@@ -415,3 +415,73 @@
     padding-bottom: calc(60px + env(safe-area-inset-bottom));
   }
 }
+
+/* ─── Isolated Quotation & Proposal Print Engine ─── */
+#apni-print-host {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm 14mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body.apni-printing-only #root {
+    display: none !important;
+  }
+
+  body.apni-printing-only #apni-print-host {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #apni-print-host .quotation-sheet {
+    max-width: 100% !important;
+    width: 100% !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #apni-print-host table {
+    page-break-inside: auto !important;
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  #apni-print-host thead {
+    display: table-header-group !important;
+  }
+
+  #apni-print-host tr,
+  #apni-print-host .print-avoid-break {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}

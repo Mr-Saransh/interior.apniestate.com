@@ -14,10 +14,20 @@ import {
   Sparkles,
   Share2,
   Calendar,
-  Send
+  Send,
+  Maximize2,
+  Minimize2,
+  PenTool
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { formatINR } from '../../utils/formatters';
+import { printQuotationById } from '../../utils/printQuotation';
+import {
+  SignaturePadField,
+  QuotationSignatureBlock,
+  DEFAULT_SIGNATORY,
+  SignatoryConfig
+} from './SignaturePadField';
 import { Project, Room, BOQItem } from '../../types';
 
 interface SpecificQuotationModalProps {
@@ -40,6 +50,9 @@ export const SpecificQuotationModal: React.FC<SpecificQuotationModalProps> = ({
   const [discountPercent, setDiscountPercent] = useState<number>(0);
   const [markupPercent, setMarkupPercent] = useState<number>(15);
   const [viewMode, setViewMode] = useState<'edit' | 'preview'>('preview');
+  const [isFullView, setIsFullView] = useState<boolean>(false);
+  const [showSignatoryPanel, setShowSignatoryPanel] = useState<boolean>(false);
+  const [signatory, setSignatory] = useState<SignatoryConfig>(DEFAULT_SIGNATORY);
 
   const selectedProject = projects.find(p => p.id === selectedProjectId) || projects[0];
   const linkedClient = clients.find(c => c.id === selectedProject?.client_id || c.name === selectedProject?.client);
@@ -83,8 +96,18 @@ export const SpecificQuotationModal: React.FC<SpecificQuotationModalProps> = ({
   if (!isOpen || !selectedProject) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl border border-[#E5E7EB] overflow-hidden">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150 ${
+        isFullView ? 'p-0 sm:p-2' : 'p-3 sm:p-6'
+      }`}
+    >
+      <div
+        className={`bg-white flex flex-col shadow-2xl border border-[#E5E7EB] overflow-hidden transition-all duration-200 ${
+          isFullView
+            ? 'w-full h-full sm:rounded-2xl max-w-none max-h-none'
+            : 'rounded-2xl w-full max-w-5xl max-h-[92vh]'
+        }`}
+      >
         
         {/* Header */}
         <div className="px-5 py-4 border-b border-[#E5E7EB] flex items-center justify-between bg-white shrink-0">
@@ -112,16 +135,27 @@ export const SpecificQuotationModal: React.FC<SpecificQuotationModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => window.print()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#E5E7EB] hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer"
+              onClick={() => printQuotationById('specific-quotation-sheet', `Quotation-${quoteNumber}`)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold cursor-pointer"
             >
-              <Printer className="w-3.5 h-3.5 text-slate-500" />
-              <span>Print</span>
+              <Printer className="w-3.5 h-3.5" />
+              <span>Print / PDF</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsFullView((prev) => !prev)}
+              className="p-1.5 text-slate-500 hover:text-[#1D4ED8] hover:bg-[#EFF6FF] rounded-lg transition-colors cursor-pointer"
+              title={isFullView ? 'Exit Full View' : 'View Full Screen'}
+              aria-label={isFullView ? 'Exit Full View' : 'View Full Screen'}
+            >
+              {isFullView ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
 
             <button
               onClick={onClose}
               className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              aria-label="Close Specific Quotation"
             >
               <X className="w-5 h-5" />
             </button>
@@ -177,12 +211,34 @@ export const SpecificQuotationModal: React.FC<SpecificQuotationModalProps> = ({
               />
               <span className="text-slate-700 font-semibold">Include GST (18%)</span>
             </label>
+
+            <button
+              type="button"
+              onClick={() => setShowSignatoryPanel((prev) => !prev)}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+                showSignatoryPanel
+                  ? 'bg-[#EFF6FF] border-[#1D4ED8] text-[#1D4ED8]'
+                  : 'bg-white border-[#E5E7EB] text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <PenTool className="w-3.5 h-3.5" />
+              <span>{showSignatoryPanel ? 'Hide Signatory & E-Sign' : 'Signatory & E-Sign'}</span>
+            </button>
           </div>
         </div>
 
         {/* Printable Proposal Document */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-8">
-          <div className="bg-white p-6 sm:p-10 rounded-xl border border-[#E5E7EB] max-w-4xl mx-auto shadow-sm space-y-7">
+        <div className="flex-1 overflow-y-auto p-5 sm:p-8 bg-[#F4F6FA] space-y-4">
+          {showSignatoryPanel && (
+            <div className="max-w-4xl mx-auto">
+              <SignaturePadField value={signatory} onChange={setSignatory} compact />
+            </div>
+          )}
+
+          <div
+            id="specific-quotation-sheet"
+            className="quotation-sheet bg-white p-6 sm:p-10 rounded-xl border border-[#E5E7EB] max-w-4xl mx-auto shadow-sm space-y-7"
+          >
             
             {/* Letterhead */}
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-6 border-b-2 border-[#1D4ED8]">
@@ -330,19 +386,12 @@ export const SpecificQuotationModal: React.FC<SpecificQuotationModalProps> = ({
             </div>
 
             {/* Signatures */}
-            <div className="pt-8 border-t border-[#E5E7EB] flex justify-between items-end text-xs text-slate-500">
-              <div>
-                <div className="h-10 border-b border-slate-300 w-44 mb-1"></div>
-                <div className="font-semibold text-slate-800">For Apni Estate Interiors</div>
-                <div>Authorized Signatory</div>
-              </div>
-
-              <div className="text-right">
-                <div className="h-10 border-b border-slate-300 w-44 mb-1 ml-auto"></div>
-                <div className="font-semibold text-slate-800">{selectedProject.client}</div>
-                <div>Client Approval & Work Order Sign-off</div>
-              </div>
-            </div>
+            <QuotationSignatureBlock
+              signatory={signatory}
+              studioTitle="APNI ESTATE INTERIORS"
+              clientName={selectedProject.client}
+              clientSubtitle="Client Approval & Work Order Sign-off"
+            />
 
           </div>
         </div>

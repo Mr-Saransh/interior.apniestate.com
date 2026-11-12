@@ -19,9 +19,19 @@ import {
   FolderPlus,
   Edit3,
   Eye,
-  RotateCcw
+  RotateCcw,
+  Maximize2,
+  Minimize2,
+  PenTool
 } from 'lucide-react';
 import { formatINR } from '../../utils/formatters';
+import { printQuotationById } from '../../utils/printQuotation';
+import {
+  SignaturePadField,
+  QuotationSignatureBlock,
+  DEFAULT_SIGNATORY,
+  SignatoryConfig
+} from './SignaturePadField';
 import {
   parseSpreadsheetFile,
   parsePdfQuotationFile,
@@ -163,6 +173,9 @@ export const GenericQuotationModal: React.FC<GenericQuotationModalProps> = ({
   const [gstRate, setGstRate] = useState<number>(18);
   const [discountPercent, setDiscountPercent] = useState<number>(5);
   const [viewMode, setViewMode] = useState<'edit' | 'proposal'>('edit');
+  const [isFullView, setIsFullView] = useState<boolean>(false);
+  const [showPreviewSignatory, setShowPreviewSignatory] = useState<boolean>(false);
+  const [signatory, setSignatory] = useState<SignatoryConfig>(DEFAULT_SIGNATORY);
 
   // Editable Line Items, Payment Milestones & Terms
   const [items, setItems] = useState<QuoteLineItem[]>(DEFAULT_STARTER_ITEMS);
@@ -322,8 +335,18 @@ export const GenericQuotationModal: React.FC<GenericQuotationModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-5 bg-slate-900/45 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl w-full max-w-6xl max-h-[94vh] flex flex-col shadow-2xl border border-[#E5E7EB] overflow-hidden">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 backdrop-blur-xs animate-in fade-in duration-150 ${
+        isFullView ? 'p-0 sm:p-2' : 'p-2 sm:p-5'
+      }`}
+    >
+      <div
+        className={`bg-white flex flex-col shadow-2xl border border-[#E5E7EB] overflow-hidden transition-all duration-200 ${
+          isFullView
+            ? 'w-full h-full sm:rounded-2xl max-w-none max-h-none'
+            : 'rounded-2xl w-full max-w-6xl max-h-[94vh]'
+        }`}
+      >
         {/* Top Modal Header — Single Clean Segmented Switch + Actions */}
         <div className="px-4 sm:px-6 py-3.5 border-b border-[#E5E7EB] flex flex-wrap items-center justify-between gap-3 bg-white shrink-0">
           <div className="flex items-center gap-3 min-w-0">
@@ -370,13 +393,23 @@ export const GenericQuotationModal: React.FC<GenericQuotationModalProps> = ({
             {viewMode === 'proposal' && (
               <button
                 type="button"
-                onClick={() => window.print()}
+                onClick={() => printQuotationById('generic-quotation-sheet', `Quotation-${quoteNumber || 'Proposal'}`)}
                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>Print / PDF</span>
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={() => setIsFullView((prev) => !prev)}
+              className="p-2 rounded-xl text-slate-500 hover:text-[#1D4ED8] hover:bg-[#EFF6FF] transition-colors cursor-pointer"
+              title={isFullView ? 'Exit Full View' : 'View Full Screen'}
+              aria-label={isFullView ? 'Exit Full View' : 'View Full Screen'}
+            >
+              {isFullView ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
 
             <button
               type="button"
@@ -908,12 +941,54 @@ export const GenericQuotationModal: React.FC<GenericQuotationModalProps> = ({
                   </div>
                 </div>
               </div>
+
+              {/* Optional Signatory Name, Designation & E-Sign */}
+              <SignaturePadField value={signatory} onChange={setSignatory} />
             </div>
           ) : (
             /* ==========================================================
-               MODE 2: ARCHITECTURAL CLIENT PROPOSAL VIEW (PRINTABLE)
+               MODE 2: ARCHITECTURAL CLIENT PROPOSAL VIEW (FULL SCROLL + ISOLATED PRINT)
                ========================================================== */
-            <div className="bg-white p-6 sm:p-10 rounded-xl border border-[#E5E7EB] max-w-4xl mx-auto shadow-sm space-y-8 font-sans">
+            <div className="space-y-4 max-w-4xl mx-auto pb-8">
+              {/* Compact Preview Controls (never printed) */}
+              <div className="no-print bg-white px-4 py-2.5 rounded-xl border border-[#E5E7EB] flex flex-wrap items-center justify-between gap-2">
+                <div className="text-xs text-slate-600">
+                  Showing full quotation ({items.length} scope item{items.length === 1 ? '' : 's'})
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowPreviewSignatory((prev) => !prev)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
+                      showPreviewSignatory
+                        ? 'bg-[#EFF6FF] border-[#1D4ED8] text-[#1D4ED8]'
+                        : 'bg-white border-[#E5E7EB] text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <PenTool className="w-3.5 h-3.5" />
+                    <span>{showPreviewSignatory ? 'Hide Signatory / E-Sign' : 'Add Signatory / E-Sign'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsFullView((prev) => !prev)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#E5E7EB] bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer"
+                  >
+                    {isFullView ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                    <span>{isFullView ? 'Compact Modal' : 'Full Page View'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {showPreviewSignatory && (
+                <div className="no-print">
+                  <SignaturePadField value={signatory} onChange={setSignatory} compact />
+                </div>
+              )}
+
+              <div
+                id="generic-quotation-sheet"
+                className="quotation-sheet bg-white p-6 sm:p-10 rounded-xl border border-[#E5E7EB] shadow-sm space-y-7 font-sans"
+              >
               {/* Proposal Letterhead */}
               <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-6 border-b-2 border-[#1D4ED8]">
                 <div className="flex items-center gap-3">
@@ -1014,7 +1089,7 @@ export const GenericQuotationModal: React.FC<GenericQuotationModalProps> = ({
               </div>
 
               {/* Totals */}
-              <div className="flex justify-end pt-2">
+              <div className="print-avoid-break flex justify-end pt-2">
                 <div className="w-full sm:w-80 space-y-2 text-xs bg-slate-50 p-4 rounded-xl border border-[#E5E7EB]">
                   <div className="flex justify-between text-slate-600">
                     <span>Subtotal:</span>
@@ -1040,7 +1115,7 @@ export const GenericQuotationModal: React.FC<GenericQuotationModalProps> = ({
               </div>
 
               {/* Payment Schedule */}
-              <div className="space-y-2">
+              <div className="print-avoid-break space-y-2">
                 <h4 className="font-bold text-xs text-[#111827] uppercase tracking-wider">
                   Payment Schedule
                 </h4>
@@ -1059,9 +1134,9 @@ export const GenericQuotationModal: React.FC<GenericQuotationModalProps> = ({
 
               {/* Terms */}
               {termsText.trim() && (
-                <div className="space-y-1.5 text-[11px] text-slate-600 bg-slate-50 p-3.5 rounded-xl border border-[#E5E7EB]">
+                <div className="print-avoid-break space-y-1.5 text-[11px] text-slate-600 bg-slate-50 p-3.5 rounded-xl border border-[#E5E7EB]">
                   <div className="font-bold text-[#111827] uppercase tracking-wider text-[10px]">
-                    Terms & Conditions
+                    Terms &amp; Conditions
                   </div>
                   <ul className="list-disc pl-4 space-y-1">
                     {termsText
@@ -1074,19 +1149,12 @@ export const GenericQuotationModal: React.FC<GenericQuotationModalProps> = ({
                 </div>
               )}
 
-              {/* Signatures */}
-              <div className="pt-8 border-t border-[#E5E7EB] flex justify-between items-end text-xs text-slate-500">
-                <div>
-                  <div className="h-10 border-b border-slate-300 w-44 mb-1"></div>
-                  <div className="font-semibold text-slate-800">For {studioTitle}</div>
-                  <div>Authorized Signatory</div>
-                </div>
-
-                <div className="text-right">
-                  <div className="h-10 border-b border-slate-300 w-44 mb-1 ml-auto"></div>
-                  <div className="font-semibold text-slate-800">{clientName || 'Client Name'}</div>
-                  <div>Client Approval & Signature</div>
-                </div>
+              {/* Optional Signatures */}
+              <QuotationSignatureBlock
+                signatory={signatory}
+                studioTitle={studioTitle}
+                clientName={clientName}
+              />
               </div>
             </div>
           )}

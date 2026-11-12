@@ -8,6 +8,7 @@ import {
   IndianRupee,
   Mail,
   MessageCircle,
+  PenTool,
   Plus,
   Printer,
   Send,
@@ -18,6 +19,13 @@ import { useAuth } from '../context/AuthContext';
 import { quotationService } from '../services/quotationService';
 import { Quotation, QuotationEvent, QuotationLine, QuotationStatus } from '../types';
 import { formatINR } from '../utils/formatters';
+import { printQuotationById } from '../utils/printQuotation';
+import {
+  SignaturePadField,
+  QuotationSignatureBlock,
+  DEFAULT_SIGNATORY,
+  SignatoryConfig
+} from '../components/quotations/SignaturePadField';
 
 const DEFAULT_TERMS = 'This quotation is subject to final site measurements and written approval.';
 const DEFAULT_PAYMENT_TERMS = 'Payment schedule to be agreed before work commencement.';
@@ -99,6 +107,8 @@ export const QuotationsPage: React.FC = () => {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [shareTokens, setShareTokens] = useState<Record<string, string>>({});
+  const [showSignatoryDrawer, setShowSignatoryDrawer] = useState(false);
+  const [signatory, setSignatory] = useState<SignatoryConfig>(DEFAULT_SIGNATORY);
 
   const selectedProject = projects.find(project => project.id === selectedProjectId) || projects[0];
   const selectedQuote = quotes.find(quote => quote.id === selectedId) || quotes[0] || null;
@@ -506,14 +516,29 @@ export const QuotationsPage: React.FC = () => {
         </section>
 
         {selectedQuote ? (
-          <section id="quotation-print" className="min-w-0 rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <section id="quotation-print" className="quotation-sheet min-w-0 rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="no-print flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4 sm:p-5">
               <div>
                 <p className="text-[10px] font-extrabold uppercase tracking-widest text-brand-600">Quotation</p>
                 <h2 className="mt-1 text-lg font-extrabold text-slate-900">{selectedQuote.quote_number}</h2>
               </div>
               <div className="flex flex-wrap gap-2">
-                <button onClick={() => window.print()} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                <button
+                  type="button"
+                  onClick={() => setShowSignatoryDrawer((prev) => !prev)}
+                  className={`inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition-colors ${
+                    showSignatoryDrawer
+                      ? 'border-[#1D4ED8] bg-[#EFF6FF] text-[#1D4ED8]'
+                      : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  <PenTool className="h-4 w-4" /> Signatory &amp; E-Sign
+                </button>
+                <button
+                  type="button"
+                  onClick={() => printQuotationById('quotation-print', `Quotation-${selectedQuote.quote_number}`)}
+                  className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#1D4ED8] px-3 py-2 text-xs font-bold text-white hover:bg-[#1E40AF]"
+                >
                   <Printer className="h-4 w-4" /> PDF / Print
                 </button>
                 {selectedQuote.status === 'draft' && (
@@ -542,6 +567,11 @@ export const QuotationsPage: React.FC = () => {
                 <button onClick={copyLink} className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm"><Copy className="h-3.5 w-3.5" /> Copy client link</button>
                 <button onClick={sendViaWhatsApp} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white"><MessageCircle className="h-3.5 w-3.5" /> WhatsApp</button>
                 <button onClick={sendViaEmail} className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm"><Mail className="h-3.5 w-3.5" /> Email</button>
+              </div>
+            )}
+            {showSignatoryDrawer && (
+              <div className="no-print mx-4 mt-4 sm:mx-5">
+                <SignaturePadField value={signatory} onChange={setSignatory} compact />
               </div>
             )}
             <article className="space-y-5 p-4 sm:p-6">
@@ -607,6 +637,11 @@ export const QuotationsPage: React.FC = () => {
                 <div><h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-600">Terms &amp; conditions</h4><p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-slate-600">{selectedQuote.terms || '—'}</p></div>
                 <div><h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-600">Payment terms</h4><p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-slate-600">{selectedQuote.payment_terms || '—'}</p></div>
               </div>
+              <QuotationSignatureBlock
+                signatory={signatory}
+                studioTitle={selectedQuote.company_snapshot.name || 'Apni Estate Interiors'}
+                clientName={selectedQuote.client_snapshot.name || selectedQuote.client_name}
+              />
               {selectedQuote.decision_comment && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
                   <strong>Client comment:</strong> {selectedQuote.decision_comment}
@@ -636,7 +671,6 @@ export const QuotationsPage: React.FC = () => {
         )}
       </div>
       {isDemoMode && <p className="text-center text-[11px] text-slate-400">Demo quotations are stored in this browser only.</p>}
-      <style>{'@media print { body * { visibility: hidden !important; } #quotation-print, #quotation-print * { visibility: visible !important; } #quotation-print { position: absolute; inset: 0; width: 100%; } .no-print { display: none !important; } }'}</style>
     </div>
   );
 };
@@ -679,12 +713,12 @@ export const SharedQuotationPage: React.FC<{ token: string }> = ({ token }) => {
 
   return (
     <main className="min-h-screen bg-slate-50 px-3 py-6 sm:px-6">
-      <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div id="quotation-print" className="quotation-sheet mx-auto max-w-4xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-5 sm:p-7">
           <div><p className="text-xs font-bold uppercase tracking-widest text-brand-600">{quote.company_snapshot.name || 'Apni Estate'}</p><h1 className="mt-1 text-xl font-extrabold text-slate-900">Quotation {quote.quote_number}</h1></div>
-          <button onClick={() => window.print()} className="no-print inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700"><Printer className="h-4 w-4" /> Download / Print</button>
+          <button onClick={() => printQuotationById('quotation-print', `Quotation-${quote.quote_number}`)} className="no-print inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#1D4ED8] px-3 py-2 text-xs font-bold text-white hover:bg-[#1E40AF]"><Printer className="h-4 w-4" /> Download / Print</button>
         </header>
-        <article id="quotation-print" className="space-y-5 p-5 sm:p-7">
+        <article className="space-y-5 p-5 sm:p-7">
           <div className="flex flex-wrap justify-between gap-4 rounded-xl bg-slate-50 p-4 text-sm">
             <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Project</p><p className="mt-1 font-bold text-slate-900">{quote.project_snapshot.name}</p><p className="text-xs text-slate-500">{quote.project_snapshot.location}</p></div>
             <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Prepared for</p><p className="mt-1 font-bold text-slate-900">{quote.client_snapshot.name}</p><p className="text-xs text-slate-500">{quote.client_snapshot.address}</p></div>
@@ -715,7 +749,6 @@ export const SharedQuotationPage: React.FC<{ token: string }> = ({ token }) => {
           {quote.decision_comment && <p className="rounded-lg border border-slate-200 p-3 text-sm text-slate-700"><strong>Response:</strong> {quote.decision_comment}</p>}
         </article>
       </div>
-      <style>{'@media print { body * { visibility: hidden !important; } #quotation-print, #quotation-print * { visibility: visible !important; } #quotation-print { position: absolute; inset: 0; width: 100%; } .no-print { display: none !important; } }'}</style>
     </main>
   );
 };

@@ -154,18 +154,8 @@ export const Sidebar: React.FC = () => {
 
   const handleModeSwitch = (mode: WorkspaceMode) => {
     if (mode === workspaceMode) return;
+    setIsMobileMenuOpen(false);
     setWorkspaceMode(mode);
-    if (mode === 'crm') {
-      // Land on leads or clients if currently on ERP specific pages
-      if (['overview', 'projects', 'project-detail', 'expenses', 'purchases', 'site-controls', 'budget'].includes(currentPage)) {
-        setCurrentPage('leads');
-      }
-    } else {
-      // Land on overview if currently on CRM specific pages
-      if (['leads', 'quotations', 'client-portal'].includes(currentPage)) {
-        setCurrentPage('overview');
-      }
-    }
   };
 
   const handlePrimaryAction = () => {

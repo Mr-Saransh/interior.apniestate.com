@@ -1104,13 +1104,20 @@ export const GenericQuotationModal: React.FC<GenericQuotationModalProps> = ({
               <button
                 type="button"
                 onClick={() => {
+                  const todayIso = new Date().toISOString().split('T')[0];
+                  const targetDeadline = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
                   onSaveAsProject({
                     name: `${(clientName || 'Client').split(' ')[0]}'s ${
                       propertyType === 'Custom / Blank' ? 'Interior' : propertyType
                     } Project`,
                     client: clientName || 'New Client',
                     clientPhone,
+                    type: propertyType === 'Commercial Office' ? 'Commercial' : 'Residential',
                     budget: grandTotal,
+                    contract_value: grandTotal,
+                    startDate: todayIso,
+                    deadline: targetDeadline,
+                    city: projectLocation || 'Mumbai',
                     location: projectLocation || 'Mumbai'
                   });
                   onClose();

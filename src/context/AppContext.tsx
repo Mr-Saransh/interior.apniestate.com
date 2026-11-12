@@ -122,6 +122,9 @@ interface AppContextType {
   workspaceMode: WorkspaceMode;
   setWorkspaceMode: (mode: WorkspaceMode) => void;
   toggleWorkspaceMode: () => void;
+  modeTransitionTarget: WorkspaceMode | null;
+  modeTransitionPhase: 'entering' | 'exiting' | null;
+  dismissModeTransition: () => void;
   currentPage: NavigationPage;
   setCurrentPage: (page: NavigationPage) => void;
   selectedProjectId: string | null;
@@ -375,28 +378,70 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
-  const setWorkspaceMode = useCallback((mode: WorkspaceMode) => {
-    setWorkspaceModeState(mode);
-    try {
-      localStorage.setItem('apni_estate_workspace_mode', mode);
-    } catch (e) {
-      // ignore
-    }
+  const [modeTransitionTarget, setModeTransitionTarget] = useState<WorkspaceMode | null>(null);
+  const [modeTransitionPhase, setModeTransitionPhase] = useState<'entering' | 'exiting' | null>(null);
+  const transitionTimersRef = React.useRef<number[]>([]);
+
+  const dismissModeTransition = useCallback(() => {
+    transitionTimersRef.current.forEach((id) => window.clearTimeout(id));
+    transitionTimersRef.current = [];
+    setModeTransitionPhase(null);
+    setModeTransitionTarget(null);
   }, []);
 
-  const toggleWorkspaceMode = useCallback(() => {
-    setWorkspaceModeState(prev => {
-      const next = prev === 'erp' ? 'crm' : 'erp';
+  const [currentPage, setCurrentPage] = useState<NavigationPage>('overview');
+
+  const triggerModeTransition = useCallback((targetMode: WorkspaceMode) => {
+    transitionTimersRef.current.forEach((id) => window.clearTimeout(id));
+    transitionTimersRef.current = [];
+
+    setModeTransitionTarget(targetMode);
+    setModeTransitionPhase('entering');
+
+    const swapTimer = window.setTimeout(() => {
+      setWorkspaceModeState(targetMode);
       try {
-        localStorage.setItem('apni_estate_workspace_mode', next);
+        localStorage.setItem('apni_estate_workspace_mode', targetMode);
       } catch (e) {
         // ignore
       }
-      return next;
-    });
+      setCurrentPage((prevPage) => {
+        if (targetMode === 'crm') {
+          if (['overview', 'projects', 'project-detail', 'expenses', 'purchases', 'site-controls', 'budget'].includes(prevPage)) {
+            return 'leads';
+          }
+        } else {
+          if (['leads', 'quotations', 'client-portal', 'tasks', 'documents'].includes(prevPage)) {
+            return 'overview';
+          }
+        }
+        return prevPage;
+      });
+    }, 240);
+
+    const exitTimer = window.setTimeout(() => {
+      setModeTransitionPhase('exiting');
+    }, 560);
+
+    const clearTimer = window.setTimeout(() => {
+      setModeTransitionPhase(null);
+      setModeTransitionTarget(null);
+    }, 840);
+
+    transitionTimersRef.current = [swapTimer, exitTimer, clearTimer];
   }, []);
 
-  // Alt + S or Ctrl+K mode toggle shortcut
+  const setWorkspaceMode = useCallback((mode: WorkspaceMode) => {
+    if (mode === workspaceMode && !modeTransitionTarget) return;
+    triggerModeTransition(mode);
+  }, [workspaceMode, modeTransitionTarget, triggerModeTransition]);
+
+  const toggleWorkspaceMode = useCallback(() => {
+    const next = workspaceMode === 'erp' ? 'crm' : 'erp';
+    triggerModeTransition(next);
+  }, [workspaceMode, triggerModeTransition]);
+
+  // Alt + S or Ctrl+S mode toggle shortcut
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.altKey && e.key.toLowerCase() === 's') || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's')) {
@@ -408,7 +453,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [toggleWorkspaceMode]);
 
-  const [currentPage, setCurrentPage] = useState<NavigationPage>('overview');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [initialProjectDetailTab, setInitialProjectDetailTab] = useState<ProjectDetailTab>('Overview');
   const [globalSearch, setGlobalSearch] = useState<string>('');
@@ -1347,9 +1391,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return newProject;
     } else {
       const id = `proj-${Date.now()}`;
+      const todayIso = new Date().toISOString().split('T')[0];
+      const defaultDeadline = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       const project: Project = {
         ...newProjectData,
         id,
+        type: newProjectData.type || 'Residential',
+        city: newProjectData.city || newProjectData.location || 'Mumbai',
+        startDate: newProjectData.startDate || todayIso,
+        deadline: newProjectData.deadline || defaultDeadline,
+        coverImage: newProjectData.coverImage || 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1200&q=80',
         spent: 0,
         progress: 0,
         status: 'On Track',
@@ -2370,6 +2421,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         workspaceMode,
         setWorkspaceMode,
         toggleWorkspaceMode,
+        modeTransitionTarget,
+        modeTransitionPhase,
+        dismissModeTransition,
         isGenericQuoteModalOpen,
         setIsGenericQuoteModalOpen,
         isSpecificQuoteModalOpen,

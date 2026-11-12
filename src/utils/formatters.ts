@@ -58,9 +58,15 @@ export function formatLakhValue(amount: number): string {
   return `₹${l.toFixed(1).replace(/\.0+$/, '')}L`;
 }
 
-export function calculateDaysRemaining(deadlineStr: string): { days: number; isOverdue: boolean; text: string } {
+export function calculateDaysRemaining(deadlineStr?: string | null): { days: number; isOverdue: boolean; text: string } {
+  if (!deadlineStr) {
+    return { days: 0, isOverdue: false, text: 'Date pending' };
+  }
   try {
     const deadline = new Date(deadlineStr);
+    if (Number.isNaN(deadline.getTime())) {
+      return { days: 0, isOverdue: false, text: 'Date pending' };
+    }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     deadline.setHours(0, 0, 0, 0);
@@ -103,11 +109,13 @@ export function getBudgetHealth(budget: number, spent: number): {
   return { status: 'Healthy', color: 'bg-emerald-500', badgeBg: 'bg-emerald-50 border-emerald-200', textColor: 'text-emerald-700', percentage };
 }
 
-export function formatDate(dateString: string): string {
+export function formatDate(dateString?: string | null): string {
+  if (!dateString) return 'Not scheduled';
   try {
     const d = new Date(dateString);
+    if (Number.isNaN(d.getTime())) return 'Not scheduled';
     return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   } catch {
-    return dateString;
+    return 'Not scheduled';
   }
 }

@@ -86,6 +86,18 @@ import { milestoneService } from '../services/milestoneService';
 import { documentService } from '../services/documentService';
 import { quotationService } from '../services/quotationService';
 import { GanttChart } from '../components/project/GanttChart';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
 import { Task, DocumentItem, DocumentCategory, TaskStatus, TaskPriority, ClientPayment, Purchase, Vendor } from '../types';
 
 type ProjectTab =
@@ -696,362 +708,531 @@ export const ProjectDetailPage: React.FC = () => {
       </nav>
 
       {/* TAB 1: OVERVIEW */}
-      {activeTab === 'Overview' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="premium-card p-5">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Project Budget</span>
-              <div className="text-2xl font-extrabold font-display text-slate-900 mt-2">
-                {formatINR(project.budget)}
+      {activeTab === 'Overview' && (() => {
+        const CHART_PALETTE = ['#1D4ED8', '#059669', '#D97706', '#6366F1', '#0891B2'];
+
+        const roomBarData = rooms.map((room) => ({
+          name: room.name.length > 14 ? `${room.name.slice(0, 14)}…` : room.name,
+          Budget: Number(room.budget || 0),
+          Spent: calculateRoomSpent(room.id, expenses),
+        }));
+
+        const pillarBarData = [
+          { name: 'Contract', Amount: Number(profitability.contractValue || 0), fill: '#1D4ED8' },
+          { name: 'BOQ Est.', Amount: Number(projectBOQ || 0), fill: '#4F46E5' },
+          { name: 'Collected', Amount: Number(profitability.revenueReceived || 0), fill: '#059669' },
+          { name: 'Actual Cost', Amount: Number(profitability.actualCost || 0), fill: '#D97706' },
+        ];
+
+        const expenseByCategoryMap: Record<string, number> = {};
+        projectExpenses.forEach((exp) => {
+          const cat = exp.category || 'Other';
+          expenseByCategoryMap[cat] = (expenseByCategoryMap[cat] || 0) + Number(exp.amount || 0);
+        });
+        const sortedCategories = Object.entries(expenseByCategoryMap)
+          .sort((a, b) => b[1] - a[1]);
+
+        const donutData = sortedCategories.length > 0
+          ? sortedCategories.slice(0, 4).map(([name, value], idx) => ({
+              name,
+              value,
+              color: CHART_PALETTE[idx % CHART_PALETTE.length],
+            })).concat(
+              sortedCategories.length > 4
+                ? [{
+                    name: 'Other',
+                    value: sortedCategories.slice(4).reduce((s, [, v]) => s + v, 0),
+                    color: '#94A3B8',
+                  }]
+                : []
+            )
+          : [
+              ...(projectSpent > 0 ? [{ name: 'Actual Spend', value: projectSpent, color: '#D97706' }] : []),
+              {
+                name: 'Remaining Budget',
+                value: Math.max(Number(project.budget || 0) - projectSpent, projectSpent > 0 ? 0 : 1),
+                color: '#1D4ED8',
+              },
+            ].filter((d) => d.value > 0);
+
+        return (
+          <div className="space-y-5">
+            {/* ROW 1: 4 UNIFORM ARCHITECTURAL KPI CARDS */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Project Budget</span>
+                  <span className="w-7 h-7 rounded-lg bg-[#EFF6FF] text-[#1D4ED8] flex items-center justify-center">
+                    <DollarSign className="w-3.5 h-3.5" />
+                  </span>
+                </div>
+                <div className="text-2xl font-extrabold font-display text-slate-900 tabular-nums mt-2">
+                  {formatINR(project.budget)}
+                </div>
+                <p className="text-xs text-slate-500 mt-1.5 tabular-nums">
+                  BOQ Estimate: <span className="font-semibold text-slate-800">{formatINR(projectBOQ)}</span>
+                </p>
               </div>
-              <p className="text-xs text-slate-400 mt-1">
-                BOQ Estimate: <span className="font-semibold text-slate-700">{formatINR(projectBOQ)}</span>
-              </p>
+
+              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Actual Spend</span>
+                  <span className="text-[11px] font-bold text-[#1D4ED8] bg-[#EFF6FF] px-2 py-0.5 rounded-full tabular-nums">
+                    {projectMetrics.utilization !== null ? `${projectMetrics.utilization.toFixed(0)}%` : '0%'}
+                  </span>
+                </div>
+                <div className="text-2xl font-extrabold font-display text-[#1D4ED8] tabular-nums mt-2">
+                  {formatINR(projectSpent)}
+                </div>
+                <div className="mt-2">
+                  <ProgressBar value={projectMetrics.utilization || 0} height="sm" />
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Remaining Cushion</span>
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full tabular-nums ${
+                    projectMetrics.isOverBudget ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'
+                  }`}>
+                    {profitability.grossMarginPercentage.toFixed(0)}% margin
+                  </span>
+                </div>
+                <div className={`text-2xl font-extrabold font-display tabular-nums mt-2 ${
+                  projectMetrics.isOverBudget ? 'text-rose-600' : 'text-emerald-600'
+                }`}>
+                  {formatINR(projectMetrics.remaining)}
+                </div>
+                <p className="text-xs text-slate-500 mt-1.5 tabular-nums">
+                  {projectMetrics.isOverBudget ? (
+                    <span className="font-semibold text-rose-600">Over budget by {formatINR(projectMetrics.overBudgetAmount)}</span>
+                  ) : (
+                    'Available for uncommitted scope'
+                  )}
+                </p>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Milestone Progress</span>
+                  <span className="text-xs font-extrabold text-slate-900 tabular-nums">
+                    {derivedMilestoneProgress !== null ? `${derivedMilestoneProgress}%` : '0%'}
+                  </span>
+                </div>
+                <div className="mt-3">
+                  <ProgressBar value={progressNumericValue} height="md" />
+                </div>
+                <div className="flex items-center justify-between gap-2 text-xs text-slate-500 mt-2.5">
+                  <span className="truncate">{displayProgressText}</span>
+                  <span className="font-semibold text-slate-700 shrink-0">{formatDate(project.deadline)}</span>
+                </div>
+              </div>
             </div>
 
-            <div className="premium-card p-5">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Actual Spent</span>
-              <div className="text-2xl font-extrabold font-display text-brand-600 mt-2">
-                {formatINR(projectSpent)}
-              </div>
-              <p className="text-xs text-slate-400 mt-1">
-                {projectMetrics.utilization !== null ? `${projectMetrics.utilization.toFixed(1)}% of budget utilized` : 'No budget configured'}
-              </p>
-            </div>
+            {/* ROW 2: ANALYTICS CHARTS & HEALTH SIGNALS */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+              {/* Chart 1: Financial & Room Cost Comparison */}
+              <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E5E7EB] p-5 flex flex-col">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                  <div>
+                    <h3 className="text-base font-bold font-display text-slate-900">
+                      {rooms.length > 0 ? 'Room Budget vs. Actual Spend' : 'Financial Position & Cash Comparison'}
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      {rooms.length > 0
+                        ? 'Allocated room budget compared against recorded ledger expenses'
+                        : 'Contract commitment, BOQ estimate, collected revenue & actual cost'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px] font-semibold text-slate-600 shrink-0">
+                    {rooms.length > 0 ? (
+                      <>
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-sm bg-[#1D4ED8]" /> Budget
+                        </span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-sm bg-[#D97706]" /> Spent
+                        </span>
+                      </>
+                    ) : (
+                      <span className="px-2.5 py-1 rounded-lg bg-[#F4F6FA] border border-[#E5E7EB] text-slate-600">
+                        Live Financial Rollup
+                      </span>
+                    )}
+                  </div>
+                </div>
 
-            <div className="premium-card p-5">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Remaining Cushion</span>
-              <div className={`text-2xl font-extrabold font-display mt-2 ${projectMetrics.isOverBudget ? 'text-rose-600' : 'text-emerald-600'}`}>
-                {formatINR(projectMetrics.remaining)}
+                <div className="h-[235px] w-full mt-auto">
+                  <ResponsiveContainer width="100%" height="100%">
+                    {rooms.length > 0 ? (
+                      <BarChart data={roomBarData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }} barGap={6}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fill: '#64748B', fontSize: 11, fontWeight: 600 }}
+                          axisLine={{ stroke: '#E5E7EB' }}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          tickFormatter={(v) => formatINRCompact(Number(v))}
+                          tick={{ fill: '#64748B', fontSize: 11 }}
+                          axisLine={false}
+                          tickLine={false}
+                          width={58}
+                        />
+                        <Tooltip
+                          formatter={(value: unknown) => formatINR(Number(value || 0))}
+                          contentStyle={{
+                            backgroundColor: '#FFFFFF',
+                            borderColor: '#E5E7EB',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)',
+                          }}
+                        />
+                        <Bar dataKey="Budget" fill="#1D4ED8" radius={[6, 6, 0, 0]} maxBarSize={34} />
+                        <Bar dataKey="Spent" fill="#D97706" radius={[6, 6, 0, 0]} maxBarSize={34} />
+                      </BarChart>
+                    ) : (
+                      <BarChart data={pillarBarData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fill: '#64748B', fontSize: 11, fontWeight: 600 }}
+                          axisLine={{ stroke: '#E5E7EB' }}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          tickFormatter={(v) => formatINRCompact(Number(v))}
+                          tick={{ fill: '#64748B', fontSize: 11 }}
+                          axisLine={false}
+                          tickLine={false}
+                          width={58}
+                        />
+                        <Tooltip
+                          formatter={(value: unknown) => [formatINR(Number(value || 0)), 'Amount']}
+                          contentStyle={{
+                            backgroundColor: '#FFFFFF',
+                            borderColor: '#E5E7EB',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)',
+                          }}
+                        />
+                        <Bar dataKey="Amount" radius={[8, 8, 0, 0]} maxBarSize={48}>
+                          {pillarBarData.map((entry, idx) => (
+                            <Cell key={`pillar-${idx}`} fill={entry.fill} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    )}
+                  </ResponsiveContainer>
+                </div>
               </div>
-              <p className="text-xs text-slate-400 mt-1">
-                {projectMetrics.isOverBudget ? (
-                  <span className="font-bold text-rose-600">Over budget by {formatINR(projectMetrics.overBudgetAmount)}</span>
+
+              {/* Chart 2 & Compact Health Pulse */}
+              <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E7EB] p-5 flex flex-col justify-between gap-4">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-base font-bold font-display text-slate-900">Spend Mix &amp; Controls</h3>
+                    <p className="text-xs text-slate-500">
+                      {sortedCategories.length > 0 ? 'Expense split by trade category' : 'Budget utilization & execution health'}
+                    </p>
+                  </div>
+                  <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold shrink-0 ${
+                    projectHealth === 'Red' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                    projectHealth === 'Amber' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                    'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  }`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${
+                      projectHealth === 'Red' ? 'bg-rose-600' : projectHealth === 'Amber' ? 'bg-amber-500' : 'bg-emerald-600'
+                    }`} />
+                    {projectHealth} Health
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-4">
+                  <div className="h-[136px] w-[140px] mx-auto">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={donutData}
+                          dataKey="value"
+                          nameKey="name"
+                          innerRadius={40}
+                          outerRadius={60}
+                          paddingAngle={donutData.length > 1 ? 3 : 0}
+                          stroke="none"
+                        >
+                          {donutData.map((entry, idx) => (
+                            <Cell key={`slice-${idx}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(value: unknown) => formatINR(Number(value || 0))}
+                          contentStyle={{
+                            backgroundColor: '#FFFFFF',
+                            borderColor: '#E5E7EB',
+                            borderRadius: '10px',
+                            fontSize: '11px',
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="rounded-xl bg-[#F4F6FA] border border-[#E5E7EB] p-2.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">BOQ Approved</span>
+                      <span className="text-sm font-extrabold text-slate-900 tabular-nums">
+                        {approvedBOQCount}/{projectBOQItems.length}
+                      </span>
+                    </div>
+                    <div className="rounded-xl bg-[#F4F6FA] border border-[#E5E7EB] p-2.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">PO Fulfilled</span>
+                      <span className="text-sm font-extrabold text-slate-900 tabular-nums">
+                        {purchaseCompletion === null ? 'No POs' : `${purchaseCompletion}%`}
+                      </span>
+                    </div>
+                    <div className="rounded-xl bg-[#F4F6FA] border border-[#E5E7EB] p-2.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Site Updates</span>
+                      <span className="text-sm font-extrabold text-slate-900 tabular-nums">
+                        {projectDailyUpdates.length} reports
+                      </span>
+                    </div>
+                    <div className="rounded-xl bg-[#F4F6FA] border border-[#E5E7EB] p-2.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Client Quotes</span>
+                      <span className="text-sm font-extrabold text-slate-900 tabular-nums">
+                        {pendingQuotationCount} pending
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {healthReasons.length === 0 ? (
+                  <div className="rounded-xl bg-emerald-50/80 border border-emerald-200/70 px-3.5 py-2.5 text-xs text-emerald-800 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>No cost, schedule, purchase, or client payment risks detected.</span>
+                  </div>
                 ) : (
-                  'Available for uncommitted scope'
+                  <div className="rounded-xl bg-amber-50/80 border border-amber-200/80 p-3 space-y-1.5">
+                    {healthReasons.slice(0, 2).map((reason) => (
+                      <div key={reason} className="flex items-start gap-2 text-xs text-slate-700">
+                        <AlertTriangle className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${projectHealth === 'Red' ? 'text-rose-600' : 'text-amber-600'}`} />
+                        <span>{reason}</span>
+                      </div>
+                    ))}
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {delayedTasks.length > 0 && (
+                        <button onClick={() => setCurrentPage('tasks')} className="rounded-lg bg-white border border-[#E5E7EB] px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50">
+                          Review Tasks
+                        </button>
+                      )}
+                      {delayedPurchases.length > 0 && (
+                        <button onClick={() => setActiveTab('Purchases')} className="rounded-lg bg-white border border-[#E5E7EB] px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50">
+                          Follow Up POs
+                        </button>
+                      )}
+                      {overduePayments.length > 0 && (
+                        <button onClick={() => setActiveTab('Payments')} className="rounded-lg bg-white border border-[#E5E7EB] px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50">
+                          Review Dues
+                        </button>
+                      )}
+                      {projectBOQItems.length > approvedBOQCount && (
+                        <button onClick={() => setActiveTab('BOQ')} className="rounded-lg bg-white border border-[#E5E7EB] px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50">
+                          Approve BOQ
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 )}
-              </p>
+                {quotationLoadError && (
+                  <p role="alert" className="text-[11px] text-rose-700">
+                    Approval status could not be refreshed: {quotationLoadError}
+                  </p>
+                )}
+              </div>
             </div>
 
-            <div className="premium-card p-5">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Milestone Progress</span>
-                <span className="text-xs font-extrabold text-slate-900">{displayProgressText}</span>
-              </div>
-              <div className="mt-3">
-                <ProgressBar value={progressNumericValue} height="md" />
-              </div>
-              <p className="text-xs text-slate-400 mt-2">Target handover: {formatDate(project.deadline)}</p>
-            </div>
-          </div>
+            {/* ROW 3: SCHEDULE, PROFITABILITY & ROOM BREAKDOWN */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+              {/* Crisp White Architectural Card for Profitability & Timeline (Fixes contrast) */}
+              <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E7EB] p-5 flex flex-col justify-between gap-4">
+                <div>
+                  <div className="flex items-center justify-between gap-2 pb-3 border-b border-[#E5E7EB]">
+                    <div>
+                      <h3 className="text-base font-bold font-display text-slate-900">Schedule &amp; Cash Position</h3>
+                      <p className="text-xs text-slate-500">Contract margins and handover milestones</p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => setActiveTab('Payments')}
+                        className="px-2.5 py-1.5 rounded-lg bg-[#EFF6FF] hover:bg-blue-100 text-[#1D4ED8] text-xs font-semibold transition-colors"
+                      >
+                        Payments ({projectPayments.length})
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('Purchases')}
+                        className="px-2.5 py-1.5 rounded-lg bg-[#F4F6FA] hover:bg-slate-200 text-slate-700 border border-[#E5E7EB] text-xs font-semibold transition-colors"
+                      >
+                        POs ({projectPurchases.length})
+                      </button>
+                    </div>
+                  </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-5 premium-card p-6 flex flex-col justify-between">
-              <div>
-                <h3 className="text-base font-bold font-display text-slate-900 mb-4">Project Details & Handover</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                  <div className="mt-4 flex items-center justify-between p-3.5 rounded-xl bg-[#F4F6FA] border border-[#E5E7EB]">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-[#EFF6FF] text-[#1D4ED8] flex items-center justify-center shrink-0">
                         <Calendar className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="text-xs text-slate-400 font-semibold">Start Date</div>
-                        <div className="text-xs font-bold text-slate-800">{formatDate(project.startDate)}</div>
+                        <div className="text-[11px] text-slate-500 font-semibold">Start Date</div>
+                        <div className="text-xs font-bold text-slate-900">{formatDate(project.startDate)}</div>
+                      </div>
+                    </div>
+                    <div className="text-center px-2">
+                      <div className="text-[11px] text-slate-500 font-semibold">Timeline</div>
+                      <div className={`text-xs font-extrabold ${daysInfo.isOverdue ? 'text-rose-600' : 'text-slate-800'}`}>
+                        {daysInfo.text}
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-xs text-slate-400 font-semibold">Deadline</div>
-                      <div className="text-xs font-bold text-slate-800">{formatDate(project.deadline)}</div>
+                      <div className="text-[11px] text-slate-500 font-semibold">Handover</div>
+                      <div className="text-xs font-bold text-slate-900">{formatDate(project.deadline)}</div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-amber-50/70 border border-amber-100/80">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
-                        <Clock className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs text-amber-700 font-semibold">Days to Handover</div>
-                        <div className="text-sm font-extrabold text-amber-900">{daysInfo.text}</div>
-                      </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mt-3.5">
+                    <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Contract Value</span>
+                      <span className="text-sm font-extrabold text-slate-900 tabular-nums mt-1 block">
+                        {formatINR(profitability.contractValue)}
+                      </span>
                     </div>
-                    <Badge status={daysInfo.isOverdue ? 'Delayed' : 'On Track'} />
+                    <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Received</span>
+                      <span className="text-sm font-extrabold text-emerald-700 tabular-nums mt-1 block">
+                        {formatINR(profitability.revenueReceived)}
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Actual Cost</span>
+                      <span className="text-sm font-extrabold text-amber-700 tabular-nums mt-1 block">
+                        {formatINR(profitability.actualCost)}
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Gross Profit</span>
+                      <span className={`text-sm font-extrabold tabular-nums mt-1 block ${profitability.grossProfit >= 0 ? 'text-[#1D4ED8]' : 'text-rose-600'}`}>
+                        {formatINR(profitability.grossProfit)}
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Realized Cash</span>
+                      <span className={`text-sm font-extrabold tabular-nums mt-1 block ${profitability.realizedCashPosition >= 0 ? 'text-slate-900' : 'text-rose-600'}`}>
+                        {formatINR(profitability.realizedCashPosition)}
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Client Dues</span>
+                      <span className={`text-sm font-extrabold tabular-nums mt-1 block ${overduePaymentAmount > 0 ? 'text-rose-600' : 'text-slate-900'}`}>
+                        {formatINR(overduePaymentAmount)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-slate-100">
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Scope Summary</div>
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                    <span className="text-slate-500 font-medium">Configured Rooms:</span>
-                    <span className="block font-bold text-slate-800 text-sm mt-0.5">{rooms.length} Areas</span>
-                  </div>
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                    <span className="text-slate-500 font-medium">BOQ Line Items:</span>
-                    <span className="block font-bold text-slate-800 text-sm mt-0.5">{projectBOQItems.length} Items</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="lg:col-span-7 premium-card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-base font-bold font-display text-slate-900">Room-by-Room Financial Breakdown</h3>
-                  <p className="text-xs text-slate-500">Budgets and actual spent calculated from real expense ledger</p>
-                </div>
-                <button
-                  onClick={handleAddRoom}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-50 border border-brand-200 text-brand-700 text-xs font-bold hover:bg-brand-100 transition-all"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Room</span>
-                </button>
-              </div>
-
-              {rooms.length === 0 ? (
-                <EmptyState
-                  icon={LayoutGrid}
-                  title="No rooms created yet"
-                  description="Add rooms like Living Room, Kitchen, and Master Bedroom to organize budget and scope."
-                  actionLabel="+ Add First Room"
-                  onAction={handleAddRoom}
-                />
-              ) : (
-                <div className="space-y-3">
-                  {rooms.map((room) => {
-                    const roomSpent = calculateRoomSpent(room.id, expenses);
-                    const roomBOQ = calculateRoomBOQ(room.id, boqItems);
-                    const roomMetrics = calculateBudgetMetrics(room.budget, roomSpent);
-
-                    return (
-                      <div key={room.id} className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/80 hover:bg-slate-50 transition-colors">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-slate-900">{room.name}</span>
-                            {room.room_type && (
-                              <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-200/60 font-semibold text-slate-600">
-                                {room.room_type}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge status={roomMetrics.health.status} />
-                            <button
-                              onClick={() => handleEditRoom(room)}
-                              className="p-1 text-slate-400 hover:text-slate-700 rounded-md"
-                              title="Edit Room"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-2 text-xs mb-2">
-                          <div>
-                            <span className="text-[10px] text-slate-400 font-semibold uppercase">Budget</span>
-                            <div className="font-extrabold text-slate-800">{formatINR(room.budget)}</div>
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-slate-400 font-semibold uppercase">Actual Spent</span>
-                            <div className="font-extrabold text-brand-600">{formatINR(roomSpent)}</div>
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-slate-400 font-semibold uppercase">Remaining</span>
-                            <div className={`font-extrabold ${roomMetrics.isOverBudget ? 'text-rose-600' : 'text-emerald-600'}`}>
-                              {formatINR(roomMetrics.remaining)}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1">
-                            <ProgressBar value={roomMetrics.utilization || 0} height="sm" />
-                          </div>
-                          <span className="text-[11px] font-bold text-slate-500">
-                            {roomMetrics.utilization !== null ? `${roomMetrics.utilization.toFixed(0)}%` : '0%'}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Professional Profitability & Cash Position Card */}
-          <div className="premium-card p-6 bg-linear-to-br from-slate-900 via-slate-900 to-indigo-950 text-white shadow-xl">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
-              <div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-brand-400">Professional Financial Suite</span>
-                <h3 className="text-base sm:text-lg font-black font-display text-white mt-0.5">
-                  Project Profitability & Cash Flow Position
-                </h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setActiveTab('Payments')}
-                  className="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition-colors"
-                >
-                  View Payments ({projectPayments.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab('Purchases')}
-                  className="px-3 py-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition-colors"
-                >
-                  View POs ({projectPurchases.length})
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 pt-5">
-              <div className="p-3.5 rounded-xl bg-white/5 border border-white/10">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Contract Value</span>
-                <span className="text-base sm:text-lg font-black text-white mt-1 block">
-                  {formatINR(profitability.contractValue)}
-                </span>
-                <span className="text-[10px] text-slate-400">Agreed client budget</span>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-white/5 border border-white/10">
-                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Revenue Received</span>
-                <span className="text-base sm:text-lg font-black text-emerald-400 mt-1 block">
-                  {formatINR(profitability.revenueReceived)}
-                </span>
-                <span className="text-[10px] text-slate-400">
-                  {profitability.contractValue > 0 
-                    ? `${((profitability.revenueReceived / profitability.contractValue) * 100).toFixed(0)}% collected`
-                    : '0% collected'}
-                </span>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-white/5 border border-white/10">
-                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">Actual Cost</span>
-                <span className="text-base sm:text-lg font-black text-amber-400 mt-1 block">
-                  {formatINR(profitability.actualCost)}
-                </span>
-                <span className="text-[10px] text-slate-400">Total ledger expenses</span>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-white/5 border border-white/10">
-                <span className="text-[10px] font-bold text-indigo-300 uppercase tracking-wider block">Gross Profit</span>
-                <span className={`text-base sm:text-lg font-black mt-1 block ${profitability.grossProfit >= 0 ? 'text-indigo-300' : 'text-rose-400'}`}>
-                  {formatINR(profitability.grossProfit)}
-                </span>
-                <span className="text-[10px] text-slate-400">Contract − Costs</span>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-white/5 border border-white/10">
-                <span className="text-[10px] font-bold text-purple-300 uppercase tracking-wider block">Gross Margin</span>
-                <span className={`text-base sm:text-lg font-black mt-1 block ${profitability.grossMarginPercentage >= 0 ? 'text-purple-300' : 'text-rose-400'}`}>
-                  {profitability.grossMarginPercentage.toFixed(1)}%
-                </span>
-                <span className="text-[10px] text-slate-400">Margin on contract</span>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-white/5 border border-white/10">
-                <span className="text-[10px] font-bold text-cyan-300 uppercase tracking-wider block">Realized Cash</span>
-                <span className={`text-base sm:text-lg font-black mt-1 block ${profitability.realizedCashPosition >= 0 ? 'text-cyan-300' : 'text-rose-400'}`}>
-                  {formatINR(profitability.realizedCashPosition)}
-                </span>
-                <span className="text-[10px] text-slate-400">Received − Spent</span>
-              </div>
-            </div>
-          </div>
-
-          <section className="premium-card overflow-hidden">
-            <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Project controls</span>
-                <h3 className="mt-1 text-base font-extrabold text-slate-900">Project health &amp; actions</h3>
-              </div>
-              <div className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-extrabold ${
-                projectHealth === 'Red' ? 'bg-rose-100 text-rose-800' :
-                projectHealth === 'Amber' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
-              }`}>
-                <span className={`h-2 w-2 rounded-full ${projectHealth === 'Red' ? 'bg-rose-600' : projectHealth === 'Amber' ? 'bg-amber-500' : 'bg-emerald-600'}`} />
-                {projectHealth} health
-              </div>
-            </div>
-            <div className="grid gap-4 p-5 lg:grid-cols-[1fr_1.1fr]">
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Profit at risk</p>
-                    <p className={`mt-1 text-base font-black ${costOverrun ? 'text-rose-700' : 'text-slate-900'}`}>{formatINR(costOverrun)}</p>
-                    <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
-                      {projectBOQ > 0 ? 'Recorded expense overrun against BOQ estimate' : 'Not measurable until project BOQ is entered'}
+              {/* Room-by-Room Breakdown Card */}
+              <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E5E7EB] p-5">
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#E5E7EB]">
+                  <div>
+                    <h3 className="text-base font-bold font-display text-slate-900">Room-by-Room Breakdown</h3>
+                    <p className="text-xs text-slate-500">
+                      {rooms.length} configured areas • {projectBOQItems.length} BOQ items
                     </p>
                   </div>
-                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Outstanding client dues</p>
-                    <p className={`mt-1 text-base font-black ${overduePaymentAmount ? 'text-amber-700' : 'text-slate-900'}`}>{formatINR(overduePaymentAmount)}</p>
-                    <p className="mt-1 text-[10px] leading-relaxed text-slate-500">{overduePayments.length} overdue scheduled payment{overduePayments.length === 1 ? '' : 's'}</p>
-                  </div>
+                  <button
+                    onClick={handleAddRoom}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#EFF6FF] border border-blue-200 text-[#1D4ED8] text-xs font-bold hover:bg-blue-100 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Room</span>
+                  </button>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-slate-100 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Task completion</p>
-                    <p className="mt-1 text-sm font-extrabold text-slate-900">{taskCompletion === null ? 'No tasks' : `${taskCompletion}%`}</p>
-                    <p className="text-[10px] text-slate-500">{delayedTasks.length} overdue</p>
-                  </div>
-                  <div className="rounded-xl border border-slate-100 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">BOQ approval</p>
-                    <p className="mt-1 text-sm font-extrabold text-slate-900">{approvedBOQCount}/{projectBOQItems.length} lines</p>
-                    <p className="text-[10px] text-slate-500">{projectBOQItems.length - approvedBOQCount} awaiting approval</p>
-                  </div>
-                  <div className="rounded-xl border border-slate-100 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Purchase received</p>
-                    <p className="mt-1 text-sm font-extrabold text-slate-900">{purchaseCompletion === null ? 'No orders' : `${purchaseCompletion}%`}</p>
-                    <p className="text-[10px] text-slate-500">{delayedPurchases.length} delayed</p>
-                  </div>
-                  <div className="rounded-xl border border-slate-100 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Site updates</p>
-                    <p className="mt-1 text-sm font-extrabold text-slate-900">{projectDailyUpdates.length} reports</p>
-                    <p className="text-[10px] text-slate-500">{allPhotos.length} site photos</p>
-                  </div>
-                  <div className="rounded-xl border border-slate-100 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Client approvals</p>
-                    <p className="mt-1 text-sm font-extrabold text-slate-900">{pendingQuotationCount} pending</p>
-                    <p className="text-[10px] text-slate-500">Quotation responses</p>
-                  </div>
-                </div>
-              </div>
-              <div className="rounded-xl border border-slate-100 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-600">Health reasons</h4>
-                  {projectOverdueDays > 0 && Number(project.progress) < 100 && <Badge status="Delayed" />}
-                </div>
-                {healthReasons.length === 0 ? (
-                  <p className="mt-3 rounded-lg bg-emerald-50 p-3 text-xs leading-relaxed text-emerald-800">
-                    No cost, schedule, purchase, or payment risks are visible in the data recorded for this project.
-                  </p>
+
+                {rooms.length === 0 ? (
+                  <EmptyState
+                    icon={LayoutGrid}
+                    title="No rooms created yet"
+                    description="Add rooms like Living Room, Kitchen, and Master Bedroom to track space-level budgets and expenses."
+                    actionLabel="Add First Room"
+                    onAction={handleAddRoom}
+                  />
                 ) : (
-                  <ul className="mt-3 space-y-2">
-                    {healthReasons.map(reason => (
-                      <li key={reason} className="flex gap-2 rounded-lg bg-amber-50/70 p-2.5 text-xs leading-relaxed text-slate-700">
-                        <AlertTriangle className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${projectHealth === 'Red' ? 'text-rose-600' : 'text-amber-600'}`} />
-                        {reason}
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="space-y-3 max-h-[340px] overflow-y-auto pr-1">
+                    {rooms.map((room) => {
+                      const roomSpent = calculateRoomSpent(room.id, expenses);
+                      const roomMetrics = calculateBudgetMetrics(room.budget, roomSpent);
+
+                      return (
+                        <div key={room.id} className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB] hover:bg-[#F4F6FA] transition-colors">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-slate-900">{room.name}</span>
+                              {room.room_type && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-md bg-white border border-[#E5E7EB] font-semibold text-slate-600">
+                                  {room.room_type}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge status={roomMetrics.health.status} />
+                              <button
+                                onClick={() => handleEditRoom(room)}
+                                className="p-1 text-slate-400 hover:text-slate-700 rounded-md"
+                                title="Edit Room"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2 text-xs mb-2 tabular-nums">
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-semibold uppercase">Budget</span>
+                              <div className="font-bold text-slate-800">{formatINR(room.budget)}</div>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-semibold uppercase">Spent</span>
+                              <div className="font-bold text-[#1D4ED8]">{formatINR(roomSpent)}</div>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-semibold uppercase">Remaining</span>
+                              <div className={`font-bold ${roomMetrics.isOverBudget ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                {formatINR(roomMetrics.remaining)}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1">
+                              <ProgressBar value={roomMetrics.utilization || 0} height="sm" />
+                            </div>
+                            <span className="text-[11px] font-bold text-slate-500 tabular-nums">
+                              {roomMetrics.utilization !== null ? `${roomMetrics.utilization.toFixed(0)}%` : '0%'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
-                {quotationLoadError && <p role="alert" className="mt-2 text-[10px] text-rose-700">Approval status could not be refreshed: {quotationLoadError}</p>}
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {delayedTasks.length > 0 && <button onClick={() => setCurrentPage('tasks')} className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[10px] font-bold text-slate-700 hover:bg-slate-50">Review tasks</button>}
-                  {delayedPurchases.length > 0 && <button onClick={() => setActiveTab('Purchases')} className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[10px] font-bold text-slate-700 hover:bg-slate-50">Follow up POs</button>}
-                  {overduePayments.length > 0 && <button onClick={() => setActiveTab('Payments')} className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[10px] font-bold text-slate-700 hover:bg-slate-50">Review payments</button>}
-                  {projectBOQItems.length > approvedBOQCount && <button onClick={() => setActiveTab('BOQ')} className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[10px] font-bold text-slate-700 hover:bg-slate-50">Approve BOQ</button>}
-                  {pendingQuotationCount > 0 && <button onClick={() => setCurrentPage('quotations')} className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[10px] font-bold text-slate-700 hover:bg-slate-50">Review quotations</button>}
-                </div>
               </div>
             </div>
-          </section>
-        </div>
-      )}
+          </div>
+        );
+      })()}
 
       {/* TAB 2: ROOMS */}
       {activeTab === 'Rooms' && (

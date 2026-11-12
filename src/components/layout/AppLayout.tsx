@@ -1,6 +1,7 @@
 import React from 'react';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
+import { ModeTransitionOverlay } from './ModeTransitionOverlay';
 import { useApp } from '../../context/AppContext';
 import { 
   LayoutDashboard, 
@@ -16,6 +17,9 @@ import {
 export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { 
     workspaceMode, 
+    modeTransitionTarget,
+    modeTransitionPhase,
+    dismissModeTransition,
     currentPage, 
     setCurrentPage, 
     setIsNewProjectModalOpen,
@@ -32,11 +36,18 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
 
   return (
     <div className="app-shell flex h-screen w-full overflow-hidden bg-[#F4F6FA]">
+      <ModeTransitionOverlay
+        targetMode={modeTransitionTarget}
+        phase={modeTransitionPhase}
+        onSkip={dismissModeTransition}
+      />
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto overflow-x-hidden">
         <TopBar />
         <main className="app-main flex-1 p-3.5 sm:p-5 md:p-7 xl:p-8 mx-auto min-w-0 pb-20 lg:pb-8">
-          {children}
+          <div key={`${workspaceMode}-${currentPage}`} className="animate-workspace-enter">
+            {children}
+          </div>
         </main>
       </div>
 

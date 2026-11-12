@@ -9,17 +9,17 @@ import { useAuth } from '../context/AuthContext';
 import { ClientPayment, ClientPaymentStatus } from '../types';
 import { formatINR, formatDate } from '../utils/formatters';
 import { calculatePaymentScheduleMetrics } from '../lib/profitabilityMetrics';
-import { 
-  IndianRupee, 
-  Plus, 
-  Search, 
-  Filter, 
-  CheckCircle2, 
-  Clock, 
-  AlertCircle, 
-  Calendar, 
-  Building2, 
-  Edit2, 
+import {
+  IndianRupee,
+  Plus,
+  Search,
+  Filter,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  Calendar,
+  Building2,
+  Edit2,
   Trash2,
   TrendingUp,
   CreditCard,
@@ -52,7 +52,7 @@ export const PaymentsPage: React.FC = () => {
     return clientPayments.filter(p => {
       const matchesProject = selectedProjectId === 'All' || p.project_id === selectedProjectId;
       const matchesStatus = selectedStatus === 'All' || p.status === selectedStatus;
-      const matchesSearch = 
+      const matchesSearch =
         p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (p.projectName && p.projectName.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (p.clientName && p.clientName.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -254,26 +254,24 @@ export const PaymentsPage: React.FC = () => {
             return (
               <div
                 key={p.id}
-                className={`bg-white p-4 sm:p-5 rounded-2xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
-                  isOverdue 
-                    ? 'border-rose-300 bg-rose-50/10 shadow-xs' 
-                    : isFullyPaid 
-                      ? 'border-slate-200/90 shadow-xs' 
-                      : 'border-slate-200/90 shadow-xs hover:border-brand-300'
-                }`}
+                className={`bg-white p-4 sm:p-5 rounded-2xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${isOverdue
+                  ? 'border-rose-300 bg-rose-50/10 shadow-xs'
+                  : isFullyPaid
+                    ? 'border-slate-200/90 shadow-xs'
+                    : 'border-slate-200/90 shadow-xs hover:border-brand-300'
+                  }`}
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-1.5">
                     {/* Status Badge */}
-                    <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-lg border ${
-                      isFullyPaid 
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                        : isOverdue
-                          ? 'bg-rose-50 text-rose-800 border-rose-200 animate-pulse'
-                          : isPartial
-                            ? 'bg-amber-50 text-amber-800 border-amber-200'
-                            : 'bg-indigo-50 text-indigo-800 border-indigo-200'
-                    }`}>
+                    <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-lg border ${isFullyPaid
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                      : isOverdue
+                        ? 'bg-rose-50 text-rose-800 border-rose-200 animate-pulse'
+                        : isPartial
+                          ? 'bg-amber-50 text-amber-800 border-amber-200'
+                          : 'bg-indigo-50 text-indigo-800 border-indigo-200'
+                      }`}>
                       {p.status}
                     </span>
 
@@ -313,10 +311,9 @@ export const PaymentsPage: React.FC = () => {
                   {/* Progress Bar for Partial Collections */}
                   <div className="mt-2.5 max-w-md flex items-center gap-2">
                     <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          isFullyPaid ? 'bg-emerald-500' : isOverdue ? 'bg-rose-500' : 'bg-brand-500'
-                        }`}
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${isFullyPaid ? 'bg-emerald-500' : isOverdue ? 'bg-rose-500' : 'bg-brand-500'
+                          }`}
                         style={{ width: `${pctCollected}%` }}
                       />
                     </div>
@@ -333,8 +330,8 @@ export const PaymentsPage: React.FC = () => {
                       {formatINR(p.amount)}
                     </span>
                     <span className="text-[11px] text-slate-400">
-                      {isFullyPaid 
-                        ? 'Fully Settled' 
+                      {isFullyPaid
+                        ? 'Fully Settled'
                         : `Pending: ${formatINR(Math.max(p.amount - p.paid_amount, 0))}`
                       }
                     </span>

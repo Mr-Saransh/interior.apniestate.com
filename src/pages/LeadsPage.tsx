@@ -7,23 +7,23 @@ import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { Lead, LeadStatus, LeadSource } from '../types';
 import { formatINR, formatINRCompact, formatDate } from '../utils/formatters';
-import { 
-  UserPlus, 
-  Search, 
-  Plus, 
-  Phone, 
-  Mail, 
-  Tag, 
-  IndianRupee, 
-  ArrowRight, 
-  CheckCircle2, 
-  Edit2, 
-  Trash2, 
-  Sparkles, 
-  LayoutGrid, 
-  List, 
-  Filter, 
-  UserCheck, 
+import {
+  UserPlus,
+  Search,
+  Plus,
+  Phone,
+  Mail,
+  Tag,
+  IndianRupee,
+  ArrowRight,
+  CheckCircle2,
+  Edit2,
+  Trash2,
+  Sparkles,
+  LayoutGrid,
+  List,
+  Filter,
+  UserCheck,
   Calendar,
   AlertCircle,
   TrendingUp,
@@ -283,18 +283,16 @@ export const LeadsPage: React.FC = () => {
             <button
               onClick={() => setViewMode('board')}
               title="Pipeline Board"
-              className={`p-1.5 rounded-lg text-xs font-semibold transition-all ${
-                viewMode === 'board' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-              }`}
+              className={`p-1.5 rounded-lg text-xs font-semibold transition-all ${viewMode === 'board' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                }`}
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewMode('list')}
               title="Table View"
-              className={`p-1.5 rounded-lg text-xs font-semibold transition-all ${
-                viewMode === 'list' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-              }`}
+              className={`p-1.5 rounded-lg text-xs font-semibold transition-all ${viewMode === 'list' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                }`}
             >
               <List className="w-4 h-4" />
             </button>

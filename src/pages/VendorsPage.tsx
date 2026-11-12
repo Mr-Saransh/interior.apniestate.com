@@ -7,17 +7,17 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { Vendor, VendorCategory } from '../types';
-import { 
-  Building2, 
-  Search, 
-  Plus, 
-  Phone, 
-  Mail, 
-  MapPin, 
-  Tag, 
-  Star, 
-  Edit2, 
-  Trash2, 
+import {
+  Building2,
+  Search,
+  Plus,
+  Phone,
+  Mail,
+  MapPin,
+  Tag,
+  Star,
+  Edit2,
+  Trash2,
   ShoppingBag,
   ExternalLink,
   ShieldCheck,
@@ -82,7 +82,7 @@ export const VendorsPage: React.FC = () => {
   const filteredVendors = useMemo(() => {
     return vendors.filter(v => {
       const matchesCategory = selectedCategory === 'All' || v.category === selectedCategory;
-      const matchesSearch = 
+      const matchesSearch =
         v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (v.contact_person && v.contact_person.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (v.phone && v.phone.includes(searchQuery)) ||
@@ -215,10 +215,9 @@ export const VendorsPage: React.FC = () => {
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Vendor performance</span>
                         {scorecardsLoading ? <span className="text-[10px] text-slate-400">Calculating…</span> : scorecards[vendor.id] ? (
-                          <span className={`rounded-full px-2 py-1 text-[10px] font-black ${
-                            scorecards[vendor.id].overall_score >= 80 ? 'bg-emerald-100 text-emerald-800' :
+                          <span className={`rounded-full px-2 py-1 text-[10px] font-black ${scorecards[vendor.id].overall_score >= 80 ? 'bg-emerald-100 text-emerald-800' :
                             scorecards[vendor.id].overall_score >= 60 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
-                          }`}>{scorecards[vendor.id].overall_score}/100</span>
+                            }`}>{scorecards[vendor.id].overall_score}/100</span>
                         ) : <span className="text-[10px] text-slate-400">{isDemoMode ? 'Requires recorded PO & GRN data' : 'No purchasing history'}</span>}
                       </div>
                       {scorecards[vendor.id] && (

@@ -73,12 +73,12 @@ function totals(quotation: Pick<Quotation, 'subtotal' | 'gst_amount' | 'total'>)
 }
 
 export const QuotationsPage: React.FC = () => {
-  const { 
-    projects, 
-    clients, 
-    boqItems, 
-    selectedProjectId, 
-    setSelectedProjectId, 
+  const {
+    projects,
+    clients,
+    boqItems,
+    selectedProjectId,
+    setSelectedProjectId,
     openProjectDetail,
     setIsGenericQuoteModalOpen,
     setIsSpecificQuoteModalOpen

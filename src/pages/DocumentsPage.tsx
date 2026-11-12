@@ -6,16 +6,16 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { DocumentItem, DocumentCategory } from '../types';
-import { 
-  FileText, 
-  Download, 
-  Plus, 
-  Search, 
-  FolderKanban, 
-  Trash2, 
-  ExternalLink, 
-  FileCode, 
-  FileSpreadsheet, 
+import {
+  FileText,
+  Download,
+  Plus,
+  Search,
+  FolderKanban,
+  Trash2,
+  ExternalLink,
+  FileCode,
+  FileSpreadsheet,
   Sparkles,
   Tag,
   AlertCircle
@@ -27,14 +27,14 @@ import { EmptyState } from '../components/common/EmptyState';
 import { UnifiedFilterPopover } from '../components/common/UnifiedFilterPopover';
 
 const CATEGORIES = [
-  'All', 
-  'Proposal', 
-  'Contract', 
-  'Moodboard', 
-  'Drawing', 
-  'Estimate', 
-  'Site Plan', 
-  'Invoice', 
+  'All',
+  'Proposal',
+  'Contract',
+  'Moodboard',
+  'Drawing',
+  'Estimate',
+  'Site Plan',
+  'Invoice',
   'Other'
 ];
 
@@ -184,7 +184,7 @@ export const DocumentsPage: React.FC = () => {
                   </h3>
 
                   {doc.projectName && pid ? (
-                    <div 
+                    <div
                       onClick={() => openProjectDetail(pid, 'Overview')}
                       className="text-xs text-brand-600 font-semibold hover:underline cursor-pointer mb-3 inline-flex items-center gap-1"
                     >
@@ -200,7 +200,7 @@ export const DocumentsPage: React.FC = () => {
 
                 <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
                   <span>{doc.size || 'PDF / CAD'} • {formatDate(doc.updatedAt || doc.created_at || '')}</span>
-                  
+
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleDownload(doc)}

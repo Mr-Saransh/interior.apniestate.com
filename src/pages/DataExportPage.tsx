@@ -10,8 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { exportService } from '../services/exportService';
 import { 
   Download, 
-  FileSpreadsheet, 
-  Database, 
+  Database,  
   ShieldCheck, 
   CheckCircle2, 
   FolderKanban, 
@@ -179,33 +178,48 @@ export const DataExportPage: React.FC = () => {
     notifyDownload('Full Organization JSON');
   };
 
+  const totalRecordsCount = datasets.reduce((sum, d) => sum + Number(d.count || 0), 0);
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300 pb-12">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-              Enterprise Data Portability
+    <div className="space-y-6 pb-10">
+      {/* Architectural Header & Export Summary */}
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
+              Data Portability
             </span>
+            <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
+              Data Export Center
+            </h1>
+            <p className="text-sm text-[#4B5563] mt-1">
+              Download your organization&apos;s project records, financial ledgers, and procurement logs in CSV or JSON.
+            </p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold font-display text-slate-900 tracking-tight flex items-center gap-2.5">
-            <FileSpreadsheet className="w-7 h-7 text-emerald-600" />
-            <span>Data Export Center</span>
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Download your organization's business records, financial ledgers, and procurement data in RFC-compliant CSV or JSON.
-          </p>
+
+          <button
+            onClick={handleFullJSONExport}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold transition-colors cursor-pointer self-start sm:self-auto"
+          >
+            <Database className="w-4 h-4" />
+            <span>Export All Data (JSON)</span>
+          </button>
         </div>
 
-        {/* Global JSON Export Button */}
-        <button
-          onClick={handleFullJSONExport}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm active:scale-[0.98] transition-all cursor-pointer min-h-[42px]"
-        >
-          <Database className="w-4 h-4" />
-          <span>Export All Data (JSON)</span>
-        </button>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Exportable Modules</p>
+            <p className="text-xl font-bold text-[#111827] tabular-nums mt-1">{datasets.length}</p>
+          </div>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Total Records Available</p>
+            <p className="text-xl font-bold text-[#1D4ED8] tabular-nums mt-1">{totalRecordsCount.toLocaleString()}</p>
+          </div>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Supported Formats</p>
+            <p className="text-xl font-bold text-emerald-700 mt-1">CSV & JSON</p>
+          </div>
+        </div>
       </div>
 
       {/* Success Notification Banner */}

@@ -108,20 +108,20 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           <>
             <button
               type="button"
-              onClick={() => setCurrentPage('leads')}
-              className={`mobile-bottom-nav-btn ${currentPage === 'leads' ? 'active' : ''}`}
+              onClick={() => setCurrentPage('overview')}
+              className={`mobile-bottom-nav-btn ${currentPage === 'overview' ? 'active' : ''}`}
             >
-              <UserPlus className="nav-icon" />
-              <span>Leads</span>
+              <LayoutDashboard className="nav-icon" />
+              <span>Overview</span>
             </button>
 
             <button
               type="button"
-              onClick={() => setCurrentPage('clients')}
-              className={`mobile-bottom-nav-btn ${currentPage === 'clients' ? 'active' : ''}`}
+              onClick={() => setCurrentPage('leads')}
+              className={`mobile-bottom-nav-btn ${currentPage === 'leads' ? 'active' : ''}`}
             >
-              <Users className="nav-icon" />
-              <span>Clients</span>
+              <UserPlus className="nav-icon" />
+              <span>Pipeline</span>
             </button>
 
             {/* Quick Action (+) button in center */}
@@ -129,7 +129,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
               type="button"
               onClick={handleMobilePrimaryAction}
               className="flex items-center justify-center w-11 h-11 rounded-full bg-[#1D4ED8] text-white shadow-md active:scale-95 transition-transform -mt-3.5 border-2 border-white"
-              aria-label="New Lead"
+              aria-label="Capture New Lead"
             >
               <Plus className="w-5 h-5" />
             </button>

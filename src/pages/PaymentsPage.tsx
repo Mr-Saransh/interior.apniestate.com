@@ -5,15 +5,13 @@
 
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
-import { useAuth } from '../context/AuthContext';
 import { ClientPayment, ClientPaymentStatus } from '../types';
-import { formatINR, formatDate } from '../utils/formatters';
+import { formatINR, formatINRCompact, formatDate } from '../utils/formatters';
 import { calculatePaymentScheduleMetrics } from '../lib/profitabilityMetrics';
 import {
   IndianRupee,
   Plus,
   Search,
-  Filter,
   CheckCircle2,
   Clock,
   AlertCircle,
@@ -21,10 +19,17 @@ import {
   Building2,
   Edit2,
   Trash2,
-  TrendingUp,
-  CreditCard,
-  ArrowUpRight
 } from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { ClientPaymentModal } from '../components/modals/ClientPaymentModal';
 import { EmptyState } from '../components/common/EmptyState';
 import { UnifiedFilterPopover } from '../components/common/UnifiedFilterPopover';
@@ -39,7 +44,6 @@ const STATUS_FILTERS: ('All' | ClientPaymentStatus)[] = [
 
 export const PaymentsPage: React.FC = () => {
   const { clientPayments, projects, clients, addClientPayment, updateClientPayment, deleteClientPayment } = useApp();
-  const { isDemoMode } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('All');
@@ -82,111 +86,134 @@ export const PaymentsPage: React.FC = () => {
     });
   };
 
+  const paymentBreakdownChart = useMemo(
+    () => [
+      { stage: 'Collected', amount: metrics.totalReceived, fill: '#059669' },
+      { stage: 'Pending Due', amount: Math.max(metrics.scheduleOutstanding - metrics.overdueAmount, 0), fill: '#1D4ED8' },
+      { stage: 'Overdue', amount: metrics.overdueAmount, fill: '#E11D48' },
+    ],
+    [metrics]
+  );
+
   return (
-    <div className="space-y-6 max-w-7xl animate-in fade-in duration-300">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold font-display text-slate-900 tracking-tight">
+    <div className="space-y-6 pb-10">
+      {/* Architectural Header & 4 KPI Cards */}
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
+              Collections & Billing
+            </span>
+            <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
               Client Payments & Milestones
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-              {clientPayments.length} Milestone Invoices
-            </span>
+            <p className="text-sm text-[#4B5563] mt-1">
+              Track customer stage payments, advance deposits, received collections & overdue aging.
+            </p>
           </div>
-          <p className="text-sm text-slate-500 mt-1">
-            Track customer stage payments, advance deposits, received collections & outstanding aging.
-          </p>
+
+          <button
+            onClick={() => {
+              setPaymentToEdit(null);
+              setIsModalOpen(true);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold transition-colors self-start sm:self-auto cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Record Payment</span>
+          </button>
         </div>
 
-        <button
-          onClick={() => {
-            setPaymentToEdit(null);
-            setIsModalOpen(true);
-          }}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold shadow-sm transition-all hover:shadow hover:-translate-y-0.5 self-start sm:self-auto cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Record Payment</span>
-        </button>
-      </div>
-
-      {/* Financial Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Scheduled */}
-        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Scheduled Milestone Value
-            </span>
-            <div className="p-2 rounded-xl bg-slate-100 text-slate-700">
-              <Calendar className="w-4 h-4" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">
+                Scheduled Milestone Value
+              </span>
+              <Calendar className="w-4 h-4 text-[#64748B]" />
             </div>
-          </div>
-          <div className="text-lg sm:text-2xl font-black text-slate-900 font-display">
-            {formatINR(metrics.totalScheduled)}
-          </div>
-          <div className="text-[11px] text-slate-400 mt-1 font-medium">
-            Across {clientPayments.length} scheduled stages
-          </div>
-        </div>
-
-        {/* Revenue Received */}
-        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-emerald-100 bg-emerald-50/20 shadow-xs">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">
-              Total Revenue Received
-            </span>
-            <div className="p-2 rounded-xl bg-emerald-100 text-emerald-700">
-              <IndianRupee className="w-4 h-4" />
+            <div className="text-xl sm:text-2xl font-bold text-[#111827] tabular-nums">
+              {formatINR(metrics.totalScheduled)}
             </div>
+            <div className="text-xs text-[#64748B] mt-1">Across {clientPayments.length} stages</div>
           </div>
-          <div className="text-lg sm:text-2xl font-black text-emerald-700 font-display">
-            {formatINR(metrics.totalReceived)}
-          </div>
-          <div className="text-[11px] text-emerald-600 mt-1 font-semibold flex items-center gap-1">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>{metrics.paidCount} milestones fully collected</span>
-          </div>
-        </div>
 
-        {/* Schedule Outstanding */}
-        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-indigo-100 bg-indigo-50/20 shadow-xs">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-indigo-800">
-              Pending Collections
-            </span>
-            <div className="p-2 rounded-xl bg-indigo-100 text-indigo-700">
-              <Clock className="w-4 h-4" />
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">
+                Revenue Received
+              </span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             </div>
+            <div className="text-xl sm:text-2xl font-bold text-emerald-700 tabular-nums">
+              {formatINR(metrics.totalReceived)}
+            </div>
+            <div className="text-xs text-emerald-700 mt-1">{metrics.paidCount} stages fully collected</div>
           </div>
-          <div className="text-lg sm:text-2xl font-black text-indigo-900 font-display">
-            {formatINR(metrics.scheduleOutstanding)}
-          </div>
-          <div className="text-[11px] text-indigo-600 mt-1 font-medium">
-            {metrics.pendingCount} milestones awaiting payment
-          </div>
-        </div>
 
-        {/* Overdue Amount */}
-        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-rose-100 bg-rose-50/20 shadow-xs">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-rose-800">
-              Overdue Aging
-            </span>
-            <div className="p-2 rounded-xl bg-rose-100 text-rose-700">
-              <AlertCircle className="w-4 h-4" />
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">
+                Pending Collections
+              </span>
+              <Clock className="w-4 h-4 text-[#1D4ED8]" />
             </div>
+            <div className="text-xl sm:text-2xl font-bold text-[#1D4ED8] tabular-nums">
+              {formatINR(metrics.scheduleOutstanding)}
+            </div>
+            <div className="text-xs text-[#64748B] mt-1">{metrics.pendingCount} awaiting payment</div>
           </div>
-          <div className="text-lg sm:text-2xl font-black text-rose-600 font-display">
-            {formatINR(metrics.overdueAmount)}
-          </div>
-          <div className="text-[11px] text-rose-600 mt-1 font-semibold">
-            {metrics.overdueCount > 0 ? `⚠️ ${metrics.overdueCount} payments past due` : 'No overdue invoices'}
+
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">
+                Overdue Aging
+              </span>
+              <AlertCircle className="w-4 h-4 text-rose-600" />
+            </div>
+            <div className="text-xl sm:text-2xl font-bold text-rose-600 tabular-nums">
+              {formatINR(metrics.overdueAmount)}
+            </div>
+            <div className="text-xs text-[#64748B] mt-1">
+              {metrics.overdueCount > 0 ? `${metrics.overdueCount} invoices past due` : 'No overdue invoices'}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Collections Breakdown Chart */}
+      {clientPayments.length > 0 && (
+        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5">
+          <div className="mb-3">
+            <h2 className="text-sm font-semibold text-[#111827]">Collection & Aging Health</h2>
+            <p className="text-xs text-[#64748B]">Comparison of realized collections, upcoming dues, and overdue amounts</p>
+          </div>
+          <div className="h-44">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={paymentBreakdownChart} layout="vertical" margin={{ top: 4, right: 20, left: 20, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" horizontal={false} />
+                <XAxis
+                  type="number"
+                  tick={{ fontSize: 11, fill: '#64748B' }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v) => formatINRCompact(Number(v))}
+                />
+                <YAxis type="category" dataKey="stage" width={92} tick={{ fontSize: 12, fill: '#374151', fontWeight: 600 }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  formatter={(val: unknown) => formatINR(Number(val || 0))}
+                  contentStyle={{ borderRadius: 12, borderColor: '#E5E7EB', fontSize: 12 }}
+                />
+                <Bar dataKey="amount" radius={[0, 6, 6, 0]} maxBarSize={24}>
+                  {paymentBreakdownChart.map((entry, idx) => (
+                    <Cell key={idx} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* Search + Single Unified Filter Button */}
       <div className="flex items-center justify-between gap-3">
@@ -237,7 +264,7 @@ export const PaymentsPage: React.FC = () => {
           icon={IndianRupee}
           title="No client payments match your filters"
           description="Record milestone stages (e.g. 50% on booking, 30% on carpentry, 20% on handover)."
-          actionLabel="+ Record New Payment"
+          actionLabel="Record New Payment"
           onAction={() => {
             setPaymentToEdit(null);
             setIsModalOpen(true);

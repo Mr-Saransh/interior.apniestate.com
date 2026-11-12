@@ -33,6 +33,20 @@ import { EmptyState } from '../components/common/EmptyState';
 import { materialService } from '../services/materialService';
 import { branchService } from '../services/branchService';
 import { INITIAL_BRANCHES, INITIAL_APPROVAL_REQUESTS } from '../data/mockData';
+import {
+  BarChart,
+  Bar,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart as RechartsPieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+
+const REPORT_CHART_COLORS = ['#1D4ED8', '#0D9488', '#D97706', '#6366F1', '#059669', '#64748B'];
 
 export const ReportsPage: React.FC = () => {
   const { 
@@ -130,150 +144,253 @@ export const ReportsPage: React.FC = () => {
     };
   }, [filteredPurchases]);
 
+  const profitBarData = profitabilityList.slice(0, 6).map((item) => ({
+    name: item.projectName.length > 14 ? `${item.projectName.slice(0, 13)}…` : item.projectName,
+    Contract: item.contractValue,
+    Collected: item.revenueReceived,
+    Cost: item.actualCost,
+  }));
+
+  const categoryDonutData = useMemo(() => {
+    const map = new Map<string, number>();
+    filteredExpenses.forEach((exp) => {
+      const k = exp.category || 'Other';
+      map.set(k, (map.get(k) || 0) + Number(exp.amount || 0));
+    });
+    return Array.from(map.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6);
+  }, [filteredExpenses]);
+
   return (
-    <div className="space-y-6 max-w-7xl animate-in fade-in duration-300">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold font-display text-slate-900 tracking-tight">
+    <div className="space-y-6 pb-10">
+      {/* Architectural Header */}
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
+              Analytics & Insights
+            </span>
+            <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
               Reports & Business Analytics
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-50 text-brand-700 border border-brand-200/60">
-              Professional Suite
-            </span>
+            <p className="text-sm text-[#4B5563] mt-1">
+              Executive insights into project margins, client collections, vendor disbursements, and inventory flow.
+            </p>
           </div>
-          <p className="text-sm text-slate-500 mt-1">
-            Executive insights into project margins, client collections, vendor disbursements, and inventory flow.
-          </p>
-        </div>
 
-        {/* Filters: Branch & Project */}
-        <div className="flex items-center gap-2.5 flex-wrap self-start sm:self-auto">
-          {branches.length > 0 && (
-            <div className="flex items-center gap-1.5 bg-white px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 shadow-xs">
-              <Building className="w-3.5 h-3.5 text-slate-400" />
+          {/* Filters: Branch & Project */}
+          <div className="flex items-center gap-2.5 flex-wrap self-start sm:self-auto">
+            {branches.length > 0 && (
+              <div className="flex items-center gap-1.5 bg-[#F8FAFC] px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#374151]">
+                <Building className="w-3.5 h-3.5 text-[#64748B]" />
+                <select
+                  value={selectedBranchId}
+                  onChange={(e) => setSelectedBranchId(e.target.value)}
+                  className="bg-transparent focus:outline-none cursor-pointer"
+                >
+                  <option value="All">All Branches</option>
+                  {branches.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="flex items-center gap-1.5 bg-[#F8FAFC] px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#374151]">
+              <Filter className="w-3.5 h-3.5 text-[#64748B]" />
               <select
-                value={selectedBranchId}
-                onChange={(e) => setSelectedBranchId(e.target.value)}
+                value={selectedProjectId}
+                onChange={(e) => setSelectedProjectId(e.target.value)}
                 className="bg-transparent focus:outline-none cursor-pointer"
               >
-                <option value="All">All Branches</option>
-                {branches.map(b => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
+                <option value="All">All Projects (Consolidated)</option>
+                {projects.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
             </div>
-          )}
-
-          <div className="flex items-center gap-1.5 bg-white px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 shadow-xs">
-            <Filter className="w-3.5 h-3.5 text-slate-400" />
-            <select
-              value={selectedProjectId}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
-              className="bg-transparent focus:outline-none cursor-pointer"
-            >
-              <option value="All">All Projects (Consolidated)</option>
-              {projects.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
           </div>
         </div>
-      </div>
 
-      {/* Navigation Tabs for Reports */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200 no-scrollbar">
-        {[
-          { id: 'profitability', label: 'Project Profitability', icon: TrendingUp },
-          { id: 'branches', label: 'Branch Performance', icon: Building },
-          { id: 'payments', label: 'Payment Aging & Collections', icon: IndianRupee },
-          { id: 'expenses', label: 'Expense Breakdown', icon: PieChart },
-          { id: 'procurement', label: 'Procurement Commitments', icon: ShoppingBag },
-          { id: 'vendors', label: 'Vendor Disbursements', icon: Building2 },
-          { id: 'approvals', label: 'Approval Activity', icon: ShieldCheck },
-          { id: 'progress', label: 'Project Progress', icon: FolderKanban },
-          { id: 'inventory', label: 'Material & Site Inventory', icon: Package }
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const active = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                active
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
+        {/* Clean Architectural Pill Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-1 border-t border-[#F1F5F9] no-scrollbar">
+          {[
+            { id: 'profitability', label: 'Profitability', icon: TrendingUp },
+            { id: 'branches', label: 'Branches', icon: Building },
+            { id: 'payments', label: 'Collections', icon: IndianRupee },
+            { id: 'expenses', label: 'Expenses', icon: PieChart },
+            { id: 'procurement', label: 'Procurement', icon: ShoppingBag },
+            { id: 'vendors', label: 'Vendors', icon: Building2 },
+            { id: 'approvals', label: 'Approvals', icon: ShieldCheck },
+            { id: 'progress', label: 'Progress', icon: FolderKanban },
+            { id: 'inventory', label: 'Inventory', icon: Package }
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                  active
+                    ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-blue-200'
+                    : 'text-[#4B5563] hover:bg-[#F8FAFC] hover:text-[#111827] border border-transparent'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* TAB 1: PROJECT PROFITABILITY */}
       {activeTab === 'profitability' && (
         <div className="space-y-6">
           {/* Top Profitability Summary Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-xs">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB]">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B] block mb-1.5">
                 Contract Value
               </span>
-              <span className="text-lg sm:text-2xl font-black text-slate-900 font-display block">
+              <span className="text-xl sm:text-2xl font-bold text-[#111827] tabular-nums block">
                 {formatINR(totalContractVal)}
               </span>
-              <span className="text-[11px] text-slate-400 mt-1 block">
+              <span className="text-xs text-[#64748B] mt-1 block">
                 Total contracted customer scope
               </span>
             </div>
 
-            <div className="bg-white p-4 sm:p-5 rounded-3xl border border-emerald-100 bg-emerald-50/20 shadow-xs">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 block mb-1">
+            <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB]">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B] block mb-1.5">
                 Gross Profit
               </span>
-              <span className="text-lg sm:text-2xl font-black text-emerald-700 font-display block">
+              <span className="text-xl sm:text-2xl font-bold text-emerald-700 tabular-nums block">
                 {formatINR(totalGrossProfit)}
               </span>
-              <span className="text-[11px] text-emerald-600 mt-1 font-semibold block">
+              <span className="text-xs text-emerald-700 mt-1 font-medium block">
                 {Math.round(overallMarginPct * 10) / 10}% Gross Margin
               </span>
             </div>
 
-            <div className="bg-white p-4 sm:p-5 rounded-3xl border border-indigo-100 bg-indigo-50/20 shadow-xs">
-              <span className="text-xs font-bold uppercase tracking-wider text-indigo-800 block mb-1">
+            <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB]">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B] block mb-1.5">
                 Revenue Collected
               </span>
-              <span className="text-lg sm:text-2xl font-black text-indigo-900 font-display block">
+              <span className="text-xl sm:text-2xl font-bold text-[#1D4ED8] tabular-nums block">
                 {formatINR(totalRevenueRec)}
               </span>
-              <span className="text-[11px] text-indigo-600 mt-1 block">
+              <span className="text-xs text-[#64748B] mt-1 block">
                 Actual received client receipts
               </span>
             </div>
 
-            <div className={`bg-white p-4 sm:p-5 rounded-3xl border shadow-xs ${
-              totalRealizedCash >= 0 ? 'border-emerald-100 bg-emerald-50/10' : 'border-rose-100 bg-rose-50/10'
-            }`}>
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">
+            <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB]">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B] block mb-1.5">
                 Realized Cash Position
               </span>
-              <span className={`text-lg sm:text-2xl font-black font-display block ${
+              <span className={`text-xl sm:text-2xl font-bold tabular-nums block ${
                 totalRealizedCash >= 0 ? 'text-emerald-700' : 'text-rose-600'
               }`}>
                 {formatINR(totalRealizedCash)}
               </span>
-              <span className="text-[11px] text-slate-400 mt-1 block">
+              <span className="text-xs text-[#64748B] mt-1 block">
                 Revenue Received minus Actual Costs
               </span>
             </div>
           </div>
 
+          {/* Visual Executive Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E5E7EB] p-5">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-[#111827]">Contract vs. Collected vs. Cost</h3>
+                <p className="text-xs text-[#64748B]">Site-level revenue realization and actual spend</p>
+              </div>
+              {profitBarData.length === 0 ? (
+                <div className="h-56 flex items-center justify-center text-xs text-[#64748B]">No project data to chart.</div>
+              ) : (
+                <div className="h-60">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={profitBarData} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748B' }} axisLine={false} tickLine={false} />
+                      <YAxis
+                        tick={{ fontSize: 11, fill: '#64748B' }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(v) => formatINRCompact(Number(v))}
+                      />
+                      <Tooltip
+                        formatter={(val: unknown) => formatINR(Number(val || 0))}
+                        contentStyle={{ borderRadius: 12, borderColor: '#E5E7EB', fontSize: 12 }}
+                      />
+                      <Bar dataKey="Contract" fill="#CBD5E1" radius={[4, 4, 0, 0]} maxBarSize={20} />
+                      <Bar dataKey="Collected" fill="#059669" radius={[4, 4, 0, 0]} maxBarSize={20} />
+                      <Bar dataKey="Cost" fill="#1D4ED8" radius={[4, 4, 0, 0]} maxBarSize={20} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+
+            <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E7EB] p-5 flex flex-col">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-[#111827]">Cost Distribution by Category</h3>
+                <p className="text-xs text-[#64748B]">Share of total logged expenses across trades</p>
+              </div>
+              {categoryDonutData.length === 0 ? (
+                <div className="flex-1 min-h-[200px] flex items-center justify-center text-xs text-[#64748B]">No expenses recorded yet.</div>
+              ) : (
+                <div className="flex-1 flex flex-col sm:flex-row items-center gap-4">
+                  <div className="w-full sm:w-1/2 h-48">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsPieChart>
+                        <Pie
+                          data={categoryDonutData}
+                          dataKey="value"
+                          nameKey="name"
+                          innerRadius={44}
+                          outerRadius={70}
+                          paddingAngle={3}
+                        >
+                          {categoryDonutData.map((_, idx) => (
+                            <Cell key={idx} fill={REPORT_CHART_COLORS[idx % REPORT_CHART_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(val: unknown) => formatINR(Number(val || 0))}
+                          contentStyle={{ borderRadius: 12, borderColor: '#E5E7EB', fontSize: 12 }}
+                        />
+                      </RechartsPieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="w-full sm:w-1/2 space-y-2">
+                    {categoryDonutData.map((c, i) => (
+                      <div key={c.name} className="flex items-center justify-between text-xs gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: REPORT_CHART_COLORS[i % REPORT_CHART_COLORS.length] }}
+                          />
+                          <span className="text-[#374151] font-medium truncate">{c.name}</span>
+                        </div>
+                        <span className="font-semibold text-[#111827] tabular-nums shrink-0">
+                          {formatINRCompact(c.value)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Project Profitability Table */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden">
             <div className="p-4 sm:p-5 border-b border-slate-100">
               <h3 className="text-base font-bold font-display text-slate-900">
                 Project Margin & Realized Cash Breakdown
@@ -343,25 +460,25 @@ export const ReportsPage: React.FC = () => {
       {activeTab === 'payments' && (
         <div className="space-y-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-xs">
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5E7EB]">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-1">Total Scheduled</span>
               <span className="text-lg sm:text-2xl font-black text-slate-900 font-display block">{formatINR(paymentMetrics.totalScheduled)}</span>
             </div>
-            <div className="bg-white p-4 sm:p-5 rounded-3xl border border-emerald-100 bg-emerald-50/20 shadow-xs">
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5E7EB] shadow-xs">
               <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 block mb-1">Total Collected</span>
               <span className="text-lg sm:text-2xl font-black text-emerald-700 font-display block">{formatINR(paymentMetrics.totalReceived)}</span>
             </div>
-            <div className="bg-white p-4 sm:p-5 rounded-3xl border border-indigo-100 bg-indigo-50/20 shadow-xs">
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5E7EB] shadow-xs">
               <span className="text-xs font-bold uppercase tracking-wider text-indigo-800 block mb-1">Schedule Outstanding</span>
               <span className="text-lg sm:text-2xl font-black text-indigo-900 font-display block">{formatINR(paymentMetrics.scheduleOutstanding)}</span>
             </div>
-            <div className="bg-white p-4 sm:p-5 rounded-3xl border border-rose-100 bg-rose-50/20 shadow-xs">
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5E7EB] shadow-xs">
               <span className="text-xs font-bold uppercase tracking-wider text-rose-800 block mb-1">Overdue Aging</span>
               <span className="text-lg sm:text-2xl font-black text-rose-600 font-display block">{formatINR(paymentMetrics.overdueAmount)}</span>
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5">
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5">
             <h3 className="text-base font-bold font-display text-slate-900 mb-3">Milestone Aging Ledger</h3>
             <div className="space-y-3">
               {filteredPayments.map(p => (
@@ -384,7 +501,7 @@ export const ReportsPage: React.FC = () => {
       {/* TAB 3: EXPENSE BREAKDOWN */}
       {activeTab === 'expenses' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5">
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5">
             <h3 className="text-base font-bold font-display text-slate-900 mb-4">Expenses by Category</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {vendorSpendByCategory.map(item => (
@@ -412,17 +529,17 @@ export const ReportsPage: React.FC = () => {
       {activeTab === 'procurement' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs">
+            <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB]">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-1">Total Orders</span>
               <span className="text-2xl font-black text-slate-900 font-display block">{procurementSummary.totalOrders}</span>
               <span className="text-[11px] text-slate-400 mt-1 block">Value: {formatINR(procurementSummary.totalAmount)}</span>
             </div>
-            <div className="bg-white p-5 rounded-3xl border border-emerald-100 bg-emerald-50/20 shadow-xs">
+            <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB] shadow-xs">
               <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 block mb-1">Delivered Scope</span>
               <span className="text-2xl font-black text-emerald-700 font-display block">{formatINR(procurementSummary.receivedAmount)}</span>
               <span className="text-[11px] text-emerald-600 mt-1 block">Received on site</span>
             </div>
-            <div className="bg-white p-5 rounded-3xl border border-indigo-100 bg-indigo-50/20 shadow-xs">
+            <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB] shadow-xs">
               <span className="text-xs font-bold uppercase tracking-wider text-indigo-800 block mb-1">In Transit</span>
               <span className="text-2xl font-black text-indigo-900 font-display block">{formatINR(procurementSummary.inTransitAmount)}</span>
               <span className="text-[11px] text-indigo-600 mt-1 block">Ordered / awaiting fulfillment</span>
@@ -434,7 +551,7 @@ export const ReportsPage: React.FC = () => {
       {/* TAB 5: VENDOR DISBURSEMENTS */}
       {activeTab === 'vendors' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5">
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5">
             <h3 className="text-base font-bold font-display text-slate-900 mb-3">Active Vendor Directory & Scope</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {vendors.map(v => (
@@ -455,7 +572,7 @@ export const ReportsPage: React.FC = () => {
       {/* TAB 6: MATERIAL / INVENTORY SUMMARY */}
       {activeTab === 'inventory' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5">
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-base font-bold font-display text-slate-900">Material & Site Inventory Summary</h3>
@@ -515,7 +632,7 @@ export const ReportsPage: React.FC = () => {
       {/* TAB 7: BRANCH PERFORMANCE REPORT (ENTERPRISE) */}
       {activeTab === 'branches' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 space-y-4">
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-slate-100">
               <div>
                 <h3 className="text-base font-bold font-display text-slate-900">Multi-Branch Performance Report</h3>
@@ -581,7 +698,7 @@ export const ReportsPage: React.FC = () => {
       {/* TAB 8: APPROVAL ACTIVITY REPORT (ENTERPRISE) */}
       {activeTab === 'approvals' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 space-y-4">
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <h3 className="text-base font-bold font-display text-slate-900">Governance & Approval Activity</h3>
@@ -660,7 +777,7 @@ export const ReportsPage: React.FC = () => {
       {/* TAB 9: PROJECT PROGRESS REPORT (ENTERPRISE) */}
       {activeTab === 'progress' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 space-y-4">
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <h3 className="text-base font-bold font-display text-slate-900">Project Progress & Timeline Overview</h3>

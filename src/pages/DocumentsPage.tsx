@@ -82,31 +82,57 @@ export const DocumentsPage: React.FC = () => {
     }
   };
 
+  const drawingsCount = documents.filter((d) =>
+    ['Drawing', '3D Render', 'CAD', 'Plan', 'Floor Plan'].some((k) =>
+      `${d.category || ''} ${d.type || ''}`.toLowerCase().includes(k.toLowerCase())
+    )
+  ).length;
+  const contractsCount = documents.filter((d) =>
+    ['Contract', 'Proposal', 'Quote', 'Agreement', 'Invoice'].some((k) =>
+      `${d.category || ''} ${d.type || ''}`.toLowerCase().includes(k.toLowerCase())
+    )
+  ).length;
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold font-display text-slate-900 tracking-tight">
+    <div className="space-y-6 pb-10">
+      {/* Architectural Header & Vault Summary */}
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
+              Studio Vault
+            </span>
+            <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
               Documents & Blueprints
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-50 text-brand-700 border border-brand-200/60">
-              {documents.length} Files
-            </span>
+            <p className="text-sm text-[#4B5563] mt-1">
+              Store client contracts, moodboard decks, and CAD drawing sets in one central archive.
+            </p>
           </div>
-          <p className="text-sm text-slate-500 mt-1">
-            Store client contracts, moodboard presentations, and CAD drawing sets in one secure central vault.
-          </p>
+
+          <button
+            onClick={() => setIsUploadModalOpen(true)}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold transition-colors self-start sm:self-auto cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Upload Document</span>
+          </button>
         </div>
 
-        <button
-          onClick={() => setIsUploadModalOpen(true)}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm transition-all self-start sm:self-auto min-h-[42px] cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Upload Document</span>
-        </button>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Total Files</p>
+            <p className="text-xl font-bold text-[#111827] tabular-nums mt-1">{documents.length}</p>
+          </div>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Drawings & 3D Sets</p>
+            <p className="text-xl font-bold text-[#1D4ED8] tabular-nums mt-1">{drawingsCount}</p>
+          </div>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Contracts & Proposals</p>
+            <p className="text-xl font-bold text-emerald-700 tabular-nums mt-1">{contractsCount}</p>
+          </div>
+        </div>
       </div>
 
       {/* Filter toolbar */}
@@ -159,7 +185,7 @@ export const DocumentsPage: React.FC = () => {
           icon={FileText}
           title="No documents match your filters"
           description="Upload contracts, signed estimates, DWG drawings, or moodboard presentations."
-          actionLabel="+ Upload First Document"
+          actionLabel="Upload First Document"
           onAction={() => setIsUploadModalOpen(true)}
         />
       ) : (

@@ -71,7 +71,7 @@ export const TopBar: React.FC = () => {
   // Page title calculation with interior design context
   const getPageTitle = () => {
     switch (currentPage) {
-      case 'overview': return 'Studio Overview';
+      case 'overview': return workspaceMode === 'crm' ? 'CRM Overview' : 'Studio Overview';
       case 'projects': return 'Projects & Rooms';
       case 'clients': return 'Client Directory';
       case 'leads': return 'Lead Pipeline';

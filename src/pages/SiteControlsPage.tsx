@@ -306,20 +306,75 @@ export const SiteControlsPage: React.FC = () => {
     : status === 'rejected' ? 'bg-rose-100 text-rose-800'
       : status === 'submitted' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700';
 
+  const pendingBillsCount = bills.filter((b) => b.status === 'submitted').length;
+  const approvedBillsValue = bills
+    .filter((b) => b.status === 'approved' || b.status === 'paid')
+    .reduce((sum, b) => sum + Number(b.amount || 0), 0);
+
   return (
     <div className="space-y-6 pb-10">
-      <header>
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-600">Projects &amp; site</p>
-        <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">Contractor bills &amp; wastage</h1>
-        <p className="mt-1 text-sm text-slate-500">Validate contractor invoices against approved BOQ quantities and cost rates; record material wastage against stock.</p>
-      </header>
+      {/* Architectural Header & KPI Summary */}
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
+              Site Operations & Controls
+            </span>
+            <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
+              Contractor Bills & Material Wastage
+            </h1>
+            <p className="text-sm text-[#4B5563] mt-1">
+              Validate contractor invoices against approved BOQ rates and record audited stock wastage.
+            </p>
+          </div>
+
+          <div className="inline-flex bg-[#F1F5F9] p-1 rounded-xl border border-[#E5E7EB] self-start">
+            <button
+              onClick={() => setTab('bills')}
+              className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-colors ${
+                tab === 'bills'
+                  ? 'bg-[#1D4ED8] text-white'
+                  : 'text-[#475569] hover:text-[#111827]'
+              }`}
+            >
+              <FileText className="h-3.5 w-3.5" />
+              Contractor Bills
+            </button>
+            <button
+              onClick={() => setTab('wastage')}
+              className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-colors ${
+                tab === 'wastage'
+                  ? 'bg-[#1D4ED8] text-white'
+                  : 'text-[#475569] hover:text-[#111827]'
+              }`}
+            >
+              <AlertTriangle className="h-3.5 w-3.5" />
+              Material Wastage
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Contractor Bills</p>
+            <p className="text-xl font-bold text-[#111827] tabular-nums mt-1">{bills.length}</p>
+          </div>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Awaiting Review</p>
+            <p className="text-xl font-bold text-amber-700 tabular-nums mt-1">{pendingBillsCount}</p>
+          </div>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Approved / Paid Value</p>
+            <p className="text-xl font-bold text-emerald-700 tabular-nums mt-1">{formatINR(approvedBillsValue)}</p>
+          </div>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Wastage Logs</p>
+            <p className="text-xl font-bold text-[#111827] tabular-nums mt-1">{wastage.length}</p>
+          </div>
+        </div>
+      </div>
 
       {(error || notice) && <p role={error ? 'alert' : 'status'} className={`rounded-xl border px-4 py-3 text-sm ${error ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>{error || notice}</p>}
-
-      <div className="flex gap-2 border-b border-slate-200">
-        <button onClick={() => setTab('bills')} className={`inline-flex items-center gap-2 border-b-2 px-3 py-3 text-sm font-bold ${tab === 'bills' ? 'border-brand-600 text-brand-700' : 'border-transparent text-slate-500'}`}><FileText className="h-4 w-4" />Contractor bills</button>
-        <button onClick={() => setTab('wastage')} className={`inline-flex items-center gap-2 border-b-2 px-3 py-3 text-sm font-bold ${tab === 'wastage' ? 'border-brand-600 text-brand-700' : 'border-transparent text-slate-500'}`}><AlertTriangle className="h-4 w-4" />Material wastage</button>
-      </div>
 
       {tab === 'bills' ? (
         <div className="grid gap-5 xl:grid-cols-[minmax(300px,0.8fr)_minmax(0,1.4fr)]">

@@ -4,25 +4,24 @@
 
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { 
-  PieChart as PieChartIcon, 
-  IndianRupee, 
-  TrendingUp, 
-  ShieldCheck, 
-  AlertTriangle, 
-  AlertOctagon, 
-  CheckCircle2,
-  ArrowRight,
-  Filter,
-  Layers
-} from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { formatINR, formatINRCompact } from '../utils/formatters';
 import { ProgressBar } from '../components/common/ProgressBar';
-import { 
-  calculateProjectSpent, 
-  calculateProjectBOQ, 
+import { UnifiedFilterPopover } from '../components/common/UnifiedFilterPopover';
+import {
+  calculateProjectSpent,
+  calculateProjectBOQ,
   calculateBudgetMetrics,
-  BudgetHealthStatus 
+  BudgetHealthStatus,
 } from '../lib/financialMetrics';
 
 export const BudgetPage: React.FC = () => {
@@ -51,111 +50,148 @@ export const BudgetPage: React.FC = () => {
   const riskCount = projectsWithFinancials.filter(p => p.metrics.health.status === 'Risk').length;
   const overBudgetCount = projectsWithFinancials.filter(p => p.metrics.health.status === 'Over Budget').length;
 
+  const chartData = projectsWithFinancials.slice(0, 7).map((p) => ({
+    name: p.name.length > 14 ? `${p.name.slice(0, 13)}…` : p.name,
+    Budget: Number(p.budget || 0),
+    BOQ: Number(p.boqEstimate || 0),
+    Spent: Number(p.spent || 0),
+  }));
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold font-display text-slate-900 tracking-tight">
-            Budget Control & Health
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Real-time financial variance engine tracking approved budget, BOQ estimates, and actual disbursements.
-          </p>
+    <div className="space-y-6 pb-10">
+      {/* Architectural Header & Unified Filter */}
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
+              Financial Governance
+            </span>
+            <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
+              Budget Control & Health
+            </h1>
+            <p className="text-sm text-[#4B5563] mt-1">
+              Real-time financial variance tracking approved budget, BOQ estimates, and disbursements.
+            </p>
+          </div>
+
+          <UnifiedFilterPopover
+            activeCount={filterHealth !== 'All' ? 1 : 0}
+            onReset={() => setFilterHealth('All')}
+            fields={[
+              {
+                id: 'health',
+                label: 'Budget Health Status',
+                type: 'pills',
+                value: filterHealth,
+                onChange: (val) => setFilterHealth(val as 'All' | BudgetHealthStatus),
+                options: [
+                  { label: `All (${projectsWithFinancials.length})`, value: 'All' },
+                  { label: `Healthy (${healthyCount})`, value: 'Healthy' },
+                  { label: `Watch (${watchCount})`, value: 'Watch' },
+                  { label: `Risk (${riskCount})`, value: 'Risk' },
+                  { label: `Over Budget (${overBudgetCount})`, value: 'Over Budget' },
+                ],
+              },
+            ]}
+          />
+        </div>
+
+        {/* Portfolio Summary 4 Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">
+              Total Portfolio Budget
+            </span>
+            <div className="text-2xl font-bold text-[#111827] tabular-nums mt-1.5">
+              {formatINRCompact(stats.totalBudget)}
+            </div>
+            <p className="text-xs text-[#64748B] mt-1">Across {projects.length} active contracts</p>
+          </div>
+
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">
+              Total BOQ Estimated
+            </span>
+            <div className="text-2xl font-bold text-indigo-700 tabular-nums mt-1.5">
+              {formatINRCompact(stats.totalBOQEstimate)}
+            </div>
+            <p className="text-xs text-[#64748B] mt-1">Detailed scope rate estimates</p>
+          </div>
+
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">
+              Total Actual Spent
+            </span>
+            <div className="text-2xl font-bold text-[#1D4ED8] tabular-nums mt-1.5">
+              {formatINRCompact(stats.totalSpent)}
+            </div>
+            <p className="text-xs text-[#64748B] mt-1">{stats.spentPercentage.toFixed(1)}% portfolio utilization</p>
+          </div>
+
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">
+              Remaining Cushion
+            </span>
+            <div
+              className={`text-2xl font-bold tabular-nums mt-1.5 ${
+                stats.totalRemaining < 0 ? 'text-rose-600' : 'text-emerald-700'
+              }`}
+            >
+              {formatINRCompact(stats.totalRemaining)}
+            </div>
+            <p className="text-xs text-[#64748B] mt-1">
+              {stats.totalRemaining < 0 ? 'Portfolio overrun detected' : 'Available uncommitted funds'}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Portfolio Summary 4 Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="premium-card p-5">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Portfolio Budget</span>
-          <div className="text-2xl font-extrabold font-display text-slate-900 mt-2">
-            {formatINRCompact(stats.totalBudget)}
-          </div>
-          <p className="text-xs text-slate-400 mt-1">Across all active contracts</p>
-        </div>
-
-        <div className="premium-card p-5">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Total BOQ Estimated</span>
-          <div className="text-2xl font-extrabold font-display text-indigo-600 mt-2">
-            {formatINRCompact(stats.totalBOQEstimate)}
-          </div>
-          <p className="text-xs text-slate-400 mt-1">Detailed scope rate estimates</p>
-        </div>
-
-        <div className="premium-card p-5">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Actual Spent</span>
-          <div className="text-2xl font-extrabold font-display text-brand-600 mt-2">
-            {formatINRCompact(stats.totalSpent)}
-          </div>
-          <p className="text-xs text-slate-400 mt-1">{stats.spentPercentage.toFixed(1)}% portfolio utilization</p>
-        </div>
-
-        <div className="premium-card p-5">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Remaining Cushion</span>
-          <div className={`text-2xl font-extrabold font-display mt-2 ${stats.totalRemaining < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-            {formatINRCompact(stats.totalRemaining)}
-          </div>
-          <p className="text-xs text-slate-400 mt-1">
-            {stats.totalRemaining < 0 ? 'Portfolio overrun detected' : 'Available uncommitted funds'}
-          </p>
-        </div>
-      </div>
-
-      {/* Rules Indicator Guide */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-white rounded-2xl border border-slate-200/80 shadow-xs text-xs">
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-emerald-500 shrink-0" />
+      {/* Portfolio Chart + Threshold Guide */}
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <span className="font-bold text-slate-800">0–70% Used:</span>
-            <span className="text-slate-500 ml-1">Healthy</span>
+            <h2 className="text-sm font-semibold text-[#111827]">Portfolio Budget vs. BOQ vs. Spent</h2>
+            <p className="text-xs text-[#64748B]">Site-by-site financial alignment comparison</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 text-[11px] text-[#4B5563]">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> 0–70% Healthy
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> 71–85% Watch
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> 86–100% Risk
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-700" /> &gt;100% Overrun
+            </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-amber-500 shrink-0" />
-          <div>
-            <span className="font-bold text-slate-800">71–85% Used:</span>
-            <span className="text-slate-500 ml-1">Watch</span>
+        {chartData.length > 0 && (
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748B' }} axisLine={false} tickLine={false} />
+                <YAxis
+                  tick={{ fontSize: 11, fill: '#64748B' }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v) => formatINRCompact(Number(v))}
+                />
+                <Tooltip
+                  formatter={(val: unknown) => formatINR(Number(val || 0))}
+                  contentStyle={{ borderRadius: 12, borderColor: '#E5E7EB', fontSize: 12 }}
+                />
+                <Bar dataKey="Budget" fill="#CBD5E1" radius={[4, 4, 0, 0]} maxBarSize={22} />
+                <Bar dataKey="BOQ" fill="#6366F1" radius={[4, 4, 0, 0]} maxBarSize={22} />
+                <Bar dataKey="Spent" fill="#1D4ED8" radius={[4, 4, 0, 0]} maxBarSize={22} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-rose-500 shrink-0" />
-          <div>
-            <span className="font-bold text-slate-800">86–100% Used:</span>
-            <span className="text-slate-500 ml-1">Risk</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-rose-700 shrink-0" />
-          <div>
-            <span className="font-bold text-slate-800">&gt;100% Used:</span>
-            <span className="text-slate-500 ml-1">Over Budget</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Health Filter Bar */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
-        {(['All', 'Healthy', 'Watch', 'Risk', 'Over Budget'] as const).map((h) => (
-          <button
-            key={h}
-            onClick={() => setFilterHealth(h)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
-              filterHealth === h
-                ? 'bg-slate-900 text-white shadow-sm'
-                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            {h}
-            {h === 'Healthy' && ` (${healthyCount})`}
-            {h === 'Watch' && ` (${watchCount})`}
-            {h === 'Risk' && ` (${riskCount})`}
-            {h === 'Over Budget' && ` (${overBudgetCount})`}
-          </button>
-        ))}
+        )}
       </div>
 
       {/* Project Budget Health Cards */}

@@ -408,10 +408,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCurrentPage((prevPage) => {
         if (targetMode === 'crm') {
           if (['overview', 'projects', 'project-detail', 'expenses', 'purchases', 'site-controls', 'budget'].includes(prevPage)) {
-            return 'leads';
+            return 'overview';
           }
         } else {
-          if (['leads', 'quotations', 'client-portal', 'tasks', 'documents'].includes(prevPage)) {
+          if (['overview', 'leads', 'clients', 'quotations', 'client-portal', 'tasks', 'documents'].includes(prevPage)) {
             return 'overview';
           }
         }

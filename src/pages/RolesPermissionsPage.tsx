@@ -258,28 +258,25 @@ export const RolesPermissionsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300 pb-12">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-6 pb-12">
+      {/* Architectural Header */}
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
-              Enterprise Governance
-            </span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold font-display text-slate-900 tracking-tight flex items-center gap-2.5">
-            <Shield className="w-7 h-7 text-purple-600" />
-            <span>Roles & Permissions</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
+            Enterprise Governance
+          </span>
+          <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
+            Roles & Permissions
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Configure custom organizational roles, granular capabilities, and assign responsibilities to staff members.
+          <p className="text-sm text-[#4B5563] mt-1">
+            Configure custom organizational roles, granular capabilities, and assign responsibilities to staff.
           </p>
         </div>
 
         {activeTab === 'roles' && (
           <button
             onClick={openCreateRoleModal}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-purple-900/20 active:scale-[0.98] transition-all cursor-pointer min-h-[42px]"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold transition-colors cursor-pointer self-start sm:self-auto"
           >
             <Plus className="w-4 h-4" />
             <span>Create Custom Role</span>
@@ -288,10 +285,10 @@ export const RolesPermissionsPage: React.FC = () => {
       </div>
 
       {/* Info Card: Fixed Roles vs Custom Roles */}
-      <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200/80 rounded-2xl flex items-start gap-3">
-        <Info className="w-5 h-5 text-purple-600 shrink-0 mt-0.5" />
-        <div className="text-xs text-purple-950 leading-relaxed">
-          <strong>Built on Non-Destructive Multi-Tenancy:</strong> Standard roles (Owner, Admin, Designer, Supervisor, Member) continue operating as system defaults. Custom roles allow you to tailor specific sets of the 22 real capabilities and assign them to staff. The <strong>Owner</strong> always retains ultimate administrative authority.
+      <div className="p-4 bg-[#EFF6FF] border border-blue-200 rounded-2xl flex items-start gap-3">
+        <Info className="w-5 h-5 text-[#1D4ED8] shrink-0 mt-0.5" />
+        <div className="text-xs text-[#1E3A8A] leading-relaxed">
+          <strong>Built on Non-Destructive Multi-Tenancy:</strong> Standard roles (Owner, Admin, Designer, Supervisor, Member) continue operating as system defaults. Custom roles allow you to tailor specific sets of capabilities and assign them to staff. The <strong>Owner</strong> always retains ultimate administrative authority.
         </div>
       </div>
 

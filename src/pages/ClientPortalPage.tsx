@@ -155,19 +155,37 @@ export const ClientPortalPage: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-10">
-      <header>
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-600">Client access</p>
-        <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">Client project portal</h1>
-        <p className="mt-1 text-sm text-slate-500">Share read-only project progress, milestones, payment schedule, and selected client-approved photos.</p>
-      </header>
+      {/* Architectural Header */}
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div>
+          <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
+            Client Collaboration
+          </span>
+          <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
+            Client Project Portal
+          </h1>
+          <p className="text-sm text-[#4B5563] mt-1">
+            Generate read-only client portal links showing live site progress, payment schedules, and curated photos.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#1D4ED8] font-semibold border border-blue-200">
+            1. Share Access Link
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F8FAFC] text-[#475569] font-semibold border border-[#E5E7EB]">
+            2. Publish Approved Photos
+          </span>
+        </div>
+      </div>
 
       {(error || notice) && <p role={error ? 'alert' : 'status'} className={`rounded-xl border px-4 py-3 text-sm ${error ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>{error || notice}</p>}
 
-      {projects.length === 0 ? <p className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-600">Create a project before setting up a client portal.</p> : (
-        <div className="grid gap-5 xl:grid-cols-[minmax(300px,0.8fr)_minmax(0,1.2fr)]">
+      {projects.length === 0 ? <p className="rounded-2xl border border-[#E5E7EB] bg-white p-6 text-sm text-[#4B5563]">Create a project before setting up a client portal.</p> : (
+        <div className="grid gap-5 xl:grid-cols-[minmax(300px,0.85fr)_minmax(0,1.15fr)]">
           <section className="space-y-5">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-              <div className="mb-4 flex items-center gap-2"><Link2 className="h-5 w-5 text-brand-600" /><div><h2 className="font-bold text-slate-900">Secure project link</h2><p className="text-xs text-slate-500">A random bearer link grants read-only access to this project's client view.</p></div></div>
+            <div className="rounded-2xl border border-[#E5E7EB] bg-white p-5 sm:p-6">
+              <div className="mb-4 flex items-center gap-2.5"><div className="w-8 h-8 rounded-lg bg-[#EFF6FF] text-[#1D4ED8] flex items-center justify-center shrink-0"><Link2 className="h-4 w-4" /></div><div><h2 className="text-sm font-semibold text-[#111827]">1. Secure Project Link</h2><p className="text-xs text-[#64748B]">A random bearer link grants read-only access to this project&apos;s client view.</p></div></div>
               <label className="block text-xs font-bold text-slate-700">Project
                 <select value={projectId} onChange={event => { setProjectId(event.target.value); setLink(''); setExpiresAt(''); }} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm">{projects.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}</select>
               </label>

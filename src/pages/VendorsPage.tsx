@@ -99,34 +99,52 @@ export const VendorsPage: React.FC = () => {
     }
   };
 
+  const gstRegisteredCount = vendors.filter((v) => Boolean(v.gst_number?.trim())).length;
+  const activeTradesCount = new Set(vendors.map((v) => v.category)).size;
+
   return (
-    <div className="space-y-6 max-w-7xl animate-in fade-in duration-300">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold font-display text-slate-900 tracking-tight">
-              Vendors & Suppliers
-            </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-50 text-brand-700 border border-brand-200/60">
-              {vendors.length} Partners
+    <div className="space-y-6 pb-10">
+      {/* Architectural Header & Summary */}
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
+              Procurement & Partners
             </span>
+            <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
+              Vendors & Suppliers Directory
+            </h1>
+            <p className="text-sm text-[#4B5563] mt-1">
+              Manage material suppliers, bespoke fabricators, modular carpenters, and subcontractors.
+            </p>
           </div>
-          <p className="text-sm text-slate-500 mt-1">
-            Manage material suppliers, bespoke fabricators, modular carpenters, and subcontractors.
-          </p>
+
+          <button
+            onClick={() => {
+              setVendorToEdit(null);
+              setIsModalOpen(true);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold transition-colors self-start sm:self-auto cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Vendor</span>
+          </button>
         </div>
 
-        <button
-          onClick={() => {
-            setVendorToEdit(null);
-            setIsModalOpen(true);
-          }}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold shadow-sm transition-all hover:shadow hover:-translate-y-0.5 self-start sm:self-auto cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add Vendor</span>
-        </button>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Registered Partners</p>
+            <p className="text-xl font-bold text-[#111827] tabular-nums mt-1">{vendors.length}</p>
+          </div>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">GST Verified</p>
+            <p className="text-xl font-bold text-emerald-700 tabular-nums mt-1">{gstRegisteredCount}</p>
+          </div>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Trade Categories</p>
+            <p className="text-xl font-bold text-[#1D4ED8] tabular-nums mt-1">{activeTradesCount}</p>
+          </div>
+        </div>
       </div>
 
       {scorecardsError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">Vendor performance could not be loaded: {scorecardsError}</p>}
@@ -166,7 +184,7 @@ export const VendorsPage: React.FC = () => {
           icon={Building2}
           title="No vendors found"
           description="Register suppliers for plywood, hardware, sanitaryware, fabric, and lighting fixtures."
-          actionLabel="+ Add First Vendor"
+          actionLabel="Add First Vendor"
           onAction={() => {
             setVendorToEdit(null);
             setIsModalOpen(true);
@@ -178,13 +196,13 @@ export const VendorsPage: React.FC = () => {
             return (
               <div
                 key={vendor.id}
-                className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md hover:border-brand-300 transition-all flex flex-col justify-between group"
+                className="bg-white p-5 rounded-2xl border border-[#E5E7EB] hover:border-[#1D4ED8] transition-colors flex flex-col justify-between group"
               >
                 <div>
                   {/* Card Header */}
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl bg-brand-50 text-brand-600 border border-brand-100 flex items-center justify-center font-bold font-display text-base shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#1D4ED8] border border-blue-200 flex items-center justify-center font-bold font-editorial text-base shrink-0">
                         {vendor.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
@@ -205,42 +223,77 @@ export const VendorsPage: React.FC = () => {
                   </div>
 
                   {/* Rating Stars & GST */}
-                  <div className="flex items-center justify-between gap-2 mb-3 pb-3 border-b border-slate-100 text-xs">
+                  <div className="flex items-center justify-between gap-2 mb-3 pb-3 border-b border-[#F1F5F9] text-xs">
                     <div className="flex items-center gap-1 text-amber-500 font-bold">
                       <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                      <span>{vendor.rating || 5}.0</span>
-                    </div>
-
-                    <div className="mb-3 rounded-xl border border-slate-100 bg-slate-50/80 p-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Vendor performance</span>
-                        {scorecardsLoading ? <span className="text-[10px] text-slate-400">Calculating…</span> : scorecards[vendor.id] ? (
-                          <span className={`rounded-full px-2 py-1 text-[10px] font-black ${scorecards[vendor.id].overall_score >= 80 ? 'bg-emerald-100 text-emerald-800' :
-                            scorecards[vendor.id].overall_score >= 60 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
-                            }`}>{scorecards[vendor.id].overall_score}/100</span>
-                        ) : <span className="text-[10px] text-slate-400">{isDemoMode ? 'Requires recorded PO & GRN data' : 'No purchasing history'}</span>}
-                      </div>
-                      {scorecards[vendor.id] && (
-                        <>
-                          <div className="mt-2 grid grid-cols-3 gap-2 text-[10px]">
-                            <div><p className="text-slate-400">Price</p><p className="font-extrabold text-slate-700">{scorecards[vendor.id].comparable_price_score}/100</p></div>
-                            <div><p className="text-slate-400">Quality</p><p className="font-extrabold text-slate-700">{scorecards[vendor.id].quality_score}/100</p></div>
-                            <div><p className="text-slate-400">Delivery</p><p className="font-extrabold text-slate-700">{scorecards[vendor.id].delivery_score}/100</p></div>
-                          </div>
-                          <p className="mt-2 text-[10px] text-slate-500">
-                            {scorecards[vendor.id].order_count} orders · {scorecards[vendor.id].project_count} projects · {formatINR(scorecards[vendor.id].total_purchase_value)} · {scorecards[vendor.id].average_delivery_delay_days}d avg delay · {scorecards[vendor.id].rejected_quantity} rejected
-                          </p>
-                        </>
-                      )}
+                      <span className="tabular-nums">{vendor.rating || 5}.0</span>
                     </div>
 
                     {vendor.gst_number ? (
-                      <span className="text-[11px] font-mono text-slate-500 flex items-center gap-1">
+                      <span className="text-[11px] font-mono text-[#475569] flex items-center gap-1">
                         <ShieldCheck className="w-3 h-3 text-emerald-500" />
                         <span>GST: {vendor.gst_number}</span>
                       </span>
                     ) : (
-                      <span className="text-[11px] text-slate-400">No GST registered</span>
+                      <span className="text-[11px] text-[#94A3B8]">No GST registered</span>
+                    )}
+                  </div>
+
+                  {/* Vendor Performance Scorecard */}
+                  <div className="mb-3 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-[#64748B]">
+                        Vendor Performance
+                      </span>
+                      {scorecardsLoading ? (
+                        <span className="text-[10px] text-[#94A3B8]">Calculating…</span>
+                      ) : scorecards[vendor.id] ? (
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            scorecards[vendor.id].overall_score >= 80
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : scorecards[vendor.id].overall_score >= 60
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-rose-100 text-rose-800'
+                          }`}
+                        >
+                          {scorecards[vendor.id].overall_score}/100
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-[#94A3B8]">
+                          {isDemoMode ? 'Requires recorded PO & GRN' : 'No PO history'}
+                        </span>
+                      )}
+                    </div>
+                    {scorecards[vendor.id] && (
+                      <>
+                        <div className="mt-2 grid grid-cols-3 gap-2 text-[10px]">
+                          <div>
+                            <p className="text-[#64748B]">Price</p>
+                            <p className="font-bold text-[#111827] tabular-nums">
+                              {scorecards[vendor.id].comparable_price_score}/100
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[#64748B]">Quality</p>
+                            <p className="font-bold text-[#111827] tabular-nums">
+                              {scorecards[vendor.id].quality_score}/100
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[#64748B]">Delivery</p>
+                            <p className="font-bold text-[#111827] tabular-nums">
+                              {scorecards[vendor.id].delivery_score}/100
+                            </p>
+                          </div>
+                        </div>
+                        <p className="mt-2 text-[10px] text-[#64748B] tabular-nums">
+                          {scorecards[vendor.id].order_count} orders · {scorecards[vendor.id].project_count} projects ·{' '}
+                          {formatINR(scorecards[vendor.id].total_purchase_value)} ·{' '}
+                          {scorecards[vendor.id].average_delivery_delay_days}d avg delay ·{' '}
+                          {scorecards[vendor.id].rejected_quantity} rejected
+                        </p>
+                      </>
                     )}
                   </div>
 

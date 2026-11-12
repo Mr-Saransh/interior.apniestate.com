@@ -57,31 +57,47 @@ export const TeamPage: React.FC = () => {
     }
   };
 
+  const adminOrOwnerCount = teamMembers.filter((m) => m.role === 'owner' || m.role === 'admin').length;
+  const activeCount = teamMembers.filter((m) => m.status === 'Active' || !m.status).length;
+
   return (
-    <div className="space-y-6 max-w-5xl animate-in fade-in duration-300">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-6 pb-10">
+      {/* Architectural Header & Staff Summary */}
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-5">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold font-display text-slate-900 tracking-tight">
-              Team & Staff Directory
-            </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-50 text-brand-700 border border-brand-200/60">
-              {teamMembers.length} Staff Members
-            </span>
-          </div>
-          <p className="text-sm text-slate-500 mt-1">
-            Manage organization members, assign task responsibilities, and configure site supervisor access.
+          <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
+            Studio Workspace Access
+          </span>
+          <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
+            Team & Staff Directory
+          </h1>
+          <p className="text-sm text-[#4B5563] mt-1">
+            Manage studio designers, project managers, site supervisors, and permission levels.
           </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Total Members</p>
+            <p className="text-xl font-bold text-[#111827] tabular-nums mt-1">{teamMembers.length}</p>
+          </div>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Admins & Owners</p>
+            <p className="text-xl font-bold text-[#1D4ED8] tabular-nums mt-1">{adminOrOwnerCount}</p>
+          </div>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Active Accounts</p>
+            <p className="text-xl font-bold text-emerald-700 tabular-nums mt-1">{activeCount}</p>
+          </div>
         </div>
       </div>
 
-      {/* Security Architecture & Invitation Notice */}
-      <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100 flex items-start gap-3 text-indigo-900 text-xs leading-relaxed">
-        <Info className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+      {/* Security Architecture Notice */}
+      <div className="p-4 rounded-2xl bg-[#EFF6FF] border border-blue-200 flex items-start gap-3 text-[#1E3A8A] text-xs leading-relaxed">
+        <Info className="w-5 h-5 text-[#1D4ED8] shrink-0 mt-0.5" />
         <div>
-          <strong className="font-bold">Multi-Tenant Access Governance:</strong> Each member profile is strictly isolated to your studio workspace (<span className="font-semibold">{organization?.name || 'Your Studio'}</span>).
-          To invite additional team logins securely without exposing administrative master keys, invite them through your custom company domain or workspace admin onboarding.
+          <strong className="font-semibold">Workspace Isolation:</strong> Every member profile is scoped strictly to{' '}
+          <span className="font-semibold">{organization?.name || 'Your Studio'}</span>. Invite team members securely from organization onboarding without sharing admin keys.
         </div>
       </div>
 
@@ -93,23 +109,35 @@ export const TeamPage: React.FC = () => {
           const RoleIcon = roleInfo.icon;
           const isCurrentUser = member.id === profile?.id || member.id === user?.id;
           const isTargetOwner = member.role === 'owner';
+          const initials = (member.full_name || 'TM')
+            .split(' ')
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((part) => part[0]?.toUpperCase() || '')
+            .join('');
 
           return (
             <div
               key={member.id}
-              className={`bg-white p-5 rounded-2xl border transition-all flex flex-col justify-between ${
-                isCurrentUser ? 'border-brand-400 ring-2 ring-brand-500/10 shadow-md' : 'border-slate-200/80 shadow-xs hover:border-slate-300'
+              className={`bg-white p-5 rounded-2xl border transition-colors flex flex-col justify-between ${
+                isCurrentUser ? 'border-[#1D4ED8]' : 'border-[#E5E7EB] hover:border-[#CBD5E1]'
               }`}
             >
               <div>
                 {/* Profile Header */}
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex items-center gap-3">
-                    <img
-                      src={member.avatar_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"}
-                      alt={member.full_name}
-                      className="w-11 h-11 rounded-xl object-cover ring-2 ring-slate-100 shrink-0"
-                    />
+                    {member.avatar_url ? (
+                      <img
+                        src={member.avatar_url}
+                        alt={member.full_name}
+                        className="w-11 h-11 rounded-xl object-cover border border-[#E5E7EB] shrink-0"
+                      />
+                    ) : (
+                      <div className="w-11 h-11 rounded-xl bg-[#EFF6FF] text-[#1D4ED8] border border-blue-200 flex items-center justify-center font-bold text-sm shrink-0">
+                        {initials || 'TM'}
+                      </div>
+                    )}
                     <div>
                       <h3 className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
                         <span>{member.full_name}</span>

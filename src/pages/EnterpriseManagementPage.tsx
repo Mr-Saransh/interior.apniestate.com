@@ -30,6 +30,15 @@ import {
   Layers,
   ChevronRight
 } from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 export const EnterpriseManagementPage: React.FC = () => {
   const { 
@@ -209,30 +218,33 @@ export const EnterpriseManagementPage: React.FC = () => {
     return branchService.calculateBranchMetrics(branches, projects, expenses, teamMembers);
   }, [branches, projects, expenses, teamMembers]);
 
+  const branchChartData = branchPerformance.map((b) => ({
+    name: b.name.length > 14 ? `${b.name.slice(0, 13)}…` : b.name,
+    Contract: Number(b.total_contract_value || 0),
+    Expenses: Number(b.total_expenses || 0),
+  }));
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300 pb-12">
-      {/* Header & Global Filters */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div className="space-y-6 pb-12">
+      {/* Architectural Header & Global Filters */}
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-brand-600 bg-brand-50 px-2 py-0.5 rounded-md border border-brand-200">
-              Executive Suite
-            </span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold font-display text-slate-900 tracking-tight flex items-center gap-2.5">
-            <BarChart3 className="w-7 h-7 text-brand-600" />
-            <span>Management Analytics</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
+            Executive Governance
+          </span>
+          <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
+            Management Analytics
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            High-fidelity financial performance, procurement commitments, margin distribution, and risk alerts.
+          <p className="text-sm text-[#4B5563] mt-1">
+            Studio-wide financial performance, procurement commitments, branch output, and risk alerts.
           </p>
         </div>
 
         {/* Global Multi-Branch & Project Filters */}
         <div className="flex items-center gap-2.5 flex-wrap">
           {branches.length > 0 && (
-            <div className="flex items-center gap-1.5 bg-white px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 shadow-xs">
-              <Building className="w-3.5 h-3.5 text-slate-400" />
+            <div className="flex items-center gap-1.5 bg-[#F8FAFC] px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#374151]">
+              <Building className="w-3.5 h-3.5 text-[#64748B]" />
               <select
                 value={selectedBranchId}
                 onChange={e => setSelectedBranchId(e.target.value)}
@@ -246,8 +258,8 @@ export const EnterpriseManagementPage: React.FC = () => {
             </div>
           )}
 
-          <div className="flex items-center gap-1.5 bg-white px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 shadow-xs">
-            <Filter className="w-3.5 h-3.5 text-slate-400" />
+          <div className="flex items-center gap-1.5 bg-[#F8FAFC] px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#374151]">
+            <Filter className="w-3.5 h-3.5 text-[#64748B]" />
             <select
               value={selectedProjectType}
               onChange={e => setSelectedProjectType(e.target.value)}
@@ -261,6 +273,36 @@ export const EnterpriseManagementPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Branch Contract vs Expense Visual */}
+      {branchChartData.length > 0 && (
+        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5">
+          <div className="mb-3">
+            <h2 className="text-sm font-semibold text-[#111827]">Branch Contract Value vs. Expenses</h2>
+            <p className="text-xs text-[#64748B]">Multi-studio portfolio output compared against actual disbursements</p>
+          </div>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={branchChartData} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748B' }} axisLine={false} tickLine={false} />
+                <YAxis
+                  tick={{ fontSize: 11, fill: '#64748B' }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v) => formatINRCompact(Number(v))}
+                />
+                <Tooltip
+                  formatter={(val: unknown) => formatINR(Number(val || 0))}
+                  contentStyle={{ borderRadius: 12, borderColor: '#E5E7EB', fontSize: 12 }}
+                />
+                <Bar dataKey="Contract" fill="#CBD5E1" radius={[6, 6, 0, 0]} maxBarSize={32} />
+                <Bar dataKey="Expenses" fill="#1D4ED8" radius={[6, 6, 0, 0]} maxBarSize={32} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* KPI 1: Primary Commercial Ledger Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

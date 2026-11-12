@@ -56,6 +56,7 @@ export const SettingsPage: React.FC = () => {
 
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<'identity' | 'billing' | 'plan'>('identity');
 
   useEffect(() => {
     if (profile) {
@@ -116,20 +117,48 @@ export const SettingsPage: React.FC = () => {
   const planDisplayName = organization?.plan ? organization.plan.toUpperCase() : 'STUDIO';
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto animate-in fade-in duration-300 pb-12">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold font-display text-slate-900 tracking-tight">
-            Company & Studio Settings
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Configure studio legal identity, regional currencies, commercial limits, and accounting parameters.
-          </p>
+    <div className="space-y-6 pb-10">
+      {/* Architectural Header + Clean 3-Tab Switcher */}
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
+              Workspace Administration
+            </span>
+            <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
+              Company & Studio Settings
+            </h1>
+            <p className="text-sm text-[#4B5563] mt-1">
+              Configure your studio profile, GST/billing identity, base currency, and plan entitlements.
+            </p>
+          </div>
+
+          <div className="inline-flex bg-[#F1F5F9] p-1 rounded-xl border border-[#E5E7EB] self-start">
+            {[
+              { id: 'identity', label: 'Studio Identity' },
+              { id: 'billing', label: 'Billing & Tax' },
+              { id: 'plan', label: 'Plan & Reset' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id as 'identity' | 'billing' | 'plan')}
+                className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+                  activeTab === tab.id
+                    ? 'bg-[#1D4ED8] text-white'
+                    : 'text-[#475569] hover:text-[#111827]'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* 1. Studio & Profile Information */}
+        {activeTab === 'identity' && (
         <div className="premium-card p-6 space-y-4">
           <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
             <Building className="w-5 h-5 text-brand-600" />
@@ -180,8 +209,11 @@ export const SettingsPage: React.FC = () => {
             </div>
           </div>
         </div>
+        )}
 
         {/* 2. Enterprise Company Legal & Business Details */}
+        {activeTab === 'billing' && (
+        <>
         <div className="premium-card p-6 space-y-4">
           <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
             <FileText className="w-5 h-5 text-indigo-600" />
@@ -310,8 +342,12 @@ export const SettingsPage: React.FC = () => {
             </div>
           </div>
         </div>
+        </>
+        )}
 
         {/* 4. Commercial Limit Foundation (Configurable & Nullable) */}
+        {activeTab === 'plan' && (
+        <>
         <div className="premium-card p-6 space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div className="flex items-center gap-2.5">
@@ -414,12 +450,14 @@ export const SettingsPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsPricingModalOpen(true)}
-              className="text-xs font-bold text-brand-600 hover:text-brand-700 underline cursor-pointer"
+              className="text-xs font-bold text-[#1D4ED8] hover:underline cursor-pointer"
             >
               View Plan Upgrades →
             </button>
           </div>
         </div>
+        </>
+        )}
 
         {/* Action Button */}
         <div className="flex items-center justify-between pt-2">
@@ -433,7 +471,7 @@ export const SettingsPage: React.FC = () => {
                   setTimeout(() => setSavedSuccess(false), 2000);
                 }
               }}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-xs font-semibold text-[#4B5563] hover:bg-[#F8FAFC] transition-colors cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset Demo Data</span>
@@ -444,7 +482,7 @@ export const SettingsPage: React.FC = () => {
 
           <div className="flex items-center gap-3">
             {savedSuccess && (
-              <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
+              <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Company preferences updated!</span>
               </span>
@@ -452,7 +490,7 @@ export const SettingsPage: React.FC = () => {
             <button
               type="submit"
               disabled={isSaving}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
             >
               <Save className="w-3.5 h-3.5" />
               <span>{isSaving ? 'Saving...' : 'Save Preferences'}</span>

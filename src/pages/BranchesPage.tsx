@@ -249,27 +249,24 @@ export const BranchesPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300 pb-12">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-6 pb-12">
+      {/* Architectural Header */}
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-brand-600 bg-brand-50 px-2 py-0.5 rounded-md border border-brand-200">
-              Enterprise Governance
-            </span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold font-display text-slate-900 tracking-tight flex items-center gap-2.5">
-            <Building className="w-7 h-7 text-brand-600" />
-            <span>Multi-Branch Management</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
+            Enterprise Governance
+          </span>
+          <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
+            Multi-Branch Management
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Manage regional studios, assign branch managers, and track decentralized site performance.
+          <p className="text-sm text-[#4B5563] mt-1">
+            Manage regional design studios, assign branch leads, and monitor decentralized site metrics.
           </p>
         </div>
 
         <button
           onClick={openCreateModal}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-brand-900/20 active:scale-[0.98] transition-all cursor-pointer min-h-[42px]"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold transition-colors cursor-pointer self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
           <span>Add New Branch</span>
@@ -673,7 +670,7 @@ export const BranchesPage: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-sm disabled:opacity-50"
+              className="px-5 py-2 bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold rounded-xl transition-colors disabled:opacity-50"
             >
               {isSubmitting ? 'Saving...' : editingBranch ? 'Update Branch' : 'Create Branch'}
             </button>

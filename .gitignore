@@ -1,0 +1,21 @@
+node_modules/
+dist/
+.vite-temp/
+
+# Environment variables / secrets
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Scratch / Extraction helpers
+extract_pdf*.py
+pdf_text*.txt
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/

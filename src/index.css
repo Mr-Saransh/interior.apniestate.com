@@ -1,0 +1,389 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --canvas: #F4F6FA;
+    --surface: #FFFFFF;
+    --brand-primary: #1D4ED8;
+    --brand-hover: #1E40AF;
+    --brand-tint: #EFF6FF;
+    --border-hairline: #E5E7EB;
+    --text-primary: #111827;
+    --text-secondary: #4B5563;
+    --text-muted: #6B7280;
+  }
+
+  html {
+    min-width: 320px;
+    scroll-behavior: smooth;
+    background: var(--canvas);
+  }
+
+  body {
+    color: var(--text-primary);
+    background: var(--canvas);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Editorial headings for project titles & client names */
+  .editorial-heading {
+    font-family: 'Newsreader', Georgia, serif;
+    letter-spacing: -0.02em;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight text-slate-900;
+    text-wrap: balance;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    color: #fff;
+    background: var(--brand-primary);
+  }
+}
+
+/* ─── Minimal Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D1D5DB;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9CA3AF;
+}
+
+/* ─── Architectural Card System ─── */
+.arch-card {
+  background: var(--surface);
+  border: 1px solid var(--border-hairline);
+  border-radius: 12px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.arch-card:hover {
+  border-color: #D1D5DB;
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* ─── App Shell ─── */
+.app-shell {
+  background: var(--canvas);
+}
+
+.app-main {
+  width: 100%;
+  max-width: 1680px;
+}
+
+.app-topbar {
+  min-height: 3.5rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+@media (min-width: 640px) {
+  .app-topbar {
+    min-height: 4rem;
+  }
+}
+
+/* ─── Mode Switch Pill ─── */
+.mode-switch {
+  display: flex;
+  align-items: center;
+  padding: 3px;
+  border-radius: 10px;
+  background: #F3F4F6;
+  border: 1px solid var(--border-hairline);
+  position: relative;
+}
+
+.mode-switch-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  min-height: 36px;
+  border: none;
+  background: transparent;
+  color: #64748B;
+  white-space: nowrap;
+}
+
+.mode-switch-btn.active {
+  background: var(--brand-primary);
+  color: #FFFFFF;
+  box-shadow: 0 1px 3px rgba(29, 78, 216, 0.3);
+}
+
+.mode-switch-btn:not(.active):hover {
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* ─── Sidebar Navigation ─── */
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: all 150ms ease;
+  cursor: pointer;
+  min-height: 42px;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+}
+
+.sidebar-nav-item:hover {
+  background: #F3F4F6;
+  color: var(--text-primary);
+}
+
+.sidebar-nav-item.active {
+  background: var(--brand-tint);
+  color: var(--brand-primary);
+  font-weight: 600;
+}
+
+.sidebar-nav-item.active .nav-icon {
+  color: var(--brand-primary);
+}
+
+.sidebar-nav-item .nav-icon {
+  width: 18px;
+  height: 18px;
+  color: #9CA3AF;
+  flex-shrink: 0;
+}
+
+/* ─── Metric Cards ─── */
+.metric-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 120px;
+}
+
+/* ─── Status Badges ─── */
+.badge-on-track {
+  @apply bg-emerald-50 text-emerald-700 border border-emerald-200;
+}
+
+.badge-attention {
+  @apply bg-amber-50 text-amber-700 border border-amber-200;
+}
+
+.badge-alert {
+  @apply bg-rose-50 text-rose-700 border border-rose-200;
+}
+
+.badge-delayed {
+  @apply bg-orange-50 text-orange-700 border border-orange-200;
+}
+
+.badge-completed {
+  @apply bg-blue-50 text-blue-700 border border-blue-200;
+}
+
+/* ─── Hide scrollbar ─── */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ─── Auth Screen ─── */
+.auth-screen h1,
+.auth-screen h2 {
+  font-family: 'Newsreader', Georgia, serif;
+  color: var(--text-primary);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.auth-screen input {
+  min-height: 2.75rem;
+  border-color: var(--border-hairline);
+  border-radius: 10px;
+  background-color: #F9FAFB;
+  font-size: 0.875rem;
+}
+
+.auth-screen input:focus {
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.08);
+}
+
+.auth-screen button[type="submit"] {
+  border-radius: 10px;
+  background-color: var(--brand-primary);
+  box-shadow: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.auth-screen button[type="submit"]:hover {
+  background-color: var(--brand-hover);
+}
+
+/* ─── Mobile Bottom Nav ─── */
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background: var(--surface);
+  border-top: 1px solid var(--border-hairline);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 4px 0 max(4px, env(safe-area-inset-bottom));
+  min-height: 56px;
+}
+
+.mobile-bottom-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 500;
+  color: #9CA3AF;
+  transition: all 150ms ease;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  min-width: 56px;
+}
+
+.mobile-bottom-nav-btn.active {
+  color: var(--brand-primary);
+}
+
+.mobile-bottom-nav-btn .nav-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* ─── ERP Tabular Numbers ─── */
+.erp-table td,
+.erp-table th {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Responsive Typography ─── */
+.app-main h1 {
+  font-size: clamp(1.25rem, 1.1rem + 0.5vw, 1.75rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.app-main h2 {
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+/* ─── Project Cover Fallback ─── */
+.project-cover-fallback {
+  background:
+    linear-gradient(135deg, rgba(16, 25, 45, 0.16), rgba(29, 78, 216, 0.12)),
+    url('/interior_studio_office_bg.jpg') center 52% / cover,
+    linear-gradient(135deg, #243654, #536887);
+}
+
+/* ─── Smooth Mode Transitions ─── */
+.mode-transition-enter {
+  animation: modeSlide 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes modeSlide {
+  0% {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Dashboard hero (simplified, no glass) */
+.dashboard-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--border-hairline);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+/* ─── Reduced Motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── Mobile safe-area padding ─── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .has-bottom-nav {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom));
+  }
+}

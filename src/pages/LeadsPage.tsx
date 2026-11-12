@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { LeadModal } from '../components/modals/LeadModal';
 import { EmptyState } from '../components/common/EmptyState';
+import { UnifiedFilterPopover } from '../components/common/UnifiedFilterPopover';
 
 const STATUS_COLUMNS: LeadStatus[] = [
   'New',
@@ -158,7 +159,7 @@ export const LeadsPage: React.FC = () => {
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-bold shadow-xs transition-all min-h-[42px] cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>+ Capture Lead</span>
+            <span>Capture Lead</span>
           </button>
         </div>
       </div>
@@ -242,28 +243,41 @@ export const LeadsPage: React.FC = () => {
         </div>
 
         {/* Filters & View Toggle */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:bg-white focus:outline-none shrink-0"
-          >
-            <option value="All">All Stages</option>
-            {STATUS_COLUMNS.map(st => (
-              <option key={st} value={st}>{st}</option>
-            ))}
-          </select>
-
-          <select
-            value={sourceFilter}
-            onChange={(e) => setSourceFilter(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:bg-white focus:outline-none shrink-0"
-          >
-            <option value="All">All Sources</option>
-            {(['Instagram', 'Website', 'Referral', 'Walk-in', 'Housing Portal', 'Other'] as LeadSource[]).map(s => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
+        <div className="flex items-center gap-2">
+          <UnifiedFilterPopover
+            activeCount={(statusFilter !== 'All' ? 1 : 0) + (sourceFilter !== 'All' ? 1 : 0)}
+            onReset={() => {
+              setStatusFilter('All');
+              setSourceFilter('All');
+            }}
+            fields={[
+              {
+                id: 'stage',
+                label: 'Pipeline Stage',
+                type: 'select',
+                value: statusFilter,
+                onChange: setStatusFilter,
+                options: [
+                  { label: 'All Stages', value: 'All' },
+                  ...STATUS_COLUMNS.map((st) => ({ label: st, value: st }))
+                ]
+              },
+              {
+                id: 'source',
+                label: 'Lead Source',
+                type: 'select',
+                value: sourceFilter,
+                onChange: setSourceFilter,
+                options: [
+                  { label: 'All Sources', value: 'All' },
+                  ...(['Instagram', 'Website', 'Referral', 'Walk-in', 'Housing Portal', 'Other'] as LeadSource[]).map((s) => ({
+                    label: s,
+                    value: s
+                  }))
+                ]
+              }
+            ]}
+          />
 
           <div className="flex items-center bg-slate-100 p-0.5 rounded-xl shrink-0">
             <button

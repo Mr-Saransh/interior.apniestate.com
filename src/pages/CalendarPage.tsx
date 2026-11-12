@@ -15,6 +15,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { formatDate } from '../utils/formatters';
+import { UnifiedFilterPopover } from '../components/common/UnifiedFilterPopover';
 
 export const CalendarPage: React.FC = () => {
   const { calendarEvents, addCalendarEvent, projects, milestones, openProjectDetail } = useApp();
@@ -144,7 +145,7 @@ export const CalendarPage: React.FC = () => {
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-sm transition-all self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
-          <span>+ Add Schedule Event</span>
+          <span>Add Schedule Event</span>
         </button>
       </div>
 
@@ -330,24 +331,30 @@ export const CalendarPage: React.FC = () => {
         <div className="lg:col-span-5 premium-card p-6 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold font-display text-slate-900">Upcoming Activities</h2>
-              <span className="text-xs text-slate-400">{filteredEvents.length} scheduled</span>
-            </div>
-
-            {/* Filter pills */}
-            <div className="flex items-center gap-1 overflow-x-auto pb-2 mb-3">
-              {(['All', 'delivery', 'meeting', 'site_visit', 'deadline'] as const).map(f => (
-                <button
-                  key={f}
-                  onClick={() => setEventTypeFilter(f)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shrink-0 capitalize ${eventTypeFilter === f
-                      ? 'bg-slate-900 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                >
-                  {f === 'site_visit' ? 'Site Visits' : f}
-                </button>
-              ))}
+              <div>
+                <h2 className="text-base font-bold font-display text-slate-900">Upcoming Activities</h2>
+                <span className="text-xs text-slate-400">{filteredEvents.length} scheduled</span>
+              </div>
+              <UnifiedFilterPopover
+                activeCount={eventTypeFilter !== 'All' ? 1 : 0}
+                onReset={() => setEventTypeFilter('All')}
+                fields={[
+                  {
+                    id: 'eventType',
+                    label: 'Activity Type',
+                    type: 'pills',
+                    value: eventTypeFilter,
+                    onChange: setEventTypeFilter,
+                    options: [
+                      { label: 'All', value: 'All' },
+                      { label: 'Delivery', value: 'delivery' },
+                      { label: 'Meeting', value: 'meeting' },
+                      { label: 'Site Visits', value: 'site_visit' },
+                      { label: 'Deadline', value: 'deadline' }
+                    ]
+                  }
+                ]}
+              />
             </div>
 
             <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">

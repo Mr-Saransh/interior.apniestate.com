@@ -807,7 +807,7 @@ export const ProjectDetailPage: React.FC = () => {
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-50 border border-brand-200 text-brand-700 text-xs font-bold hover:bg-brand-100 transition-all"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>+ Room</span>
+                  <span>Room</span>
                 </button>
               </div>
 
@@ -1194,7 +1194,7 @@ export const ProjectDetailPage: React.FC = () => {
                   className="inline-flex items-center gap-2 rounded-xl bg-[#1D4ED8] px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-[#1E40AF]"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  <span>+ Add BOQ Item</span>
+                  <span>Add BOQ Item</span>
                 </button>
               </div>
             </div>
@@ -1395,7 +1395,7 @@ export const ProjectDetailPage: React.FC = () => {
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-sm transition-all self-start sm:self-auto"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>+ Add Expense</span>
+                <span>Add Expense</span>
               </button>
             </div>
 
@@ -1597,7 +1597,7 @@ export const ProjectDetailPage: React.FC = () => {
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold shadow-sm transition-all"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>+ Add Material</span>
+                <span>Add Material</span>
               </button>
             </div>
 
@@ -1780,7 +1780,7 @@ export const ProjectDetailPage: React.FC = () => {
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm transition-all"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>+ Add Milestone</span>
+                <span>Add Milestone</span>
               </button>
             </div>
 
@@ -1904,7 +1904,7 @@ export const ProjectDetailPage: React.FC = () => {
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-sm transition-all"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>+ New Daily Report</span>
+                <span>New Daily Report</span>
               </button>
             </div>
 
@@ -2024,7 +2024,7 @@ export const ProjectDetailPage: React.FC = () => {
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-sm transition-all"
               >
                 <Camera className="w-3.5 h-3.5" />
-                <span>+ Upload Photo</span>
+                <span>Upload Photo</span>
               </button>
             </div>
 
@@ -2113,7 +2113,7 @@ export const ProjectDetailPage: React.FC = () => {
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm transition-all"
               >
                 <MessageSquare className="w-3.5 h-3.5" />
-                <span>+ Add Note</span>
+                <span>Add Note</span>
               </button>
             </div>
 
@@ -2170,7 +2170,7 @@ export const ProjectDetailPage: React.FC = () => {
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all self-start sm:self-auto cursor-pointer"
             >
               <Plus className="w-4 h-4 text-brand-400" />
-              <span>+ Add Task</span>
+              <span>Add Task</span>
             </button>
           </div>
 
@@ -2273,7 +2273,7 @@ export const ProjectDetailPage: React.FC = () => {
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all self-start sm:self-auto cursor-pointer"
             >
               <Plus className="w-4 h-4 text-brand-400" />
-              <span>+ Upload Document</span>
+              <span>Upload Document</span>
             </button>
           </div>
 
@@ -2365,7 +2365,7 @@ export const ProjectDetailPage: React.FC = () => {
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all shrink-0"
             >
               <Plus className="w-4 h-4" />
-              <span>+ Record Payment</span>
+              <span>Record Payment</span>
             </button>
           </div>
 
@@ -2521,7 +2521,7 @@ export const ProjectDetailPage: React.FC = () => {
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-all shrink-0"
             >
               <Plus className="w-4 h-4" />
-              <span>+ Create Purchase Order</span>
+              <span>Create Purchase Order</span>
             </button>
           </div>
 

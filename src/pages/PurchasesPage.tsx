@@ -28,6 +28,7 @@ import {
 import { PurchaseModal } from '../components/modals/PurchaseModal';
 import { EmptyState } from '../components/common/EmptyState';
 import { GoodsReceiptModal } from '../components/modals/GoodsReceiptModal';
+import { UnifiedFilterPopover } from '../components/common/UnifiedFilterPopover';
 
 const FULFILLMENT_FILTERS: ('All' | PurchaseStatus)[] = [
   'All',
@@ -176,8 +177,8 @@ export const PurchasesPage: React.FC = () => {
           }}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold shadow-sm transition-all hover:shadow hover:-translate-y-0.5 self-start sm:self-auto cursor-pointer"
         >
-          <Plus className="w-4 h-4 text-brand-400" />
-          <span>+ Create Purchase Order</span>
+          <Plus className="w-4 h-4" />
+          <span>Create Purchase Order</span>
         </button>
       </div>
 
@@ -288,51 +289,47 @@ export const PurchasesPage: React.FC = () => {
         )}
       </section>
 
-      {/* Filter Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 max-w-xl">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-            <input
-              type="text"
-              placeholder="Search PO number, item, project, or vendor..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 shadow-xs"
-            />
-          </div>
-
-          <select
-            value={selectedProjectId}
-            onChange={(e) => setSelectedProjectId(e.target.value)}
-            className="px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-          >
-            <option value="All">All Projects</option>
-            {projects.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
+      {/* Search + Single Unified Filter Button */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="relative flex-1 max-w-md">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
+          <input
+            type="text"
+            placeholder="Search PO number, item, project, or vendor..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 rounded-xl border border-[#E5E7EB] bg-white text-xs font-medium focus:outline-none focus:border-[#1D4ED8]"
+          />
         </div>
 
-        {/* Status Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full no-scrollbar">
-          {FULFILLMENT_FILTERS.map(st => {
-            const active = selectedStatus === st;
-            return (
-              <button
-                key={st}
-                onClick={() => setSelectedStatus(st)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                  active
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                {st}
-              </button>
-            );
-          })}
-        </div>
+        <UnifiedFilterPopover
+          activeCount={(selectedProjectId !== 'All' ? 1 : 0) + (selectedStatus !== 'All' ? 1 : 0)}
+          onReset={() => {
+            setSelectedProjectId('All');
+            setSelectedStatus('All');
+          }}
+          fields={[
+            {
+              id: 'project',
+              label: 'Project',
+              type: 'select',
+              value: selectedProjectId,
+              onChange: setSelectedProjectId,
+              options: [
+                { label: 'All Projects', value: 'All' },
+                ...projects.map((p) => ({ label: p.name, value: p.id }))
+              ]
+            },
+            {
+              id: 'status',
+              label: 'Fulfillment Status',
+              type: 'pills',
+              value: selectedStatus,
+              onChange: (val) => setSelectedStatus(val as any),
+              options: FULFILLMENT_FILTERS.map((st) => ({ label: st, value: st }))
+            }
+          ]}
+        />
       </div>
 
       {/* Purchases List */}

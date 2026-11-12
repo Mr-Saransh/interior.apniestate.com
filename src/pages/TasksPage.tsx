@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { TaskModal } from '../components/modals/TaskModal';
 import { EmptyState } from '../components/common/EmptyState';
+import { UnifiedFilterPopover } from '../components/common/UnifiedFilterPopover';
 
 const PRIORITY_STYLES: Record<TaskPriority, { bg: string; text: string; border: string }> = {
   Low: { bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-200' },
@@ -114,8 +115,8 @@ export const TasksPage: React.FC = () => {
           }}
           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm transition-all self-start sm:self-auto min-h-[42px] cursor-pointer"
         >
-          <Plus className="w-4 h-4 text-brand-400" />
-          <span>+ Create Task</span>
+          <Plus className="w-4 h-4" />
+          <span>Create Task</span>
         </button>
       </div>
 
@@ -180,52 +181,73 @@ export const TasksPage: React.FC = () => {
           />
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-          <select
-            value={projectFilter}
-            onChange={(e) => setProjectFilter(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:bg-white focus:outline-none shrink-0"
-          >
-            <option value="All">All Projects</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:bg-white focus:outline-none shrink-0"
-          >
-            <option value="All">All Statuses</option>
-            {(['To Do', 'In Progress', 'Completed', 'Cancelled'] as TaskStatus[]).map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:bg-white focus:outline-none shrink-0"
-          >
-            <option value="All">All Priorities</option>
-            {(['Low', 'Medium', 'High', 'Urgent'] as TaskPriority[]).map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-
-          <select
-            value={assigneeFilter}
-            onChange={(e) => setAssigneeFilter(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:bg-white focus:outline-none shrink-0"
-          >
-            <option value="All">All Staff</option>
-            {teamMembers.map((m) => (
-              <option key={m.id} value={m.id}>{m.full_name}</option>
-            ))}
-          </select>
-        </div>
+        {/* Single Unified Side Filter Button */}
+        <UnifiedFilterPopover
+          activeCount={
+            (projectFilter !== 'All' ? 1 : 0) +
+            (statusFilter !== 'All' ? 1 : 0) +
+            (priorityFilter !== 'All' ? 1 : 0) +
+            (assigneeFilter !== 'All' ? 1 : 0)
+          }
+          onReset={() => {
+            setProjectFilter('All');
+            setStatusFilter('All');
+            setPriorityFilter('All');
+            setAssigneeFilter('All');
+          }}
+          fields={[
+            {
+              id: 'project',
+              label: 'Project',
+              type: 'select',
+              value: projectFilter,
+              onChange: setProjectFilter,
+              options: [
+                { label: 'All Projects', value: 'All' },
+                ...projects.map((p) => ({ label: p.name, value: p.id }))
+              ]
+            },
+            {
+              id: 'status',
+              label: 'Task Status',
+              type: 'pills',
+              value: statusFilter,
+              onChange: setStatusFilter,
+              options: [
+                { label: 'All', value: 'All' },
+                ...(['To Do', 'In Progress', 'Completed', 'Cancelled'] as TaskStatus[]).map((s) => ({
+                  label: s,
+                  value: s
+                }))
+              ]
+            },
+            {
+              id: 'priority',
+              label: 'Priority',
+              type: 'pills',
+              value: priorityFilter,
+              onChange: setPriorityFilter,
+              options: [
+                { label: 'All', value: 'All' },
+                ...(['Low', 'Medium', 'High', 'Urgent'] as TaskPriority[]).map((p) => ({
+                  label: p,
+                  value: p
+                }))
+              ]
+            },
+            {
+              id: 'assignee',
+              label: 'Assigned Staff',
+              type: 'select',
+              value: assigneeFilter,
+              onChange: setAssigneeFilter,
+              options: [
+                { label: 'All Staff', value: 'All' },
+                ...teamMembers.map((m) => ({ label: m.full_name, value: m.id }))
+              ]
+            }
+          ]}
+        />
       </div>
 
       {/* Task List */}

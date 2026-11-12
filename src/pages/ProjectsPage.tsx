@@ -19,6 +19,7 @@ import { formatINR, calculateDaysRemaining } from '../utils/formatters';
 import { Badge } from '../components/common/Badge';
 import { ProgressBar } from '../components/common/ProgressBar';
 import { EmptyState } from '../components/common/EmptyState';
+import { UnifiedFilterPopover } from '../components/common/UnifiedFilterPopover';
 import { milestoneService } from '../services/milestoneService';
 
 export const ProjectsPage: React.FC = () => {
@@ -66,104 +67,31 @@ export const ProjectsPage: React.FC = () => {
   });
 
   const cities = Array.from(new Set(projects.map(p => p.city))).filter(Boolean);
+  const activeFilterCount =
+    (activeTab !== 'All' ? 1 : 0) +
+    (statusFilter !== 'All' ? 1 : 0) +
+    (cityFilter !== 'All' ? 1 : 0) +
+    (sortBy !== 'deadline' ? 1 : 0);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300 pb-12">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-5 animate-in fade-in duration-300 pb-12">
+      {/* Compact Header + Single Unified Controls Row (No redundant CTA or scattered filter boxes) */}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold font-display text-slate-900 tracking-tight">
-            Projects
+          <h1 className="text-2xl sm:text-3xl font-editorial font-bold text-[#111827] tracking-tight">
+            Projects Portfolio
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Manage your active site portfolios, client timelines, and room-level cost structures.
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            {filtered.length} of {projects.length} active site portfolios, room schedules, and timelines.
           </p>
         </div>
 
-        <button
-          onClick={() => setIsNewProjectModalOpen(true)}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-md shadow-brand-500/20 hover:shadow-lg transition-all self-start sm:self-auto cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New project</span>
-        </button>
-      </div>
-
-      {/* Filter & Controls Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-card flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 lg:pb-0">
-          {(['All', 'Residential', 'Commercial', 'Completed'] as const).map((tab) => (
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="flex items-center bg-white border border-[#E5E7EB] p-1 rounded-xl text-slate-600">
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
-                activeTab === tab
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              {tab === 'All' ? `All Projects (${projects.length})` : tab}
-            </button>
-          ))}
-        </div>
-
-        {/* Dropdown Filters & View Mode */}
-        <div className="flex items-center flex-wrap gap-2.5">
-          {/* Status filter */}
-          <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-600">
-            <span className="font-semibold text-slate-400">Status:</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-transparent font-semibold text-slate-800 focus:outline-none cursor-pointer"
-            >
-              <option value="All">All Statuses</option>
-              <option value="On Track">On Track</option>
-              <option value="Needs Attention">Needs Attention</option>
-              <option value="Budget Alert">Budget Alert</option>
-              <option value="Delayed">Delayed</option>
-              <option value="Completed">Completed</option>
-            </select>
-          </div>
-
-          {/* City filter */}
-          {cities.length > 1 && (
-            <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-600">
-              <span className="font-semibold text-slate-400">City:</span>
-              <select
-                value={cityFilter}
-                onChange={(e) => setCityFilter(e.target.value)}
-                className="bg-transparent font-semibold text-slate-800 focus:outline-none cursor-pointer"
-              >
-                <option value="All">All Cities</option>
-                {cities.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Sort selector */}
-          <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-600">
-            <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="bg-transparent font-semibold text-slate-800 focus:outline-none cursor-pointer"
-            >
-              <option value="deadline">Due Soonest</option>
-              <option value="budget-desc">Highest Budget</option>
-              <option value="spent-desc">Highest Spent</option>
-              <option value="progress-desc">Most Progress</option>
-            </select>
-          </div>
-
-          {/* Grid / List toggle */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl text-slate-600">
-            <button
+              type="button"
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-lg cursor-pointer ${viewMode === 'grid' ? 'bg-white text-slate-900 shadow-xs' : 'hover:text-slate-900'}`}
+              className={`p-1.5 rounded-lg cursor-pointer ${viewMode === 'grid' ? 'bg-[#EFF6FF] text-[#1D4ED8]' : 'hover:text-slate-900'}`}
               title="Grid View"
               aria-label="Grid view"
               aria-pressed={viewMode === 'grid'}
@@ -171,8 +99,9 @@ export const ProjectsPage: React.FC = () => {
               <LayoutGrid className="w-4 h-4" />
             </button>
             <button
+              type="button"
               onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-lg cursor-pointer ${viewMode === 'list' ? 'bg-white text-slate-900 shadow-xs' : 'hover:text-slate-900'}`}
+              className={`p-1.5 rounded-lg cursor-pointer ${viewMode === 'list' ? 'bg-[#EFF6FF] text-[#1D4ED8]' : 'hover:text-slate-900'}`}
               title="List View"
               aria-label="List view"
               aria-pressed={viewMode === 'list'}
@@ -180,6 +109,74 @@ export const ProjectsPage: React.FC = () => {
               <List className="w-4 h-4" />
             </button>
           </div>
+
+          <UnifiedFilterPopover
+            activeCount={activeFilterCount}
+            onReset={() => {
+              setActiveTab('All');
+              setStatusFilter('All');
+              setCityFilter('All');
+              setSortBy('deadline');
+            }}
+            fields={[
+              {
+                id: 'category',
+                label: 'Project Category',
+                type: 'pills',
+                value: activeTab,
+                onChange: (val) => setActiveTab(val as any),
+                options: [
+                  { label: `All (${projects.length})`, value: 'All' },
+                  { label: 'Residential', value: 'Residential' },
+                  { label: 'Commercial', value: 'Commercial' },
+                  { label: 'Completed', value: 'Completed' }
+                ]
+              },
+              {
+                id: 'status',
+                label: 'Execution Status',
+                type: 'select',
+                value: statusFilter,
+                onChange: setStatusFilter,
+                options: [
+                  { label: 'All Statuses', value: 'All' },
+                  { label: 'On Track', value: 'On Track' },
+                  { label: 'Needs Attention', value: 'Needs Attention' },
+                  { label: 'Budget Alert', value: 'Budget Alert' },
+                  { label: 'Delayed', value: 'Delayed' },
+                  { label: 'Completed', value: 'Completed' }
+                ]
+              },
+              ...(cities.length > 1
+                ? [
+                    {
+                      id: 'city',
+                      label: 'City',
+                      type: 'select' as const,
+                      value: cityFilter,
+                      onChange: setCityFilter,
+                      options: [
+                        { label: 'All Cities', value: 'All' },
+                        ...cities.map((c) => ({ label: c, value: c }))
+                      ]
+                    }
+                  ]
+                : []),
+              {
+                id: 'sort',
+                label: 'Sort By',
+                type: 'select',
+                value: sortBy,
+                onChange: (val) => setSortBy(val as any),
+                options: [
+                  { label: 'Due Soonest', value: 'deadline' },
+                  { label: 'Highest Budget', value: 'budget-desc' },
+                  { label: 'Highest Spent', value: 'spent-desc' },
+                  { label: 'Most Progress', value: 'progress-desc' }
+                ]
+              }
+            ]}
+          />
         </div>
       </div>
 
@@ -193,7 +190,7 @@ export const ProjectsPage: React.FC = () => {
               ? 'Try adjusting your filters or search keywords to find the project you are looking for.'
               : 'Create your first interior project to begin tracking rooms, BOQ estimates, expenses, and site updates.'
           }
-          actionLabel={globalSearch || statusFilter !== 'All' ? undefined : '+ Create First Project'}
+          actionLabel={globalSearch || statusFilter !== 'All' ? undefined : 'Create First Project'}
           onAction={globalSearch || statusFilter !== 'All' ? undefined : () => setIsNewProjectModalOpen(true)}
         />
       ) : viewMode === 'grid' ? (
@@ -335,8 +332,10 @@ export const ProjectsPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="py-3.5 px-4"><Badge status={project.status} size="sm" /></td>
-                      <td className="py-3.5 px-4 text-right">
-                        <span className="text-brand-600 font-bold hover:underline">Open Workspace →</span>
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#1D4ED8] text-[11px] font-semibold whitespace-nowrap">
+                          Open →
+                        </span>
                       </td>
                     </tr>
                   );

@@ -24,6 +24,7 @@ import {
 import { formatINR, formatINRCompact, formatDate } from '../utils/formatters';
 import { Badge } from '../components/common/Badge';
 import { EmptyState } from '../components/common/EmptyState';
+import { UnifiedFilterPopover } from '../components/common/UnifiedFilterPopover';
 
 const CATEGORIES: ExpenseCategory[] = [
   'Materials',
@@ -136,8 +137,8 @@ export const ExpensesPage: React.FC = () => {
           onClick={() => setIsAddExpenseModalOpen(true)}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm shadow-md transition-all self-start sm:self-auto"
         >
-          <Plus className="w-4 h-4 text-brand-400" />
-          <span>+ Record Expense</span>
+          <Plus className="w-4 h-4" />
+          <span>Record Expense</span>
         </button>
       </div>
 
@@ -196,70 +197,75 @@ export const ExpensesPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-card flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div className="flex items-center flex-wrap gap-2.5">
-          {/* Project filter */}
-          <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600">
-            <span className="font-semibold text-slate-400">Project:</span>
-            <select
-              value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
-              className="bg-transparent font-semibold text-slate-800 focus:outline-none cursor-pointer max-w-[160px] truncate"
-            >
-              <option value="All">All Projects</option>
-              {projects.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Category filter */}
-          <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600">
-            <span className="font-semibold text-slate-400">Category:</span>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="bg-transparent font-semibold text-slate-800 focus:outline-none cursor-pointer"
-            >
-              <option value="All">All Categories</option>
-              {CATEGORIES.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Status filter */}
-          <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600">
-            <span className="font-semibold text-slate-400">Payment:</span>
-            <select
-              value={selectedPaymentStatus}
-              onChange={(e) => setSelectedPaymentStatus(e.target.value)}
-              className="bg-transparent font-semibold text-slate-800 focus:outline-none cursor-pointer"
-            >
-              <option value="All">All Statuses</option>
-              <option value="Paid">Paid</option>
-              <option value="Pending">Pending</option>
-              <option value="Partially Paid">Partially Paid</option>
-            </select>
-          </div>
+      {/* Single Compact Filter Toolbar */}
+      <div className="bg-white p-3.5 rounded-2xl border border-[#E5E7EB] flex items-center justify-between gap-3">
+        <div className="text-xs font-semibold text-slate-600">
+          Showing <span className="font-bold text-[#111827] tabular-nums">{filtered.length}</span> of {expenses.length} expenses
         </div>
 
-        {/* Sort */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600">
-            <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="bg-transparent font-semibold text-slate-800 focus:outline-none cursor-pointer"
-            >
-              <option value="date-desc">Latest Date</option>
-              <option value="amount-desc">Amount (High to Low)</option>
-              <option value="amount-asc">Amount (Low to High)</option>
-            </select>
-          </div>
-        </div>
+        <UnifiedFilterPopover
+          activeCount={
+            (selectedProject !== 'All' ? 1 : 0) +
+            (selectedCategory !== 'All' ? 1 : 0) +
+            (selectedPaymentStatus !== 'All' ? 1 : 0) +
+            (sortBy !== 'date-desc' ? 1 : 0)
+          }
+          onReset={() => {
+            setSelectedProject('All');
+            setSelectedCategory('All');
+            setSelectedPaymentStatus('All');
+            setSortBy('date-desc');
+          }}
+          fields={[
+            {
+              id: 'project',
+              label: 'Project',
+              type: 'select',
+              value: selectedProject,
+              onChange: setSelectedProject,
+              options: [
+                { label: 'All Projects', value: 'All' },
+                ...projects.map((p) => ({ label: p.name, value: p.id }))
+              ]
+            },
+            {
+              id: 'category',
+              label: 'Category',
+              type: 'select',
+              value: selectedCategory,
+              onChange: setSelectedCategory,
+              options: [
+                { label: 'All Categories', value: 'All' },
+                ...CATEGORIES.map((c) => ({ label: c, value: c }))
+              ]
+            },
+            {
+              id: 'payment',
+              label: 'Payment Status',
+              type: 'pills',
+              value: selectedPaymentStatus,
+              onChange: setSelectedPaymentStatus,
+              options: [
+                { label: 'All', value: 'All' },
+                { label: 'Paid', value: 'Paid' },
+                { label: 'Pending', value: 'Pending' },
+                { label: 'Partial', value: 'Partially Paid' }
+              ]
+            },
+            {
+              id: 'sort',
+              label: 'Sort By',
+              type: 'select',
+              value: sortBy,
+              onChange: (v) => setSortBy(v as any),
+              options: [
+                { label: 'Latest Date', value: 'date-desc' },
+                { label: 'Amount (High to Low)', value: 'amount-desc' },
+                { label: 'Amount (Low to High)', value: 'amount-asc' }
+              ]
+            }
+          ]}
+        />
       </div>
 
       {/* Expenses Table / Cards */}

@@ -24,6 +24,7 @@ import { formatDate } from '../utils/formatters';
 import { documentService } from '../services/documentService';
 import { UploadDocumentModal } from '../components/modals/UploadDocumentModal';
 import { EmptyState } from '../components/common/EmptyState';
+import { UnifiedFilterPopover } from '../components/common/UnifiedFilterPopover';
 
 const CATEGORIES = [
   'All', 
@@ -103,8 +104,8 @@ export const DocumentsPage: React.FC = () => {
           onClick={() => setIsUploadModalOpen(true)}
           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm transition-all self-start sm:self-auto min-h-[42px] cursor-pointer"
         >
-          <Plus className="w-4 h-4 text-brand-400" />
-          <span>+ Upload Document</span>
+          <Plus className="w-4 h-4" />
+          <span>Upload Document</span>
         </button>
       </div>
 
@@ -122,28 +123,34 @@ export const DocumentsPage: React.FC = () => {
           />
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-          <select
-            value={projectFilter}
-            onChange={(e) => setProjectFilter(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:bg-white focus:outline-none shrink-0"
-          >
-            <option value="All">All Projects</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:bg-white focus:outline-none shrink-0"
-          >
-            {CATEGORIES.map(c => (
-              <option key={c} value={c}>{c === 'All' ? 'All Categories' : c}</option>
-            ))}
-          </select>
-        </div>
+        <UnifiedFilterPopover
+          activeCount={(projectFilter !== 'All' ? 1 : 0) + (categoryFilter !== 'All' ? 1 : 0)}
+          onReset={() => {
+            setProjectFilter('All');
+            setCategoryFilter('All');
+          }}
+          fields={[
+            {
+              id: 'project',
+              label: 'Project',
+              type: 'select',
+              value: projectFilter,
+              onChange: setProjectFilter,
+              options: [
+                { label: 'All Projects', value: 'All' },
+                ...projects.map((p) => ({ label: p.name, value: p.id }))
+              ]
+            },
+            {
+              id: 'category',
+              label: 'Document Category',
+              type: 'pills',
+              value: categoryFilter,
+              onChange: setCategoryFilter,
+              options: CATEGORIES.map((c) => ({ label: c === 'All' ? 'All Categories' : c, value: c }))
+            }
+          ]}
+        />
       </div>
 
       {/* Documents Grid */}

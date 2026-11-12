@@ -195,7 +195,7 @@ export const TopBar: React.FC = () => {
           className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>{workspaceMode === 'erp' ? '+ Add Project' : '+ New Lead'}</span>
+          <span>{workspaceMode === 'erp' ? 'New Project' : 'New Lead'}</span>
         </button>
 
         {/* Notifications Icon Button */}

@@ -2,7 +2,7 @@
 // APNI ESTATE INTERIORS - BESPOKE ARCHITECTURAL SIDEBAR (ERP ↔ CRM SWITCH)
 // ==============================================================================
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -13,11 +13,11 @@ import {
   Receipt,
   PieChart,
   Settings,
-  Plus,
   Crown,
   Sparkles,
   LogOut,
   ChevronRight,
+  ChevronDown,
   X,
   UserCheck,
   Building2,
@@ -85,35 +85,42 @@ export const Sidebar: React.FC = () => {
   const hasEnterpriseAccess = isDemoMode || canUseFeature(organization, 'multi_branch', { isDemoMode });
   const hasExportAccess = isDemoMode || canUseFeature(organization, 'data_export', { isDemoMode });
 
-  // 1. ERP Mode Navigation (Operations, Execution, Site & Budgets)
+  // 1. Primary ERP Mode Navigation (Focused 5 core workspaces)
   const erpNavItems: SidebarNavItem[] = [
     { id: 'overview', label: 'Studio Overview', icon: LayoutDashboard },
     { id: 'projects', label: 'Projects & Rooms', icon: FolderKanban, badge: stats.activeProjectsCount },
-    { id: 'calendar', label: 'Schedule & Calendar', icon: CalendarDays },
     { id: 'expenses', label: 'Expense Ledger', icon: Receipt },
     { id: 'purchases', label: 'Purchase Orders', icon: ShoppingBag, badge: activeOrdersCount > 0 ? activeOrdersCount : undefined },
-    { id: 'site-controls', label: 'Site Controls & Bills', icon: Layers },
-    { id: 'vendors', label: 'Vendor Directory', icon: Building2, badge: vendors.length > 0 ? vendors.length : undefined },
-    { id: 'budget', label: 'Budget Analytics', icon: PieChart },
+    { id: 'calendar', label: 'Schedule', icon: CalendarDays },
   ];
 
-  // 2. CRM Mode Navigation (Clients, Proposals, Leads & Moodboards)
+  // 2. Primary CRM Mode Navigation (Focused 5 core workspaces)
   const crmNavItems: SidebarNavItem[] = [
     { id: 'leads', label: 'Lead Pipeline', icon: UserPlus, badge: activeLeadsCount > 0 ? activeLeadsCount : undefined, badgeVariant: 'blue' },
-    { id: 'clients', label: 'Client Directory', icon: Users },
-    { id: 'quotations', label: 'Design Proposals', icon: FileCheck2 },
-    { id: 'calendar', label: 'Client Walkthroughs', icon: CalendarDays },
-    { id: 'client-portal', label: 'Client Portal', icon: Briefcase },
-    { id: 'tasks', label: 'Tasks & Schedule', icon: CheckSquare, badge: pendingTasksCount > 0 ? pendingTasksCount : undefined },
-    { id: 'documents', label: 'Briefs & Documents', icon: FileText, badge: documents.length > 0 ? documents.length : undefined },
+    { id: 'clients', label: 'Clients', icon: Users },
+    { id: 'quotations', label: 'Quotations', icon: FileCheck2 },
+    { id: 'tasks', label: 'Tasks & Follow-ups', icon: CheckSquare, badge: pendingTasksCount > 0 ? pendingTasksCount : undefined },
+    { id: 'calendar', label: 'Walkthroughs', icon: CalendarDays },
   ];
 
-  // 3. Shared Operations (Bottom)
-  const sharedNavItems: SidebarNavItem[] = [
+  // 3. Secondary Tools & Admin (Collapsed drawer so Sidebar stays clean & uncluttered)
+  const secondaryNavItems: SidebarNavItem[] = workspaceMode === 'erp'
+    ? [
+        { id: 'site-controls', label: 'Site Controls & Bills', icon: Layers },
+        { id: 'vendors', label: 'Vendor Directory', icon: Building2, badge: vendors.length > 0 ? vendors.length : undefined },
+        { id: 'budget', label: 'Budget Analytics', icon: PieChart },
+      ]
+    : [
+        { id: 'client-portal', label: 'Client Portal', icon: Briefcase },
+        { id: 'documents', label: 'Drawings & Briefs', icon: FileText, badge: documents.length > 0 ? documents.length : undefined },
+      ];
+
+  const adminNavItems: SidebarNavItem[] = [
+    ...secondaryNavItems,
     { id: 'reports', label: 'Reports & Audit', icon: BarChart3 },
     ...(hasExportAccess ? [{ id: 'export' as NavigationPage, label: 'Data Export', icon: FileSpreadsheet }] : []),
     { id: 'team', label: 'Studio Team', icon: UserCheck, badge: teamMembers.length },
-    { id: 'settings', label: 'Studio Settings', icon: Settings },
+    { id: 'settings', label: 'Settings', icon: Settings },
     ...(hasEnterpriseAccess ? [
       { id: 'management' as NavigationPage, label: 'Multi-Branch HQ', icon: TrendingUp },
       { id: 'branches' as NavigationPage, label: 'Branches', icon: Building },
@@ -121,6 +128,9 @@ export const Sidebar: React.FC = () => {
       { id: 'roles' as NavigationPage, label: 'Roles & Access', icon: Shield }
     ] : [])
   ];
+
+  const isSecondaryActive = adminNavItems.some((item) => item.id === currentPage);
+  const [isMoreExpanded, setIsMoreExpanded] = useState(false);
 
   const roleDisplay = () => {
     if (!profile) return 'Studio Owner';
@@ -254,23 +264,12 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Primary Action CTA (Fitts's Law) ── */}
-      <div className="px-3 pt-3 pb-2">
-        <button
-          onClick={handlePrimaryAction}
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-semibold text-xs transition-all duration-150 group active:scale-[0.99] cursor-pointer min-h-[40px] shadow-xs"
-        >
-          <Plus className="w-4 h-4 transition-transform group-hover:rotate-90 duration-200" />
-          <span>{workspaceMode === 'erp' ? 'New Project' : 'New Lead'}</span>
-        </button>
-      </div>
-
       {/* ── Mode-Specific Navigation Links (Smooth cross-fade) ── */}
-      <div className="flex-1 px-3 py-1 space-y-4 overflow-y-auto no-scrollbar">
+      <div className="flex-1 px-3 py-3 space-y-4 overflow-y-auto no-scrollbar">
         {/* Dynamic Nav Items for Active Mode */}
         <div key={workspaceMode} className="space-y-1 animate-mode-slide">
-          <div className="px-3 pt-1 pb-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-            {workspaceMode === 'erp' ? 'Interior Operations' : 'Client Relationship'}
+          <div className="px-3 pt-1 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            {workspaceMode === 'erp' ? 'Core Operations' : 'Client & Pipeline'}
           </div>
 
           {currentModeItems.map((item) => {
@@ -301,32 +300,46 @@ export const Sidebar: React.FC = () => {
           })}
         </div>
 
-        {/* Studio Operations (Shared Across Modes) */}
+        {/* Collapsible Secondary & Admin Menu (Decluttered Sidebar) */}
         <div className="pt-2 border-t border-gray-100 space-y-1">
-          <div className="px-3 pb-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-            Studio
-          </div>
-          {sharedNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentPage === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => handleNavClick(item.id)}
-                aria-current={isActive ? 'page' : undefined}
-                className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
-              >
-                <Icon className="nav-icon" aria-hidden="true" />
-                <span className="flex-1 truncate">{item.label}</span>
-                {item.badge !== undefined && item.badge > 0 && (
-                  <span className="rounded-full px-2 py-0.5 text-[10px] font-bold bg-slate-100 text-slate-600 shrink-0">
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+          <button
+            type="button"
+            onClick={() => setIsMoreExpanded((prev) => !prev)}
+            className="w-full px-3 py-2 flex items-center justify-between text-[11px] font-bold text-slate-500 hover:text-[#111827] rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+          >
+            <span className="uppercase tracking-wider">Studio & Admin Tools</span>
+            <ChevronDown
+              className={`w-3.5 h-3.5 transition-transform duration-150 ${
+                isMoreExpanded || isSecondaryActive ? 'rotate-180 text-[#1D4ED8]' : ''
+              }`}
+            />
+          </button>
+
+          {(isMoreExpanded || isSecondaryActive) && (
+            <div className="space-y-0.5 pt-1 animate-in fade-in duration-150">
+              {adminNavItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = currentPage === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleNavClick(item.id)}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
+                  >
+                    <Icon className="nav-icon" aria-hidden="true" />
+                    <span className="flex-1 truncate">{item.label}</span>
+                    {item.badge !== undefined && item.badge > 0 && (
+                      <span className="rounded-full px-2 py-0.5 text-[10px] font-bold bg-slate-100 text-slate-600 shrink-0">
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Demo Workspace Banner or Subscription Card */}

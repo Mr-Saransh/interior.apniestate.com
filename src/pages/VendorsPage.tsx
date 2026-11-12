@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { VendorModal } from '../components/modals/VendorModal';
 import { EmptyState } from '../components/common/EmptyState';
+import { UnifiedFilterPopover } from '../components/common/UnifiedFilterPopover';
 import { vendorScorecardService, VendorScorecard } from '../services/vendorScorecardService';
 import { formatINR } from '../utils/formatters';
 
@@ -123,45 +124,40 @@ export const VendorsPage: React.FC = () => {
           }}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold shadow-sm transition-all hover:shadow hover:-translate-y-0.5 self-start sm:self-auto cursor-pointer"
         >
-          <Plus className="w-4 h-4 text-brand-400" />
-          <span>+ Add Vendor</span>
+          <Plus className="w-4 h-4" />
+          <span>Add Vendor</span>
         </button>
       </div>
 
       {scorecardsError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">Vendor performance could not be loaded: {scorecardsError}</p>}
 
-      {/* Search & Category Filter Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+      {/* Search + Single Unified Filter Button */}
+      <div className="flex items-center justify-between gap-3">
         <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
           <input
             type="text"
             placeholder="Search vendor name, contact, phone, or GST..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 shadow-xs"
+            className="w-full pl-10 pr-4 py-2 rounded-xl border border-[#E5E7EB] bg-white text-xs font-medium focus:outline-none focus:border-[#1D4ED8]"
           />
         </div>
 
-        {/* Category Chips Horizontal Scroll */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full no-scrollbar">
-          {CATEGORIES.map(cat => {
-            const active = selectedCategory === cat;
-            return (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                  active
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                {cat}
-              </button>
-            );
-          })}
-        </div>
+        <UnifiedFilterPopover
+          activeCount={selectedCategory !== 'All' ? 1 : 0}
+          onReset={() => setSelectedCategory('All')}
+          fields={[
+            {
+              id: 'category',
+              label: 'Vendor Specialty',
+              type: 'pills',
+              value: selectedCategory,
+              onChange: (val) => setSelectedCategory(val as any),
+              options: CATEGORIES.map((cat) => ({ label: cat, value: cat }))
+            }
+          ]}
+        />
       </div>
 
       {/* Vendor Cards Grid */}

@@ -224,38 +224,61 @@ export const OverviewPage: React.FC = () => {
     return (
       <div className="space-y-4 pb-10">
         {/* Crisp Header */}
-        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <h1 className="text-xl font-bold text-[#111827]">
               CRM
             </h1>
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-[#1D4ED8] border border-blue-100">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-[#1D4ED8] border border-blue-100">
               {activeLeads.length} active
             </span>
           </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setWorkspaceMode('erp')}
-              className="px-3 py-1.5 text-xs font-semibold text-[#475569] bg-[#F8FAFC] hover:bg-[#EFF6FF] hover:text-[#1D4ED8] border border-[#E5E7EB] rounded-xl transition-colors cursor-pointer"
-            >
-              ERP Mode
-            </button>
-            <button
-              onClick={() => setIsGenericQuoteModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#1D4ED8] bg-[#EFF6FF] border border-blue-200 rounded-xl transition-colors cursor-pointer"
-            >
-              <Calculator className="w-3.5 h-3.5" />
-              <span>Quote</span>
-            </button>
-            <button
-              onClick={() => setCurrentPage('leads')}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#1D4ED8] hover:bg-[#1E40AF] rounded-xl transition-colors cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>New Lead</span>
-            </button>
+          <div className="text-xs text-slate-500 font-medium hidden sm:block">
+            {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
           </div>
+        </div>
+
+        {/* CRM Quick Actions Bar */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <button
+            onClick={() => setCurrentPage('leads')}
+            className="flex items-center gap-2.5 p-3 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] hover:bg-blue-50/30 rounded-xl text-xs font-semibold text-[#111827] hover:text-[#1D4ED8] transition-all cursor-pointer shadow-xs group"
+          >
+            <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#1D4ED8] flex items-center justify-center shrink-0 group-hover:bg-[#1D4ED8] group-hover:text-white transition-colors">
+              <Users className="w-4 h-4" />
+            </div>
+            <span className="truncate">Add Lead ({activeLeads.length})</span>
+          </button>
+
+          <button
+            onClick={() => setIsGenericQuoteModalOpen(true)}
+            className="flex items-center gap-2.5 p-3 bg-white border border-[#E5E7EB] hover:border-emerald-600 hover:bg-emerald-50/30 rounded-xl text-xs font-semibold text-[#111827] hover:text-emerald-700 transition-all cursor-pointer shadow-xs group"
+          >
+            <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+              <Calculator className="w-3.5 h-3.5" />
+            </div>
+            <span className="truncate">Quote Estimator</span>
+          </button>
+
+          <button
+            onClick={() => setCurrentPage('quotations')}
+            className="flex items-center gap-2.5 p-3 bg-white border border-[#E5E7EB] hover:border-amber-600 hover:bg-amber-50/30 rounded-xl text-xs font-semibold text-[#111827] hover:text-amber-700 transition-all cursor-pointer shadow-xs group"
+          >
+            <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+              <FileText className="w-3.5 h-3.5" />
+            </div>
+            <span className="truncate">Proposals ({recentQuotations.length})</span>
+          </button>
+
+          <button
+            onClick={() => setCurrentPage('client-portal')}
+            className="flex items-center gap-2.5 p-3 bg-white border border-[#E5E7EB] hover:border-indigo-600 hover:bg-indigo-50/30 rounded-xl text-xs font-semibold text-[#111827] hover:text-indigo-700 transition-all cursor-pointer shadow-xs group"
+          >
+            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+              <ExternalLink className="w-3.5 h-3.5" />
+            </div>
+            <span className="truncate">Client Portal</span>
+          </button>
         </div>
 
         {/* 4 CRM KPI Cards — Compact & Graphical */}
@@ -499,38 +522,61 @@ export const OverviewPage: React.FC = () => {
   return (
     <div className="space-y-4 pb-10">
       {/* Clean Studio Header */}
-      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <h1 className="text-xl font-bold text-[#111827]">
             Overview
           </h1>
-          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
             {activeProjectsCount} sites
           </span>
         </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setWorkspaceMode('crm')}
-            className="px-3 py-1.5 text-xs font-semibold text-[#475569] bg-[#F8FAFC] hover:bg-[#EFF6FF] hover:text-[#1D4ED8] border border-[#E5E7EB] rounded-xl transition-colors cursor-pointer"
-          >
-            CRM Mode
-          </button>
-          <button
-            onClick={() => setIsAddExpenseModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#1D4ED8] bg-[#EFF6FF] border border-blue-200 rounded-xl transition-colors cursor-pointer"
-          >
-            <Receipt className="w-3.5 h-3.5" />
-            <span>+ Expense</span>
-          </button>
-          <button
-            onClick={() => setIsNewProjectModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#1D4ED8] hover:bg-[#1E40AF] rounded-xl transition-colors cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>New Project</span>
-          </button>
+        <div className="text-xs text-slate-500 font-medium hidden sm:block">
+          {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
         </div>
+      </div>
+
+      {/* Quick Actions Bar */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <button
+          onClick={() => setIsNewProjectModalOpen(true)}
+          className="flex items-center gap-2.5 p-3 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] hover:bg-blue-50/30 rounded-xl text-xs font-semibold text-[#111827] hover:text-[#1D4ED8] transition-all cursor-pointer shadow-xs group"
+        >
+          <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#1D4ED8] flex items-center justify-center shrink-0 group-hover:bg-[#1D4ED8] group-hover:text-white transition-colors">
+            <Plus className="w-4 h-4" />
+          </div>
+          <span className="truncate">Add Project</span>
+        </button>
+
+        <button
+          onClick={() => setIsAddExpenseModalOpen(true)}
+          className="flex items-center gap-2.5 p-3 bg-white border border-[#E5E7EB] hover:border-emerald-600 hover:bg-emerald-50/30 rounded-xl text-xs font-semibold text-[#111827] hover:text-emerald-700 transition-all cursor-pointer shadow-xs group"
+        >
+          <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+            <Receipt className="w-3.5 h-3.5" />
+          </div>
+          <span className="truncate">Add Expense</span>
+        </button>
+
+        <button
+          onClick={() => setIsGenericQuoteModalOpen(true)}
+          className="flex items-center gap-2.5 p-3 bg-white border border-[#E5E7EB] hover:border-indigo-600 hover:bg-indigo-50/30 rounded-xl text-xs font-semibold text-[#111827] hover:text-indigo-700 transition-all cursor-pointer shadow-xs group"
+        >
+          <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+            <Calculator className="w-3.5 h-3.5" />
+          </div>
+          <span className="truncate">Quote Estimator</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentPage('calendar')}
+          className="flex items-center gap-2.5 p-3 bg-white border border-[#E5E7EB] hover:border-amber-600 hover:bg-amber-50/30 rounded-xl text-xs font-semibold text-[#111827] hover:text-amber-700 transition-all cursor-pointer shadow-xs group"
+        >
+          <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+            <Calendar className="w-3.5 h-3.5" />
+          </div>
+          <span className="truncate">Schedule & Tasks</span>
+        </button>
       </div>
 
       {/* 4 ERP KPI Cards — Compact & Graphical */}

@@ -100,13 +100,13 @@ export const PaymentsPage: React.FC = () => {
       {/* Header & 4 KPI Cards */}
       <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
+          <div className="flex items-center gap-2.5">
             <h1 className="font-editorial text-2xl font-medium text-[#111827]">
               Client Payments
             </h1>
-            <p className="text-xs text-[#64748B] mt-0.5">
-              Milestone invoices, stage advances, and payment receipts.
-            </p>
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+              {filteredPayments.length} of {clientPayments.length}
+            </span>
           </div>
 
           <button
@@ -122,46 +122,65 @@ export const PaymentsPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
-            <span className="text-[11px] font-semibold text-[#64748B]">Scheduled</span>
-            <div className="text-lg font-bold text-[#111827] tabular-nums mt-0.5">
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-[#64748B]">Scheduled</span>
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                {clientPayments.length}
+              </span>
+            </div>
+            <div className="text-lg font-bold text-[#111827] tabular-nums mt-1">
               {formatINR(metrics.totalScheduled)}
             </div>
-            <div className="text-[11px] text-[#64748B] mt-0.5">{clientPayments.length} milestones</div>
           </div>
 
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
-            <span className="text-[11px] font-semibold text-[#64748B]">Received</span>
-            <div className="text-lg font-bold text-emerald-700 tabular-nums mt-0.5">
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-[#64748B]">Received</span>
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                {metrics.paidCount}
+              </span>
+            </div>
+            <div className="text-lg font-bold text-emerald-700 tabular-nums mt-1">
               {formatINR(metrics.totalReceived)}
             </div>
-            <div className="text-[11px] text-emerald-700 mt-0.5">{metrics.paidCount} collected</div>
           </div>
 
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
-            <span className="text-[11px] font-semibold text-[#64748B]">Pending</span>
-            <div className="text-lg font-bold text-[#1D4ED8] tabular-nums mt-0.5">
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-[#64748B]">Pending</span>
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                {metrics.pendingCount}
+              </span>
+            </div>
+            <div className="text-lg font-bold text-[#1D4ED8] tabular-nums mt-1">
               {formatINR(metrics.scheduleOutstanding)}
             </div>
-            <div className="text-[11px] text-[#64748B] mt-0.5">{metrics.pendingCount} awaiting</div>
           </div>
 
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
-            <span className="text-[11px] font-semibold text-[#64748B]">Overdue</span>
-            <div className="text-lg font-bold text-rose-600 tabular-nums mt-0.5">
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-[#64748B]">Overdue</span>
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                {metrics.overdueCount}
+              </span>
+            </div>
+            <div className="text-lg font-bold text-rose-600 tabular-nums mt-1">
               {formatINR(metrics.overdueAmount)}
             </div>
-            <div className="text-[11px] text-rose-600 mt-0.5">{metrics.overdueCount} overdue</div>
           </div>
         </div>
       </div>
 
       {/* Collections Breakdown Chart */}
       {clientPayments.length > 0 && (
-        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5">
+        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5">
           <div className="mb-3">
-            <h2 className="text-sm font-semibold text-[#111827]">Collection & Aging Health</h2>
-            <p className="text-xs text-[#64748B]">Comparison of realized collections, upcoming dues, and overdue amounts</p>
+            <h2 className="text-xs font-semibold text-[#111827] uppercase tracking-wider">Collection & Aging</h2>
           </div>
           <div className="h-44">
             <ResponsiveContainer width="100%" height="100%">

@@ -168,13 +168,13 @@ export const ReportsPage: React.FC = () => {
       {/* Architectural Header */}
       <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
+          <div className="flex items-center gap-2.5">
             <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
               Reports
             </h1>
-            <p className="text-xs sm:text-sm text-[#4B5563] mt-0.5">
-              Track project margins, client collections, expenses, and site progress.
-            </p>
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+              {projects.length} sites
+            </span>
           </div>
 
           {/* Filters: Branch & Project */}
@@ -248,64 +248,57 @@ export const ReportsPage: React.FC = () => {
       {activeTab === 'profitability' && (
         <div className="space-y-6">
           {/* Top Profitability Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB]">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B] block mb-1.5">
-                Contract Value
-              </span>
-              <span className="text-xl sm:text-2xl font-bold text-[#111827] tabular-nums block">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+            <div className="bg-white p-3.5 rounded-2xl border border-[#E5E7EB] flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-[#64748B]">Contract Value</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+              </div>
+              <span className="text-lg sm:text-xl font-bold text-[#111827] tabular-nums mt-1 block">
                 {formatINR(totalContractVal)}
               </span>
-              <span className="text-xs text-[#64748B] mt-1 block">
-                Total agreed client value
-              </span>
             </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB]">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B] block mb-1.5">
-                Gross Profit
-              </span>
-              <span className="text-xl sm:text-2xl font-bold text-emerald-700 tabular-nums block">
+            <div className="bg-white p-3.5 rounded-2xl border border-[#E5E7EB] flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-[#64748B]">Gross Profit</span>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                  {Math.round(overallMarginPct * 10) / 10}% margin
+                </span>
+              </div>
+              <span className="text-lg sm:text-xl font-bold text-emerald-700 tabular-nums mt-1 block">
                 {formatINR(totalGrossProfit)}
               </span>
-              <span className="text-xs text-emerald-700 mt-1 font-medium block">
-                {Math.round(overallMarginPct * 10) / 10}% margin
-              </span>
             </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB]">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B] block mb-1.5">
-                Revenue Collected
-              </span>
-              <span className="text-xl sm:text-2xl font-bold text-[#1D4ED8] tabular-nums block">
+            <div className="bg-white p-3.5 rounded-2xl border border-[#E5E7EB] flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-[#64748B]">Revenue Collected</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              </div>
+              <span className="text-lg sm:text-xl font-bold text-[#1D4ED8] tabular-nums mt-1 block">
                 {formatINR(totalRevenueRec)}
               </span>
-              <span className="text-xs text-[#64748B] mt-1 block">
-                Collected to date
-              </span>
             </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB]">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B] block mb-1.5">
-                Cash Net
-              </span>
-              <span className={`text-xl sm:text-2xl font-bold tabular-nums block ${
+            <div className="bg-white p-3.5 rounded-2xl border border-[#E5E7EB] flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-[#64748B]">Cash Net</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${totalRealizedCash >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+              </div>
+              <span className={`text-lg sm:text-xl font-bold tabular-nums mt-1 block ${
                 totalRealizedCash >= 0 ? 'text-emerald-700' : 'text-rose-600'
               }`}>
                 {formatINR(totalRealizedCash)}
-              </span>
-              <span className="text-xs text-[#64748B] mt-1 block">
-                Received minus expenses
               </span>
             </div>
           </div>
 
           {/* Visual Executive Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E5E7EB] p-5">
-              <div className="mb-4">
-                <h3 className="text-sm font-semibold text-[#111827]">Contract vs. Collected vs. Cost</h3>
-                <p className="text-xs text-[#64748B]">Site-level revenue realization and actual spend</p>
+            <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E5E7EB] p-4 sm:p-5">
+              <div className="mb-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#111827]">Contract vs. Collected vs. Cost</h3>
               </div>
               {profitBarData.length === 0 ? (
                 <div className="h-56 flex items-center justify-center text-xs text-[#64748B]">No project data to chart.</div>
@@ -334,10 +327,9 @@ export const ReportsPage: React.FC = () => {
               )}
             </div>
 
-            <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E7EB] p-5 flex flex-col">
-              <div className="mb-4">
-                <h3 className="text-sm font-semibold text-[#111827]">Cost Distribution by Category</h3>
-                <p className="text-xs text-[#64748B]">Share of total logged expenses across trades</p>
+            <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E7EB] p-4 sm:p-5 flex flex-col">
+              <div className="mb-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#111827]">Cost by Category</h3>
               </div>
               {categoryDonutData.length === 0 ? (
                 <div className="flex-1 min-h-[200px] flex items-center justify-center text-xs text-[#64748B]">No expenses recorded yet.</div>
@@ -388,13 +380,13 @@ export const ReportsPage: React.FC = () => {
 
           {/* Project Profitability Table */}
           <div className="bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden">
-            <div className="p-4 sm:p-5 border-b border-slate-100">
-              <h3 className="text-base font-bold font-display text-slate-900">
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-900">
                 Project Margins & Cash Position
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Calculated from contract value, collections, and expenses.
-              </p>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                {profitabilityList.length}
+              </span>
             </div>
 
             {profitabilityList.length === 0 ? (
@@ -525,21 +517,19 @@ export const ReportsPage: React.FC = () => {
       {/* TAB 4: PROCUREMENT STATUS */}
       {activeTab === 'procurement' && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB]">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-1">Orders</span>
-              <span className="text-2xl font-black text-slate-900 font-display block">{procurementSummary.totalOrders}</span>
-              <span className="text-[11px] text-slate-400 mt-1 block">Value: {formatINR(procurementSummary.totalAmount)}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="bg-white p-3.5 rounded-2xl border border-[#E5E7EB] flex flex-col justify-between">
+              <span className="text-[11px] font-semibold text-slate-500">Orders</span>
+              <span className="text-xl font-bold text-slate-900 font-display mt-1 block">{procurementSummary.totalOrders}</span>
+              <span className="text-[11px] font-medium text-slate-600 mt-1">{formatINR(procurementSummary.totalAmount)}</span>
             </div>
-            <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB]">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 block mb-1">Delivered</span>
-              <span className="text-2xl font-black text-emerald-700 font-display block">{formatINR(procurementSummary.receivedAmount)}</span>
-              <span className="text-[11px] text-emerald-600 mt-1 block">Received on site</span>
+            <div className="bg-white p-3.5 rounded-2xl border border-[#E5E7EB] flex flex-col justify-between">
+              <span className="text-[11px] font-semibold text-emerald-800">Delivered</span>
+              <span className="text-xl font-bold text-emerald-700 font-display mt-1 block">{formatINR(procurementSummary.receivedAmount)}</span>
             </div>
-            <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB]">
-              <span className="text-xs font-bold uppercase tracking-wider text-indigo-800 block mb-1">In Transit</span>
-              <span className="text-2xl font-black text-indigo-900 font-display block">{formatINR(procurementSummary.inTransitAmount)}</span>
-              <span className="text-[11px] text-indigo-600 mt-1 block">Awaiting delivery</span>
+            <div className="bg-white p-3.5 rounded-2xl border border-[#E5E7EB] flex flex-col justify-between">
+              <span className="text-[11px] font-semibold text-indigo-800">In Transit</span>
+              <span className="text-xl font-bold text-indigo-900 font-display mt-1 block">{formatINR(procurementSummary.inTransitAmount)}</span>
             </div>
           </div>
         </div>
@@ -571,10 +561,7 @@ export const ReportsPage: React.FC = () => {
         <div className="space-y-6">
           <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5">
             <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-base font-bold font-display text-slate-900">Materials & Site Stock</h3>
-                <p className="text-xs text-slate-500">Track on-site stock and reorder needs.</p>
-              </div>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-900">Materials & Site Stock</h3>
               <span className="text-xs font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-xl">
                 {filteredMaterials.length} Items
               </span>
@@ -631,10 +618,7 @@ export const ReportsPage: React.FC = () => {
         <div className="space-y-6">
           <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-slate-100">
-              <div>
-                <h3 className="text-base font-bold font-display text-slate-900">Branch Studios</h3>
-                <p className="text-xs text-slate-500">Studio performance, contracts, and costs.</p>
-              </div>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-900">Branch Studios</h3>
               <span className="text-xs font-bold bg-brand-50 text-brand-700 px-3 py-1 rounded-xl border border-brand-200">
                 {branches.length} Studios
               </span>
@@ -697,10 +681,7 @@ export const ReportsPage: React.FC = () => {
         <div className="space-y-6">
           <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div>
-                <h3 className="text-base font-bold font-display text-slate-900">Approvals</h3>
-                <p className="text-xs text-slate-500">Purchase orders and expense requests.</p>
-              </div>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-900">Approvals</h3>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

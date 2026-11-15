@@ -262,19 +262,19 @@ export const ApprovalsPage: React.FC = () => {
   return (
     <div className="space-y-6 pb-12">
       {/* Architectural Header */}
-      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2.5">
           <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
             Approvals
           </h1>
-          <p className="text-xs sm:text-sm text-[#4B5563] mt-0.5">
-            Review and approve purchase orders and expense requests.
-          </p>
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+            {counts.all} requests
+          </span>
         </div>
 
         <button
           onClick={openNewRequestModal}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold transition-colors cursor-pointer self-start sm:self-auto"
+          className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold transition-colors cursor-pointer self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
           <span>New Request</span>

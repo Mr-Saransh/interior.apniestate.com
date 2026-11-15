@@ -123,77 +123,89 @@ export const ExpensesPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2.5">
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
             Expenses
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Track expenses across materials, labour, and site costs.
-          </p>
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-[#1D4ED8] border border-blue-100">
+            {expenses.length}
+          </span>
         </div>
 
         <button
           onClick={() => setIsAddExpenseModalOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition-all self-start sm:self-auto cursor-pointer"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition-all self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Add Expense</span>
         </button>
       </div>
 
-      {/* 4 Expense KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="premium-card p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Spend</span>
-            <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
-              <Receipt className="w-4 h-4" />
+      {/* 4 Expense KPI Cards — Compact & Visual */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-white border border-[#E5E7EB] rounded-xl p-3.5">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span className="font-semibold text-slate-700">Total Spent</span>
+            <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#1D4ED8] flex items-center justify-center">
+              <Receipt className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold font-display text-slate-900">
+          <div className="text-xl font-bold text-slate-900 tabular-nums">
             {formatINRCompact(totalExpensesSum)}
           </div>
-          <p className="text-xs text-slate-400 mt-1">{expenses.length} entries</p>
+          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+            <span>{expenses.length} records</span>
+          </div>
         </div>
 
-        <div className="premium-card p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">This Month</span>
-            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
-              <TrendingUp className="w-4 h-4" />
+        <div className="bg-white border border-[#E5E7EB] rounded-xl p-3.5">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span className="font-semibold text-slate-700">This Month</span>
+            <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <TrendingUp className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold font-display text-emerald-600">
+          <div className="text-xl font-bold text-emerald-600 tabular-nums">
             {formatINRCompact(thisMonthExpenses)}
           </div>
-          <p className="text-xs text-slate-400 mt-1">Current month</p>
+          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-emerald-700 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span>Monthly</span>
+          </div>
         </div>
 
-        <div className="premium-card p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Top Category</span>
-            <div className="p-2 rounded-xl bg-purple-50 text-purple-600">
-              <Layers className="w-4 h-4" />
+        <div className="bg-white border border-[#E5E7EB] rounded-xl p-3.5">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span className="font-semibold text-slate-700">Top Trade</span>
+            <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+              <Layers className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold font-display text-slate-900 truncate">
+          <div className="text-xl font-bold text-slate-900 truncate tabular-nums">
             {largestCategory}
           </div>
-          <p className="text-xs text-slate-400 mt-1">{formatINRCompact(largestCatAmount)} spent</p>
+          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+            <span>{formatINRCompact(largestCatAmount)}</span>
+          </div>
         </div>
 
-        <div className="premium-card p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Pending Payments</span>
-            <div className="p-2 rounded-xl bg-amber-50 text-amber-600">
-              <Clock className="w-4 h-4" />
+        <div className="bg-white border border-[#E5E7EB] rounded-xl p-3.5">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span className="font-semibold text-slate-700">Pending</span>
+            <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+              <Clock className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold font-display text-amber-600">
+          <div className="text-xl font-bold text-amber-600 tabular-nums">
             {formatINRCompact(pendingPaymentsSum)}
           </div>
-          <p className="text-xs text-slate-400 mt-1">Awaiting vendor clearance</p>
+          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <span>Unpaid</span>
+          </div>
         </div>
       </div>
 

@@ -63,28 +63,37 @@ export const TeamPage: React.FC = () => {
   return (
     <div className="space-y-6 pb-10">
       {/* Architectural Header & Staff Summary */}
-      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-4">
-        <div>
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 space-y-4">
+        <div className="flex items-center gap-2.5">
           <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
             Studio Team
           </h1>
-          <p className="text-xs sm:text-sm text-[#4B5563] mt-0.5">
-            Manage team members, designers, and site supervisors.
-          </p>
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+            {teamMembers.length} members
+          </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Members</p>
-            <p className="text-xl font-bold text-[#111827] tabular-nums mt-0.5">{teamMembers.length}</p>
+        <div className="grid grid-cols-3 gap-2.5">
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-[#64748B]">Members</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+            </div>
+            <p className="text-lg font-bold text-[#111827] tabular-nums mt-1">{teamMembers.length}</p>
           </div>
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Admins</p>
-            <p className="text-xl font-bold text-[#1D4ED8] tabular-nums mt-0.5">{adminOrOwnerCount}</p>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-[#64748B]">Admins</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+            </div>
+            <p className="text-lg font-bold text-[#1D4ED8] tabular-nums mt-1">{adminOrOwnerCount}</p>
           </div>
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Active</p>
-            <p className="text-xl font-bold text-emerald-700 tabular-nums mt-0.5">{activeCount}</p>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-[#64748B]">Active</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            </div>
+            <p className="text-lg font-bold text-emerald-700 tabular-nums mt-1">{activeCount}</p>
           </div>
         </div>
       </div>

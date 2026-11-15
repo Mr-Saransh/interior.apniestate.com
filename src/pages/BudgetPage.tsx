@@ -60,15 +60,15 @@ export const BudgetPage: React.FC = () => {
   return (
     <div className="space-y-5 pb-10">
       {/* Header & Filter */}
-      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 space-y-4">
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="font-editorial text-2xl font-medium text-[#111827]">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
               Budget Health
             </h1>
-            <p className="text-xs text-[#64748B] mt-0.5">
-              Project budgets, BOQ estimates, and actual disbursements.
-            </p>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+              {healthyCount} healthy
+            </span>
           </div>
 
           <UnifiedFilterPopover
@@ -100,7 +100,10 @@ export const BudgetPage: React.FC = () => {
             <div className="text-lg font-bold text-[#111827] tabular-nums mt-0.5">
               {formatINRCompact(stats.totalBudget)}
             </div>
-            <p className="text-[11px] text-[#64748B] mt-0.5">{projects.length} sites</p>
+            <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+              <span>{projects.length} sites</span>
+            </div>
           </div>
 
           <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
@@ -108,7 +111,10 @@ export const BudgetPage: React.FC = () => {
             <div className="text-lg font-bold text-indigo-700 tabular-nums mt-0.5">
               {formatINRCompact(stats.totalBOQEstimate)}
             </div>
-            <p className="text-[11px] text-[#64748B] mt-0.5">Scope estimate</p>
+            <div className="flex items-center gap-1.5 mt-1 text-[11px] text-indigo-700 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+              <span>Estimated</span>
+            </div>
           </div>
 
           <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
@@ -116,7 +122,10 @@ export const BudgetPage: React.FC = () => {
             <div className="text-lg font-bold text-[#1D4ED8] tabular-nums mt-0.5">
               {formatINRCompact(stats.totalSpent)}
             </div>
-            <p className="text-[11px] text-[#64748B] mt-0.5">{stats.spentPercentage.toFixed(0)}% utilized</p>
+            <div className="flex items-center gap-1.5 mt-1 text-[11px] text-blue-700 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1D4ED8]" />
+              <span>{stats.spentPercentage.toFixed(0)}%</span>
+            </div>
           </div>
 
           <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
@@ -128,9 +137,12 @@ export const BudgetPage: React.FC = () => {
             >
               {formatINRCompact(stats.totalRemaining)}
             </div>
-            <p className="text-[11px] text-[#64748B] mt-0.5">
-              {stats.totalRemaining < 0 ? 'Overrun' : 'Remaining balance'}
-            </p>
+            <div className="flex items-center gap-1.5 mt-1 text-[11px]">
+              <span className={`w-1.5 h-1.5 rounded-full ${stats.totalRemaining < 0 ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+              <span className={stats.totalRemaining < 0 ? 'text-rose-600 font-medium' : 'text-emerald-700 font-medium'}>
+                {stats.totalRemaining < 0 ? 'Overrun' : 'Balance'}
+              </span>
+            </div>
           </div>
         </div>
       </div>

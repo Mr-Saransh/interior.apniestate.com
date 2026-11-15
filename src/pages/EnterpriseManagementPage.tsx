@@ -227,14 +227,14 @@ export const EnterpriseManagementPage: React.FC = () => {
   return (
     <div className="space-y-6 pb-12">
       {/* Architectural Header & Global Filters */}
-      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="flex items-center gap-2.5">
           <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
             Studio Analytics
           </h1>
-          <p className="text-xs sm:text-sm text-[#4B5563] mt-0.5">
-            Financial performance, project margins, and risk alerts.
-          </p>
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+            {filteredProjects.length} sites
+          </span>
         </div>
 
         {/* Global Multi-Branch & Project Filters */}
@@ -273,10 +273,9 @@ export const EnterpriseManagementPage: React.FC = () => {
 
       {/* Branch Contract vs Expense Visual */}
       {branchChartData.length > 0 && (
-        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5">
+        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5">
           <div className="mb-3">
-            <h2 className="text-sm font-semibold text-[#111827]">Branch Contract Value vs. Expenses</h2>
-            <p className="text-xs text-[#64748B]">Multi-studio portfolio output compared against actual disbursements</p>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-[#111827]">Branch Contract Value vs. Expenses</h2>
           </div>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
@@ -302,123 +301,99 @@ export const EnterpriseManagementPage: React.FC = () => {
       )}
 
       {/* KPI 1: Primary Commercial Ledger Summary */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
         {/* Total Contract Value */}
-        <div className="premium-card p-4 sm:p-5">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Contract Value</span>
-            <FolderKanban className="w-4 h-4 text-brand-500" />
+        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 mb-1">
+            <span className="text-[11px] font-semibold text-slate-500">Contract Value</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
           </div>
-          <div className="text-xl sm:text-2xl font-extrabold font-display text-slate-900">
+          <div className="text-xl sm:text-2xl font-bold font-display text-slate-900 mt-1">
             {formatINRCompact(financialTotals.totalContractValue)}
-          </div>
-          <div className="text-[11px] text-slate-500 mt-1">
-            Across {filteredProjects.length} active projects
           </div>
         </div>
 
         {/* Actual Expenses Incurred */}
-        <div className="premium-card p-4 sm:p-5">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Actual Cost Incurred</span>
-            <IndianRupee className="w-4 h-4 text-amber-500" />
+        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 mb-1">
+            <span className="text-[11px] font-semibold text-slate-500">Actual Cost</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
           </div>
-          <div className="text-xl sm:text-2xl font-extrabold font-display text-slate-900">
+          <div className="text-xl sm:text-2xl font-bold font-display text-slate-900 mt-1">
             {formatINRCompact(financialTotals.totalActualCost)}
-          </div>
-          <div className="text-[11px] text-slate-500 mt-1">
-            Real expenditures paid out
           </div>
         </div>
 
         {/* Revenue Collected */}
-        <div className="premium-card p-4 sm:p-5">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Revenue Received</span>
-            <TrendingUp className="w-4 h-4 text-emerald-500" />
+        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 mb-1">
+            <span className="text-[11px] font-semibold text-slate-500">Revenue Received</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
           </div>
-          <div className="text-xl sm:text-2xl font-extrabold font-display text-slate-900">
+          <div className="text-xl sm:text-2xl font-bold font-display text-slate-900 mt-1">
             {formatINRCompact(financialTotals.totalRevenueReceived)}
-          </div>
-          <div className="text-[11px] text-emerald-600 font-semibold mt-1">
-            {financialTotals.totalContractValue > 0 
-              ? `${((financialTotals.totalRevenueReceived / financialTotals.totalContractValue) * 100).toFixed(1)}% of Contract Value`
-              : 'Cleared receipts'}
           </div>
         </div>
 
         {/* Gross Projected Margin */}
-        <div className="premium-card p-4 sm:p-5">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Gross Projected Margin</span>
-            <PieChart className="w-4 h-4 text-indigo-500" />
+        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 mb-1">
+            <span className="text-[11px] font-semibold text-slate-500">Gross Margin</span>
+            <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">
+              {formatINRCompact(financialTotals.grossProjectedProfit)}
+            </span>
           </div>
-          <div className={`text-xl sm:text-2xl font-extrabold font-display ${
+          <div className={`text-xl sm:text-2xl font-bold font-display mt-1 ${
             financialTotals.grossProjectedProfit >= 0 ? 'text-indigo-600' : 'text-rose-600'
           }`}>
             {financialTotals.grossMarginPct.toFixed(1)}%
-          </div>
-          <div className="text-[11px] text-slate-500 mt-1">
-            {formatINRCompact(financialTotals.grossProjectedProfit)} Projected Profit
           </div>
         </div>
       </div>
 
       {/* KPI 2: Critical Working Capital & Risk Alerts */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
         {/* Outstanding Receivables */}
-        <div className="premium-card p-4 border-l-4 border-l-blue-500">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-            Pending Client Receivables
+        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3.5 border-l-4 border-l-blue-500">
+          <span className="text-[11px] font-semibold text-slate-500 block mb-1">
+            Pending Receivables
           </span>
-          <div className="text-lg font-extrabold text-slate-900">
+          <div className="text-lg font-bold text-slate-900">
             {formatINR(financialTotals.outstandingCollections)}
           </div>
-          <p className="text-[11px] text-slate-500 mt-0.5">
-            Scheduled milestones awaiting payment
-          </p>
         </div>
 
         {/* Committed Procurement */}
-        <div className="premium-card p-4 border-l-4 border-l-purple-500">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-            Committed Procurement Orders
+        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3.5 border-l-4 border-l-purple-500">
+          <span className="text-[11px] font-semibold text-slate-500 block mb-1">
+            Committed POs
           </span>
-          <div className="text-lg font-extrabold text-slate-900">
+          <div className="text-lg font-bold text-slate-900">
             {formatINR(financialTotals.committedProcurement)}
           </div>
-          <p className="text-[11px] text-slate-500 mt-0.5">
-            PO commitments pending fulfillment
-          </p>
         </div>
 
         {/* Realized Cash Balance */}
-        <div className="premium-card p-4 border-l-4 border-l-emerald-500">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-            Realized Net Cash Position
+        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3.5 border-l-4 border-l-emerald-500">
+          <span className="text-[11px] font-semibold text-slate-500 block mb-1">
+            Net Cash Balance
           </span>
-          <div className={`text-lg font-extrabold ${
+          <div className={`text-lg font-bold ${
             financialTotals.realizedCashPosition >= 0 ? 'text-emerald-700' : 'text-rose-700'
           }`}>
             {formatINR(financialTotals.realizedCashPosition)}
           </div>
-          <p className="text-[11px] text-slate-500 mt-0.5">
-            Cash in hand: Receipts minus Actual Costs
-          </p>
         </div>
 
         {/* Projects at Risk */}
-        <div className="premium-card p-4 border-l-4 border-l-amber-500">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-            Budget Variance & Risk
+        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3.5 border-l-4 border-l-amber-500">
+          <span className="text-[11px] font-semibold text-slate-500 block mb-1">
+            Budget Risk
           </span>
-          <div className="text-lg font-extrabold text-amber-700 flex items-center gap-1.5">
+          <div className="text-lg font-bold text-amber-700 flex items-center gap-1.5">
             <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-            <span>{projectHealthMetrics.overBudgetCount} Over / {projectHealthMetrics.atRiskCount} At Risk</span>
+            <span>{projectHealthMetrics.overBudgetCount} Over / {projectHealthMetrics.atRiskCount} Risk</span>
           </div>
-          <p className="text-[11px] text-slate-500 mt-0.5">
-            Projects exceeding 90% budget threshold
-          </p>
         </div>
       </div>
 

@@ -316,13 +316,13 @@ export const SiteControlsPage: React.FC = () => {
       {/* Header & Summary */}
       <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
+          <div className="flex items-center gap-2.5">
             <h1 className="font-editorial text-2xl font-medium text-[#111827]">
-              Site Bills & Wastage
+              Site Controls
             </h1>
-            <p className="text-xs text-[#64748B] mt-0.5">
-              Contractor invoices against BOQ and material wastage logs.
-            </p>
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+              {tab === 'bills' ? `${bills.length} bills` : `${wastage.length} logs`}
+            </span>
           </div>
 
           <div className="inline-flex bg-[#F1F5F9] p-0.5 rounded-xl border border-[#E5E7EB] self-start">
@@ -352,21 +352,33 @@ export const SiteControlsPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
-            <p className="text-[11px] font-semibold text-[#64748B]">Total Bills</p>
-            <p className="text-lg font-bold text-[#111827] tabular-nums mt-0.5">{bills.length}</p>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-[#64748B]">Total Bills</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+            </div>
+            <p className="text-lg font-bold text-[#111827] tabular-nums mt-1">{bills.length}</p>
           </div>
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
-            <p className="text-[11px] font-semibold text-[#64748B]">Pending Review</p>
-            <p className="text-lg font-bold text-amber-700 tabular-nums mt-0.5">{pendingBillsCount}</p>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-[#64748B]">Pending Review</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            </div>
+            <p className="text-lg font-bold text-amber-700 tabular-nums mt-1">{pendingBillsCount}</p>
           </div>
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
-            <p className="text-[11px] font-semibold text-[#64748B]">Approved Value</p>
-            <p className="text-lg font-bold text-emerald-700 tabular-nums mt-0.5">{formatINR(approvedBillsValue)}</p>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-[#64748B]">Approved Value</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            </div>
+            <p className="text-lg font-bold text-emerald-700 tabular-nums mt-1">{formatINR(approvedBillsValue)}</p>
           </div>
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
-            <p className="text-[11px] font-semibold text-[#64748B]">Wastage Records</p>
-            <p className="text-lg font-bold text-[#111827] tabular-nums mt-0.5">{wastage.length}</p>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-[#64748B]">Wastage Logs</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+            </div>
+            <p className="text-lg font-bold text-[#111827] tabular-nums mt-1">{wastage.length}</p>
           </div>
         </div>
       </div>
@@ -378,10 +390,7 @@ export const SiteControlsPage: React.FC = () => {
           <section className="h-fit rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             <div className="mb-4 flex items-center gap-2">
               <ClipboardCheck className="h-5 w-5 text-[#1D4ED8]" />
-              <div>
-                <h2 className="font-bold text-slate-900 text-sm">Record Contractor Bill</h2>
-                <p className="text-xs text-slate-500">Track bills against approved scope quantities.</p>
-              </div>
+              <h2 className="font-bold text-slate-900 text-sm">Record Contractor Bill</h2>
             </div>
             <form onSubmit={createBill} className="space-y-3">
               <label className="block text-xs font-bold text-slate-700">Project
@@ -449,7 +458,7 @@ export const SiteControlsPage: React.FC = () => {
       ) : (
         <div className="grid gap-5 xl:grid-cols-[minmax(300px,0.8fr)_minmax(0,1.4fr)]">
           <section className="h-fit rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="mb-4 flex items-center gap-2"><Package className="h-5 w-5 text-amber-600" /><div><h2 className="font-bold text-slate-900">Log material wastage</h2><p className="text-xs text-slate-500">A wastage entry is an audited stock-out. Entries cannot exceed current stock.</p></div></div>
+            <div className="mb-4 flex items-center gap-2"><Package className="h-5 w-5 text-amber-600" /><h2 className="font-bold text-slate-900 text-sm">Log material wastage</h2></div>
             <form onSubmit={logWastage} className="space-y-3">
               <label className="block text-xs font-bold text-slate-700">Project
                 <select required value={projectId} onChange={event => { setProjectId(event.target.value); setWastageMaterialId(''); }} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm">{projects.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}</select>

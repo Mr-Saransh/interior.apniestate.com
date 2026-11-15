@@ -251,19 +251,19 @@ export const BranchesPage: React.FC = () => {
   return (
     <div className="space-y-6 pb-12">
       {/* Architectural Header */}
-      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2.5">
           <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
             Branch Studios
           </h1>
-          <p className="text-xs sm:text-sm text-[#4B5563] mt-0.5">
-            Manage regional studio locations and assigned teams.
-          </p>
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+            {summaryMetrics.totalBranches} studios
+          </span>
         </div>
 
         <button
           onClick={openCreateModal}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold transition-colors cursor-pointer self-start sm:self-auto"
+          className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold transition-colors cursor-pointer self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
           <span>Add Branch</span>
@@ -271,57 +271,48 @@ export const BranchesPage: React.FC = () => {
       </div>
 
       {/* Aggregated Organization Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="premium-card p-4 sm:p-5">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Studios</span>
-            <Building className="w-4 h-4 text-brand-500" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 mb-1">
+            <span className="text-[11px] font-semibold text-slate-500">Studios</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
           </div>
-          <div className="text-xl sm:text-2xl font-extrabold font-display text-slate-900">
+          <div className="text-xl font-bold font-display text-slate-900 mt-1">
             {summaryMetrics.totalBranches}
           </div>
           <div className="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             <span>{summaryMetrics.activeBranches} active</span>
           </div>
         </div>
 
-        <div className="premium-card p-4 sm:p-5">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Projects</span>
-            <FolderKanban className="w-4 h-4 text-indigo-500" />
+        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 mb-1">
+            <span className="text-[11px] font-semibold text-slate-500">Projects</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
           </div>
-          <div className="text-xl sm:text-2xl font-extrabold font-display text-slate-900">
+          <div className="text-xl font-bold font-display text-slate-900 mt-1">
             {summaryMetrics.totalProjects}
           </div>
-          <div className="text-[11px] text-slate-500 mt-1">
-            Across studios
-          </div>
         </div>
 
-        <div className="premium-card p-4 sm:p-5">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Contract Value</span>
-            <TrendingUp className="w-4 h-4 text-emerald-500" />
+        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 mb-1">
+            <span className="text-[11px] font-semibold text-slate-500">Contract Value</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
           </div>
-          <div className="text-xl sm:text-2xl font-extrabold font-display text-slate-900">
+          <div className="text-xl font-bold font-display text-slate-900 mt-1">
             {formatINRCompact(summaryMetrics.totalContractValue)}
           </div>
-          <div className="text-[11px] text-slate-500 mt-1">
-            {formatINR(summaryMetrics.totalContractValue)}
-          </div>
         </div>
 
-        <div className="premium-card p-4 sm:p-5">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Spend</span>
-            <IndianRupee className="w-4 h-4 text-amber-500" />
+        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 mb-1">
+            <span className="text-[11px] font-semibold text-slate-500">Total Spend</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
           </div>
-          <div className="text-xl sm:text-2xl font-extrabold font-display text-slate-900">
+          <div className="text-xl font-bold font-display text-slate-900 mt-1">
             {formatINRCompact(summaryMetrics.totalExpenses)}
-          </div>
-          <div className="text-[11px] text-slate-500 mt-1">
-            Total project expenses logged
           </div>
         </div>
       </div>

@@ -93,19 +93,14 @@ export const TasksPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-              Tasks
-            </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-50 text-brand-700 border border-brand-200/60">
-              {tasks.length}
-            </span>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Track site deliverables, drawings, and to-dos.
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+            Tasks
+          </h1>
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-50 text-brand-700 border border-brand-200/60">
+            {tasks.length}
+          </span>
         </div>
 
         <button
@@ -113,57 +108,77 @@ export const TasksPage: React.FC = () => {
             setTaskToEdit(null);
             setIsTaskModalOpen(true);
           }}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition-all self-start sm:self-auto min-h-[40px] cursor-pointer"
+          className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition-all self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>New Task</span>
         </button>
       </div>
 
-      {/* Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="premium-card p-4">
-          <div className="flex items-center justify-between text-slate-500 mb-1">
-            <span className="text-xs font-semibold">To Do</span>
-            <Clock className="w-4 h-4 text-slate-500" />
+      {/* Metric Cards — Compact & Visual */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-white border border-[#E5E7EB] rounded-xl p-3.5">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span className="font-semibold text-slate-700">To Do</span>
+            <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
+              <Clock className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="text-xl sm:text-2xl font-extrabold font-display text-slate-900">
+          <div className="text-xl font-bold text-slate-900 tabular-nums">
             {todoCount}
           </div>
-          <span className="text-[11px] text-slate-400">Pending</span>
+          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+            <span>Pending</span>
+          </div>
         </div>
 
-        <div className="premium-card p-4">
-          <div className="flex items-center justify-between text-slate-500 mb-1">
-            <span className="text-xs font-semibold">In Progress</span>
-            <Layers className="w-4 h-4 text-indigo-600" />
+        <div className="bg-white border border-[#E5E7EB] rounded-xl p-3.5">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span className="font-semibold text-slate-700">In Progress</span>
+            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <Layers className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="text-xl sm:text-2xl font-extrabold font-display text-indigo-700">
+          <div className="text-xl font-bold text-indigo-700 tabular-nums">
             {inProgressCount}
           </div>
-          <span className="text-[11px] text-slate-400">In progress</span>
+          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-indigo-700 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+            <span>Active</span>
+          </div>
         </div>
 
-        <div className="premium-card p-4">
-          <div className="flex items-center justify-between text-slate-500 mb-1">
-            <span className="text-xs font-semibold">Urgent</span>
-            <AlertCircle className="w-4 h-4 text-rose-600" />
+        <div className="bg-white border border-[#E5E7EB] rounded-xl p-3.5">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span className="font-semibold text-slate-700">Urgent</span>
+            <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+              <AlertCircle className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="text-xl sm:text-2xl font-extrabold font-display text-rose-700">
+          <div className="text-xl font-bold text-rose-700 tabular-nums">
             {urgentCount}
           </div>
-          <span className="text-[11px] text-slate-400">Needs attention</span>
+          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-rose-700 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+            <span>Attention</span>
+          </div>
         </div>
 
-        <div className="premium-card p-4">
-          <div className="flex items-center justify-between text-slate-500 mb-1">
-            <span className="text-xs font-semibold">Done</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+        <div className="bg-white border border-[#E5E7EB] rounded-xl p-3.5">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span className="font-semibold text-slate-700">Done</span>
+            <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="text-xl sm:text-2xl font-extrabold font-display text-emerald-700">
+          <div className="text-xl font-bold text-emerald-700 tabular-nums">
             {completedCount}
           </div>
-          <span className="text-[11px] text-slate-400">Completed</span>
+          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-emerald-700 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span>Completed</span>
+          </div>
         </div>
       </div>
 

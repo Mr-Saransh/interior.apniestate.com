@@ -18,7 +18,9 @@ import {
   FileSpreadsheet,
   Sparkles,
   Tag,
-  AlertCircle
+  AlertCircle,
+  Layers,
+  FileCheck2
 } from 'lucide-react';
 import { formatDate } from '../utils/formatters';
 import { documentService } from '../services/documentService';
@@ -96,15 +98,15 @@ export const DocumentsPage: React.FC = () => {
   return (
     <div className="space-y-5 pb-10">
       {/* Header & Vault Summary */}
-      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 space-y-4">
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="font-editorial text-2xl font-medium text-[#111827]">
-              Documents & Drawings
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
+              Documents
             </h1>
-            <p className="text-xs text-[#64748B] mt-0.5">
-              Drawings, 3D renders, specs, and signed contracts.
-            </p>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-[#1D4ED8] border border-blue-100">
+              {documents.length}
+            </span>
           </div>
 
           <button
@@ -112,22 +114,37 @@ export const DocumentsPage: React.FC = () => {
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold transition-colors self-start sm:self-auto cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Upload Document</span>
+            <span>Upload File</span>
           </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
-            <p className="text-[11px] font-semibold text-[#64748B]">Total Files</p>
-            <p className="text-lg font-bold text-[#111827] tabular-nums mt-0.5">{documents.length}</p>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3 flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-semibold text-[#64748B]">Total Files</p>
+              <p className="text-lg font-bold text-[#111827] tabular-nums mt-0.5">{documents.length}</p>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#1D4ED8] flex items-center justify-center">
+              <FileText className="w-4 h-4" />
+            </div>
           </div>
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
-            <p className="text-[11px] font-semibold text-[#64748B]">Drawings & 3D Sets</p>
-            <p className="text-lg font-bold text-[#1D4ED8] tabular-nums mt-0.5">{drawingsCount}</p>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3 flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-semibold text-[#64748B]">Drawings & 3D Sets</p>
+              <p className="text-lg font-bold text-[#1D4ED8] tabular-nums mt-0.5">{drawingsCount}</p>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <Layers className="w-4 h-4" />
+            </div>
           </div>
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
-            <p className="text-[11px] font-semibold text-[#64748B]">Contracts & Proposals</p>
-            <p className="text-lg font-bold text-emerald-700 tabular-nums mt-0.5">{contractsCount}</p>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3 flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-semibold text-[#64748B]">Contracts & Quotes</p>
+              <p className="text-lg font-bold text-emerald-700 tabular-nums mt-0.5">{contractsCount}</p>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <FileCheck2 className="w-4 h-4" />
+            </div>
           </div>
         </div>
       </div>

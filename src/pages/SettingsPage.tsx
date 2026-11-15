@@ -119,15 +119,15 @@ export const SettingsPage: React.FC = () => {
   return (
     <div className="space-y-6 pb-10">
       {/* Architectural Header + Clean 3-Tab Switcher */}
-      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2.5">
             <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
               Settings
             </h1>
-            <p className="text-xs sm:text-sm text-[#4B5563] mt-0.5">
-              Manage studio profile, billing details, and preferences.
-            </p>
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+              {studioName}
+            </span>
           </div>
 
           <div className="inline-flex bg-[#F1F5F9] p-1 rounded-xl border border-[#E5E7EB] self-start">
@@ -345,78 +345,70 @@ export const SettingsPage: React.FC = () => {
         {/* 4. Commercial Limit Foundation (Configurable & Nullable) */}
         {activeTab === 'plan' && (
         <>
-        <div className="premium-card p-6 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div className="flex items-center gap-2.5">
-              <Sliders className="w-5 h-5 text-purple-600" />
-              <h2 className="text-base font-bold font-display text-slate-900">Commercial Limits Foundation</h2>
+        <div className="premium-card p-5 space-y-3">
+          <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-purple-600" />
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-900">Commercial Limits</h2>
             </div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded">
-              Configurable Entitlements
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded">
+              Entitlements
             </span>
           </div>
 
-          <p className="text-xs text-slate-500">
-            Current account caps. Unrestricted / Null limits indicate open studio scalability without hard platform thresholds.
-          </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
                 Max Team Users
               </span>
               <span className="text-sm font-extrabold text-slate-900">
-                {maxUsers !== null ? `${maxUsers} Users` : 'Unlimited / Not Capped'}
+                {maxUsers !== null ? `${maxUsers} Users` : 'Unlimited'}
               </span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">Configured by administrator</span>
             </div>
 
-            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
                 Max Active Projects
               </span>
               <span className="text-sm font-extrabold text-slate-900">
-                {maxActiveProjects !== null ? `${maxActiveProjects} Active Sites` : 'Unlimited / Not Capped'}
+                {maxActiveProjects !== null ? `${maxActiveProjects} Sites` : 'Unlimited'}
               </span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">Configured by administrator</span>
             </div>
 
-            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
                 Max Studios / Branches
               </span>
               <span className="text-sm font-extrabold text-slate-900">
-                {maxBranches !== null ? `${maxBranches} Locations` : 'Unlimited / Not Capped'}
+                {maxBranches !== null ? `${maxBranches} Locations` : 'Unlimited'}
               </span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">Configured by administrator</span>
             </div>
           </div>
         </div>
 
         {/* 5. Subscription Status */}
-        <div className="premium-card p-6 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div className="flex items-center gap-2.5">
-              <ShieldCheck className="w-5 h-5 text-indigo-600" />
-              <h2 className="text-base font-bold font-display text-slate-900">Subscription & 15-Day Trial Status</h2>
+        <div className="premium-card p-5 space-y-3">
+          <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-indigo-600" />
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-900">Subscription Status</h2>
             </div>
-            <span className={`px-2.5 py-1 rounded-full text-xs font-extrabold border ${
+            <span className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold border ${
               trialStatus === 'active'
                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                 : 'bg-indigo-50 text-indigo-700 border-indigo-200'
             }`}>
-              {trialStatus === 'active' ? 'Active Subscription' : isDemoMode ? 'Demo Sandbox' : `Trial (${daysRemaining} days left)`}
+              {trialStatus === 'active' ? 'Active Subscription' : isDemoMode ? 'Demo Sandbox' : `Trial (${daysRemaining}d left)`}
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200/80 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200/80 text-xs">
             <div>
               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
                 <Sparkles className="w-3 h-3 text-amber-500" />
                 <span>Current Tier</span>
               </div>
               <div className="text-sm font-extrabold text-slate-900">{planDisplayName} Plan</div>
-              <div className="text-[11px] text-slate-500 mt-0.5">Commercial studio entitlement</div>
             </div>
 
             <div>
@@ -427,7 +419,6 @@ export const SettingsPage: React.FC = () => {
               <div className="text-sm font-bold text-slate-800">
                 {organization?.trial_started_at ? formatDate(organization.trial_started_at) : 'Active Session'}
               </div>
-              <div className="text-[11px] text-slate-500 mt-0.5">15 days trial duration</div>
             </div>
 
             <div>
@@ -438,7 +429,6 @@ export const SettingsPage: React.FC = () => {
               <div className="text-sm font-bold text-slate-800">
                 {organization?.trial_ends_at ? formatDate(organization.trial_ends_at) : '15 Days Remaining'}
               </div>
-              <div className="text-[11px] text-brand-600 font-semibold mt-0.5">{daysRemaining} days remaining</div>
             </div>
           </div>
 

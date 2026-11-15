@@ -75,15 +75,15 @@ export const ProjectsPage: React.FC = () => {
 
   return (
     <div className="space-y-5 animate-in fade-in duration-300 pb-12">
-      {/* Compact Header + Single Unified Controls Row (No redundant CTA or scattered filter boxes) */}
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-        <div>
+      {/* Compact Header + Single Unified Controls Row */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2.5">
           <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
             Projects
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            {filtered.length} of {projects.length} sites and active schedules.
-          </p>
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-[#1D4ED8] border border-blue-100">
+            {filtered.length} of {projects.length}
+          </span>
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -194,7 +194,7 @@ export const ProjectsPage: React.FC = () => {
           onAction={globalSearch || statusFilter !== 'All' ? undefined : () => setIsNewProjectModalOpen(true)}
         />
       ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((project) => {
             const daysInfo = calculateDaysRemaining(project.deadline);
             const remaining = project.budget - project.spent;
@@ -206,10 +206,10 @@ export const ProjectsPage: React.FC = () => {
               <div
                 key={project.id}
                 onClick={() => openProjectDetail(project.id)}
-                className="premium-card overflow-hidden cursor-pointer group flex flex-col justify-between hover:-translate-y-1 transition-all duration-200"
+                className="premium-card overflow-hidden cursor-pointer group flex flex-col justify-between hover:-translate-y-0.5 transition-all duration-200"
               >
                 {/* Image Cover Banner */}
-                <div className="relative h-48 w-full overflow-hidden bg-slate-100">
+                <div className="relative h-40 w-full overflow-hidden bg-slate-100">
                   <img
                     src={project.coverImage || "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6"}
                     alt={project.name}
@@ -222,27 +222,27 @@ export const ProjectsPage: React.FC = () => {
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/30 to-transparent" />
                   
                   {/* Top Tags */}
-                  <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider bg-slate-900/80 backdrop-blur-md text-white px-2.5 py-1 rounded-full border border-white/20">
+                  <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider bg-slate-900/80 backdrop-blur-md text-white px-2 py-0.5 rounded-full border border-white/20">
                       {project.type}
                     </span>
                     <Badge status={project.status} size="sm" />
                   </div>
 
                   {/* Bottom Image Info */}
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <h3 className="text-lg font-editorial font-bold text-white truncate drop-shadow-sm">
+                  <div className="absolute bottom-2.5 left-2.5 right-2.5">
+                    <h3 className="text-base font-editorial font-bold text-white truncate drop-shadow-sm">
                       {project.name}
                     </h3>
                     <div className="flex items-center gap-1.5 text-xs text-slate-200 truncate mt-0.5">
-                      <User className="w-3.5 h-3.5 text-blue-300 shrink-0" />
+                      <User className="w-3 h-3 text-blue-300 shrink-0" />
                       <span className="truncate font-editorial italic">{project.client}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Body Details */}
-                <div className="p-5 space-y-4 flex-1 flex flex-col justify-between">
+                <div className="p-3.5 space-y-3 flex-1 flex flex-col justify-between">
                   {/* Location & city */}
                   <div className="flex items-center gap-1 text-xs text-slate-500">
                     <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />

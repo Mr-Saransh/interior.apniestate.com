@@ -395,10 +395,12 @@ export const QuotationsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-10">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2.5">
           <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">Quotations</h1>
-          <p className="mt-0.5 text-xs sm:text-sm text-slate-500">Create and share client-ready interior estimates.</p>
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+            {quotes.length} total
+          </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
@@ -434,10 +436,7 @@ export const QuotationsPage: React.FC = () => {
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <div className="mb-4 flex items-center gap-2">
           <FileCheck2 className="h-5 w-5 text-brand-600" />
-          <div>
-            <h2 className="font-bold text-slate-900">Prepare from project BOQ</h2>
-            <p className="text-xs text-slate-500">Prices and scope are snapshotted; later BOQ edits do not rewrite sent quotations.</p>
-          </div>
+          <h2 className="font-bold text-slate-900 text-sm">Prepare from Project BOQ</h2>
         </div>
         {projects.length === 0 ? (
           <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Create a project and add its BOQ items to get started.</p>

@@ -758,71 +758,70 @@ export const ProjectDetailPage: React.FC = () => {
         return (
           <div className="space-y-5">
             {/* ROW 1: 4 UNIFORM ARCHITECTURAL KPI CARDS */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 flex flex-col justify-between">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-3.5 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Project Budget</span>
-                  <span className="w-7 h-7 rounded-lg bg-[#EFF6FF] text-[#1D4ED8] flex items-center justify-center">
-                    <DollarSign className="w-3.5 h-3.5" />
+                  <span className="text-[11px] font-semibold text-slate-500">Budget</span>
+                  <span className="w-6 h-6 rounded-lg bg-[#EFF6FF] text-[#1D4ED8] flex items-center justify-center">
+                    <DollarSign className="w-3 h-3" />
                   </span>
                 </div>
-                <div className="text-2xl font-extrabold font-display text-slate-900 tabular-nums mt-2">
+                <div className="text-xl font-bold font-display text-slate-900 tabular-nums mt-1">
                   {formatINR(project.budget)}
                 </div>
-                <p className="text-xs text-slate-500 mt-1.5 tabular-nums">
-                  BOQ Estimate: <span className="font-semibold text-slate-800">{formatINR(projectBOQ)}</span>
-                </p>
+                <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+                  <span>BOQ</span>
+                  <span className="font-semibold text-slate-700">{formatINR(projectBOQ)}</span>
+                </div>
               </div>
 
-              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 flex flex-col justify-between">
+              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-3.5 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Actual Spend</span>
-                  <span className="text-[11px] font-bold text-[#1D4ED8] bg-[#EFF6FF] px-2 py-0.5 rounded-full tabular-nums">
+                  <span className="text-[11px] font-semibold text-slate-500">Actual Spend</span>
+                  <span className="text-[10px] font-bold text-[#1D4ED8] bg-[#EFF6FF] px-1.5 py-0.5 rounded tabular-nums">
                     {projectMetrics.utilization !== null ? `${projectMetrics.utilization.toFixed(0)}%` : '0%'}
                   </span>
                 </div>
-                <div className="text-2xl font-extrabold font-display text-[#1D4ED8] tabular-nums mt-2">
+                <div className="text-xl font-bold font-display text-[#1D4ED8] tabular-nums mt-1">
                   {formatINR(projectSpent)}
                 </div>
-                <div className="mt-2">
+                <div className="mt-1.5">
                   <ProgressBar value={projectMetrics.utilization || 0} height="sm" />
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 flex flex-col justify-between">
+              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-3.5 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Remaining Cushion</span>
-                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full tabular-nums ${
+                  <span className="text-[11px] font-semibold text-slate-500">Remaining</span>
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded tabular-nums ${
                     projectMetrics.isOverBudget ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'
                   }`}>
                     {profitability.grossMarginPercentage.toFixed(0)}% margin
                   </span>
                 </div>
-                <div className={`text-2xl font-extrabold font-display tabular-nums mt-2 ${
+                <div className={`text-xl font-bold font-display tabular-nums mt-1 ${
                   projectMetrics.isOverBudget ? 'text-rose-600' : 'text-emerald-600'
                 }`}>
                   {formatINR(projectMetrics.remaining)}
                 </div>
-                <p className="text-xs text-slate-500 mt-1.5 tabular-nums">
-                  {projectMetrics.isOverBudget ? (
-                    <span className="font-semibold text-rose-600">Over budget by {formatINR(projectMetrics.overBudgetAmount)}</span>
-                  ) : (
-                    'Available for uncommitted scope'
-                  )}
-                </p>
+                {projectMetrics.isOverBudget && (
+                  <p className="text-[11px] font-semibold text-rose-600 mt-1">
+                    Over by {formatINR(projectMetrics.overBudgetAmount)}
+                  </p>
+                )}
               </div>
 
-              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 flex flex-col justify-between">
+              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-3.5 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Milestone Progress</span>
-                  <span className="text-xs font-extrabold text-slate-900 tabular-nums">
+                  <span className="text-[11px] font-semibold text-slate-500">Progress</span>
+                  <span className="text-xs font-bold text-slate-900 tabular-nums">
                     {derivedMilestoneProgress !== null ? `${derivedMilestoneProgress}%` : '0%'}
                   </span>
                 </div>
-                <div className="mt-3">
-                  <ProgressBar value={progressNumericValue} height="md" />
+                <div className="mt-2">
+                  <ProgressBar value={progressNumericValue} height="sm" />
                 </div>
-                <div className="flex items-center justify-between gap-2 text-xs text-slate-500 mt-2.5">
+                <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 mt-1.5">
                   <span className="truncate">{displayProgressText}</span>
                   <span className="font-semibold text-slate-700 shrink-0">{formatDate(project.deadline)}</span>
                 </div>
@@ -832,31 +831,26 @@ export const ProjectDetailPage: React.FC = () => {
             {/* ROW 2: ANALYTICS CHARTS & HEALTH SIGNALS */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
               {/* Chart 1: Financial & Room Cost Comparison */}
-              <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E5E7EB] p-5 flex flex-col">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+              <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E5E7EB] p-4 sm:p-5 flex flex-col">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                   <div>
-                    <h3 className="text-base font-bold font-display text-slate-900">
-                      {rooms.length > 0 ? 'Room Budget vs. Actual Spend' : 'Financial Position & Cash Comparison'}
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-900">
+                      {rooms.length > 0 ? 'Room Budget vs Spend' : 'Financial Position'}
                     </h3>
-                    <p className="text-xs text-slate-500">
-                      {rooms.length > 0
-                        ? 'Allocated room budget compared against recorded ledger expenses'
-                        : 'Contract commitment, BOQ estimate, collected revenue & actual cost'}
-                    </p>
                   </div>
                   <div className="flex items-center gap-3 text-[11px] font-semibold text-slate-600 shrink-0">
                     {rooms.length > 0 ? (
                       <>
                         <span className="inline-flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-sm bg-[#1D4ED8]" /> Budget
+                          <span className="w-2 h-2 rounded-full bg-[#1D4ED8]" /> Budget
                         </span>
                         <span className="inline-flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-sm bg-[#D97706]" /> Spent
+                          <span className="w-2 h-2 rounded-full bg-[#D97706]" /> Spent
                         </span>
                       </>
                     ) : (
-                      <span className="px-2.5 py-1 rounded-lg bg-[#F4F6FA] border border-[#E5E7EB] text-slate-600">
-                        Live Financial Rollup
+                      <span className="px-2 py-0.5 rounded-lg bg-[#F4F6FA] border border-[#E5E7EB] text-slate-600">
+                        Rollup
                       </span>
                     )}
                   </div>
@@ -931,14 +925,9 @@ export const ProjectDetailPage: React.FC = () => {
               </div>
 
               {/* Chart 2 & Compact Health Pulse */}
-              <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E7EB] p-5 flex flex-col justify-between gap-4">
+              <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E7EB] p-4 sm:p-5 flex flex-col justify-between gap-4">
                 <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <h3 className="text-base font-bold font-display text-slate-900">Spend Mix &amp; Controls</h3>
-                    <p className="text-xs text-slate-500">
-                      {sortedCategories.length > 0 ? 'Expense split by trade category' : 'Budget utilization & execution health'}
-                    </p>
-                  </div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-900">Spend Mix &amp; Health</h3>
                   <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold shrink-0 ${
                     projectHealth === 'Red' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
                     projectHealth === 'Amber' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
@@ -947,7 +936,7 @@ export const ProjectDetailPage: React.FC = () => {
                     <span className={`h-1.5 w-1.5 rounded-full ${
                       projectHealth === 'Red' ? 'bg-rose-600' : projectHealth === 'Amber' ? 'bg-amber-500' : 'bg-emerald-600'
                     }`} />
-                    {projectHealth} Health
+                    {projectHealth}
                   </div>
                 </div>
 
@@ -1057,13 +1046,10 @@ export const ProjectDetailPage: React.FC = () => {
             {/* ROW 3: SCHEDULE, PROFITABILITY & ROOM BREAKDOWN */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
               {/* Crisp White Architectural Card for Profitability & Timeline (Fixes contrast) */}
-              <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E7EB] p-5 flex flex-col justify-between gap-4">
+              <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E7EB] p-4 sm:p-5 flex flex-col justify-between gap-4">
                 <div>
                   <div className="flex items-center justify-between gap-2 pb-3 border-b border-[#E5E7EB]">
-                    <div>
-                      <h3 className="text-base font-bold font-display text-slate-900">Schedule &amp; Cash Position</h3>
-                      <p className="text-xs text-slate-500">Contract margins and handover milestones</p>
-                    </div>
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-900">Schedule &amp; Cash</h3>
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => setActiveTab('Payments')}
@@ -1144,13 +1130,13 @@ export const ProjectDetailPage: React.FC = () => {
               </div>
 
               {/* Room-by-Room Breakdown Card */}
-              <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E5E7EB] p-5">
+              <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E5E7EB] p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#E5E7EB]">
-                  <div>
-                    <h3 className="text-base font-bold font-display text-slate-900">Room-by-Room Breakdown</h3>
-                    <p className="text-xs text-slate-500">
-                      {rooms.length} configured areas • {projectBOQItems.length} BOQ items
-                    </p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-900">Room Breakdown</h3>
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                      {rooms.length}
+                    </span>
                   </div>
                   <button
                     onClick={handleAddRoom}

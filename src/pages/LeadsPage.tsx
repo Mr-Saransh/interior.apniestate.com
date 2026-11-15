@@ -128,19 +128,14 @@ export const LeadsPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-              Leads
-            </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-50 text-brand-700 border border-brand-200/60">
-              {leads.length}
-            </span>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Track inquiries and sales pipeline.
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+            Leads
+          </h1>
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-50 text-brand-700 border border-brand-200/60">
+            {leads.length}
+          </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">

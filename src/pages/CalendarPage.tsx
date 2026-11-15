@@ -243,14 +243,14 @@ export const CalendarPage: React.FC = () => {
   return (
     <div className="space-y-5 pb-10">
       {/* Header */}
-      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="font-editorial text-2xl font-medium text-[#111827]">
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
             Schedule & Tasks
           </h1>
-          <p className="text-xs text-[#64748B] mt-0.5">
-            Site visits, client walkthroughs, and pending to-dos.
-          </p>
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-[#1D4ED8] border border-blue-100">
+            {allItems.length}
+          </span>
         </div>
 
         <button

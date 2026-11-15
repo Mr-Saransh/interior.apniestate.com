@@ -222,14 +222,16 @@ export const OverviewPage: React.FC = () => {
   // ============================================================================
   if (workspaceMode === 'crm') {
     return (
-      <div className="space-y-5 pb-10">
+      <div className="space-y-4 pb-10">
         {/* Crisp Header */}
-        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="font-editorial text-2xl font-medium text-[#111827]">
-              CRM Pipeline
+        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl font-bold text-[#111827]">
+              CRM
             </h1>
-            <p className="text-xs text-[#64748B] mt-0.5">Inquiries, proposals &amp; client walkthroughs</p>
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-[#1D4ED8] border border-blue-100">
+              {activeLeads.length} active
+            </span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -256,87 +258,75 @@ export const OverviewPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 1-Line Quick Actions */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          <button
-            onClick={() => setCurrentPage('leads')}
-            className="flex items-center justify-center gap-2 p-3 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-xs font-semibold text-[#111827] hover:text-[#1D4ED8] transition-colors cursor-pointer"
-          >
-            <Users className="w-4 h-4 text-[#1D4ED8]" />
-            <span>Leads ({activeLeads.length})</span>
-          </button>
-          <button
-            onClick={() => setIsGenericQuoteModalOpen(true)}
-            className="flex items-center justify-center gap-2 p-3 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-xs font-semibold text-[#111827] hover:text-[#1D4ED8] transition-colors cursor-pointer"
-          >
-            <Calculator className="w-4 h-4 text-emerald-600" />
-            <span>Estimator</span>
-          </button>
-          <button
-            onClick={() => setCurrentPage('quotations')}
-            className="flex items-center justify-center gap-2 p-3 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-xs font-semibold text-[#111827] hover:text-[#1D4ED8] transition-colors cursor-pointer"
-          >
-            <FileText className="w-4 h-4 text-amber-600" />
-            <span>Proposals ({recentQuotations.length})</span>
-          </button>
-          <button
-            onClick={() => setCurrentPage('client-portal')}
-            className="flex items-center justify-center gap-2 p-3 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-xs font-semibold text-[#111827] hover:text-[#1D4ED8] transition-colors cursor-pointer"
-          >
-            <ExternalLink className="w-4 h-4 text-indigo-600" />
-            <span>Client Portal</span>
-          </button>
-        </div>
-
-        {/* 4 CRM KPI Cards */}
+        {/* 4 CRM KPI Cards — Compact & Graphical */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div
             onClick={() => setCurrentPage('leads')}
-            className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl p-4 cursor-pointer transition-colors"
+            className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl p-3.5 cursor-pointer transition-colors"
           >
             <div className="flex items-center justify-between text-xs text-[#64748B] mb-1">
-              <span>Active Inquiries</span>
-              <Users className="w-4 h-4 text-[#1D4ED8]" />
+              <span className="font-semibold text-slate-700">Inquiries</span>
+              <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#1D4ED8] flex items-center justify-center">
+                <Users className="w-3.5 h-3.5" />
+              </div>
             </div>
             <div className="text-xl font-bold text-[#111827] tabular-nums">{activeLeads.length}</div>
-            <p className="text-[11px] text-[#64748B] mt-0.5">of {leads.length} total</p>
+            <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              <span>{leads.length} total</span>
+            </div>
           </div>
 
           <div
             onClick={() => setCurrentPage('leads')}
-            className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl p-4 cursor-pointer transition-colors"
+            className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl p-3.5 cursor-pointer transition-colors"
           >
             <div className="flex items-center justify-between text-xs text-[#64748B] mb-1">
-              <span>Pipeline Value</span>
-              <IndianRupee className="w-4 h-4 text-emerald-600" />
+              <span className="font-semibold text-slate-700">Pipeline</span>
+              <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <IndianRupee className="w-3.5 h-3.5" />
+              </div>
             </div>
             <div className="text-xl font-bold text-[#111827] tabular-nums">
               {formatINRCompact(activePipelineValue)}
             </div>
-            <p className="text-[11px] text-[#64748B] mt-0.5">Open budget</p>
+            <div className="flex items-center gap-1.5 mt-1 text-[11px] text-emerald-700 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span>Open deals</span>
+            </div>
           </div>
 
-          <div className="bg-white border border-[#E5E7EB] rounded-xl p-4">
+          <div className="bg-white border border-[#E5E7EB] rounded-xl p-3.5">
             <div className="flex items-center justify-between text-xs text-[#64748B] mb-1">
-              <span>Win Rate</span>
-              <TrendingUp className="w-4 h-4 text-indigo-600" />
+              <span className="font-semibold text-slate-700">Win Rate</span>
+              <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <TrendingUp className="w-3.5 h-3.5" />
+              </div>
             </div>
             <div className="text-xl font-bold text-[#111827] tabular-nums">{winRatePct}%</div>
-            <p className="text-[11px] text-emerald-700 mt-0.5">{wonLeads.length} won deals</p>
+            <div className="flex items-center gap-1.5 mt-1 text-[11px] text-indigo-700 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+              <span>{wonLeads.length} won</span>
+            </div>
           </div>
 
           <div
             onClick={() => setCurrentPage('quotations')}
-            className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl p-4 cursor-pointer transition-colors"
+            className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl p-3.5 cursor-pointer transition-colors"
           >
             <div className="flex items-center justify-between text-xs text-[#64748B] mb-1">
-              <span>Proposals Sent</span>
-              <FileText className="w-4 h-4 text-amber-600" />
+              <span className="font-semibold text-slate-700">Proposals</span>
+              <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                <FileText className="w-3.5 h-3.5" />
+              </div>
             </div>
             <div className="text-xl font-bold text-[#111827] tabular-nums">
               {formatINRCompact(quotesTotalValue)}
             </div>
-            <p className="text-[11px] text-[#64748B] mt-0.5">{recentQuotations.length} quotes</p>
+            <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              <span>{recentQuotations.length} sent</span>
+            </div>
           </div>
         </div>
 
@@ -507,14 +497,16 @@ export const OverviewPage: React.FC = () => {
   // ERP MODE DASHBOARD
   // ============================================================================
   return (
-    <div className="space-y-5 pb-10">
+    <div className="space-y-4 pb-10">
       {/* Clean Studio Header */}
-      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="font-editorial text-2xl font-medium text-[#111827]">
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <h1 className="text-xl font-bold text-[#111827]">
             Overview
           </h1>
-          <p className="text-xs text-[#64748B] mt-0.5">Welcome back, {firstName}</p>
+          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+            {activeProjectsCount} sites
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -541,89 +533,74 @@ export const OverviewPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 1-Line Quick Actions */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-        <button
-          onClick={() => setIsNewProjectModalOpen(true)}
-          className="flex items-center justify-center gap-2 p-3 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-xs font-semibold text-[#111827] hover:text-[#1D4ED8] transition-colors cursor-pointer"
-        >
-          <FolderPlus className="w-4 h-4 text-[#1D4ED8]" />
-          <span>New Project</span>
-        </button>
-
-        <button
-          onClick={() => setIsAddExpenseModalOpen(true)}
-          className="flex items-center justify-center gap-2 p-3 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-xs font-semibold text-[#111827] hover:text-[#1D4ED8] transition-colors cursor-pointer"
-        >
-          <Receipt className="w-4 h-4 text-amber-600" />
-          <span>Add Expense</span>
-        </button>
-
-        <button
-          onClick={() => setCurrentPage('purchases')}
-          className="flex items-center justify-center gap-2 p-3 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-xs font-semibold text-[#111827] hover:text-[#1D4ED8] transition-colors cursor-pointer"
-        >
-          <ShoppingCart className="w-4 h-4 text-emerald-600" />
-          <span>Orders ({openOrdersCount})</span>
-        </button>
-
-        <button
-          onClick={() => setIsGenericQuoteModalOpen(true)}
-          className="flex items-center justify-center gap-2 p-3 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-xs font-semibold text-[#111827] hover:text-[#1D4ED8] transition-colors cursor-pointer"
-        >
-          <Calculator className="w-4 h-4 text-indigo-600" />
-          <span>Estimator</span>
-        </button>
-      </div>
-
-      {/* 4 ERP KPI Cards */}
+      {/* 4 ERP KPI Cards — Compact & Graphical */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div
           onClick={() => setCurrentPage('projects')}
-          className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl p-4 cursor-pointer transition-colors"
+          className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl p-3.5 cursor-pointer transition-colors"
         >
           <div className="flex items-center justify-between text-xs text-[#64748B] mb-1">
-            <span>Active Projects</span>
-            <Building2 className="w-4 h-4 text-[#1D4ED8]" />
+            <span className="font-semibold text-slate-700">Projects</span>
+            <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#1D4ED8] flex items-center justify-center">
+              <Building2 className="w-3.5 h-3.5" />
+            </div>
           </div>
           <div className="text-xl font-bold text-[#111827] tabular-nums">{activeProjectsCount}</div>
-          <p className="text-[11px] text-emerald-700 font-medium mt-0.5">{onTrackCount} on schedule</p>
+          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-emerald-700 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span>{onTrackCount} on track</span>
+          </div>
         </div>
 
         <div
           onClick={() => setCurrentPage('budget')}
-          className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl p-4 cursor-pointer transition-colors"
+          className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl p-3.5 cursor-pointer transition-colors"
         >
           <div className="flex items-center justify-between text-xs text-[#64748B] mb-1">
-            <span>Total Budget</span>
-            <Layers className="w-4 h-4 text-indigo-600" />
+            <span className="font-semibold text-slate-700">Committed</span>
+            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <Layers className="w-3.5 h-3.5" />
+            </div>
           </div>
           <div className="text-xl font-bold text-[#111827] tabular-nums">{formatINRCompact(totalBudget)}</div>
-          <p className="text-[11px] text-[#64748B] mt-0.5">{projects.length} sites</p>
+          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+            <span>{projects.length} sites</span>
+          </div>
         </div>
 
         <div
           onClick={() => setCurrentPage('expenses')}
-          className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl p-4 cursor-pointer transition-colors"
+          className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl p-3.5 cursor-pointer transition-colors"
         >
           <div className="flex items-center justify-between text-xs text-[#64748B] mb-1">
-            <span>Total Spent</span>
-            <Receipt className="w-4 h-4 text-amber-600" />
+            <span className="font-semibold text-slate-700">Total Spent</span>
+            <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+              <Receipt className="w-3.5 h-3.5" />
+            </div>
           </div>
           <div className="text-xl font-bold text-[#111827] tabular-nums">{formatINRCompact(totalSpent)}</div>
-          <p className="text-[11px] text-[#64748B] mt-0.5">Site ledger</p>
+          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <span>Ledger</span>
+          </div>
         </div>
 
         <div
           onClick={() => setCurrentPage('payments')}
-          className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl p-4 cursor-pointer transition-colors"
+          className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl p-3.5 cursor-pointer transition-colors"
         >
           <div className="flex items-center justify-between text-xs text-[#64748B] mb-1">
-            <span>Collections</span>
-            <IndianRupee className="w-4 h-4 text-emerald-600" />
+            <span className="font-semibold text-slate-700">Collected</span>
+            <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <IndianRupee className="w-3.5 h-3.5" />
+            </div>
           </div>
           <div className="text-xl font-bold text-[#111827] tabular-nums">{formatINRCompact(totalCollected)}</div>
-          <p className="text-[11px] text-emerald-700 mt-0.5">Received</p>
+          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-emerald-700 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span>Received</span>
+          </div>
         </div>
       </div>
 

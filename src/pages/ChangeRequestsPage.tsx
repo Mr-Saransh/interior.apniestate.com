@@ -247,10 +247,11 @@ export const ChangeRequestsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-10">
-      <header>
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-600">Projects &amp; site</p>
-        <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">Change requests</h1>
-        <p className="mt-1 text-sm text-slate-500">Price, review, and approve scope changes with an audit trail and automatic financial updates.</p>
+      <header className="flex items-center gap-2.5">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Change Requests</h1>
+        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+          {requests.length}
+        </span>
       </header>
 
       {(error || notice) && <p role={error ? 'alert' : 'status'} className={`rounded-xl border px-4 py-3 text-sm ${error ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>{error || notice}</p>}
@@ -258,7 +259,7 @@ export const ChangeRequestsPage: React.FC = () => {
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <div className="mb-4 flex items-center gap-2">
           <FilePlus2 className="h-5 w-5 text-brand-600" />
-          <div><h2 className="font-bold text-slate-900">Create change request</h2><p className="text-xs text-slate-500">Approval adds a separate, approved line to the project BOQ and updates planned cost and contract value.</p></div>
+          <h2 className="font-bold text-slate-900 text-sm">Create Change Request</h2>
         </div>
         {projects.length === 0 ? <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Create a project before adding a change request.</p> : (
           <form onSubmit={createRequest} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

@@ -262,14 +262,11 @@ export const RolesPermissionsPage: React.FC = () => {
       {/* Architectural Header */}
       <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
-            Enterprise Governance
-          </span>
-          <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
             Roles & Permissions
           </h1>
-          <p className="text-sm text-[#4B5563] mt-1">
-            Configure custom organizational roles, granular capabilities, and assign responsibilities to staff.
+          <p className="text-xs sm:text-sm text-[#4B5563] mt-0.5">
+            Configure custom roles and assign permissions to team members.
           </p>
         </div>
 
@@ -279,7 +276,7 @@ export const RolesPermissionsPage: React.FC = () => {
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold transition-colors cursor-pointer self-start sm:self-auto"
           >
             <Plus className="w-4 h-4" />
-            <span>Create Custom Role</span>
+            <span>Create Role</span>
           </button>
         )}
       </div>
@@ -288,7 +285,7 @@ export const RolesPermissionsPage: React.FC = () => {
       <div className="p-4 bg-[#EFF6FF] border border-blue-200 rounded-2xl flex items-start gap-3">
         <Info className="w-5 h-5 text-[#1D4ED8] shrink-0 mt-0.5" />
         <div className="text-xs text-[#1E3A8A] leading-relaxed">
-          <strong>Built on Non-Destructive Multi-Tenancy:</strong> Standard roles (Owner, Admin, Designer, Supervisor, Member) continue operating as system defaults. Custom roles allow you to tailor specific sets of capabilities and assign them to staff. The <strong>Owner</strong> always retains ultimate administrative authority.
+          Standard roles (Owner, Admin, Designer, Supervisor, Staff) work out of the box. You can create custom roles to tailor permissions.
         </div>
       </div>
 

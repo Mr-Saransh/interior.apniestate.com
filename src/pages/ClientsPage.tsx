@@ -87,14 +87,14 @@ export const ClientsPage: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600">
               <Users className="w-5 h-5" />
             </div>
-            Client Directory
+            Clients
           </h1>
-          <p className="text-xs sm:text-sm text-slate-700 font-medium mt-1">
-            Manage your homeowner & commercial clients, contact details, and linked project portfolios.
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+            Manage your client contacts and linked projects.
           </p>
         </div>
 

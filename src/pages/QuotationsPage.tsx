@@ -397,31 +397,30 @@ export const QuotationsPage: React.FC = () => {
     <div className="space-y-6 pb-10">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#1D4ED8]">Sales &amp; CRM</p>
-          <h1 className="mt-1 text-2xl font-bold font-editorial text-[#111827] sm:text-3xl">Quotations &amp; Proposals</h1>
-          <p className="mt-1 text-sm text-slate-500">Create client-ready proposals from project BOQs or instant turnkey estimators.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">Quotations</h1>
+          <p className="mt-0.5 text-xs sm:text-sm text-slate-500">Create and share client-ready interior estimates.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
             onClick={() => setIsGenericQuoteModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#EFF6FF] border border-blue-200 text-[#1D4ED8] hover:bg-blue-100 text-xs font-bold transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#EFF6FF] border border-blue-200 text-[#1D4ED8] hover:bg-blue-100 text-xs font-semibold transition-colors cursor-pointer"
           >
-            <span>⚡ Instant Generic Estimator</span>
+            <span>Instant Estimator</span>
           </button>
 
           <button
             type="button"
             onClick={() => setIsSpecificQuoteModalOpen(true, selectedProjectId || undefined)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Specific Project Proposal</span>
+            <span>Project Proposal</span>
           </button>
 
           <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
-            <Clock3 className="h-4 w-4" /> {pendingCount} awaiting response
+            <Clock3 className="h-4 w-4" /> {pendingCount} pending
           </div>
         </div>
       </header>

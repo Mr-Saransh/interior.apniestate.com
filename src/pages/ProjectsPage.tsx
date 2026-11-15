@@ -78,11 +78,11 @@ export const ProjectsPage: React.FC = () => {
       {/* Compact Header + Single Unified Controls Row (No redundant CTA or scattered filter boxes) */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-editorial font-bold text-[#111827] tracking-tight">
-            Projects Portfolio
+          <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
+            Projects
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            {filtered.length} of {projects.length} active site portfolios, room schedules, and timelines.
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+            {filtered.length} of {projects.length} sites and active schedules.
           </p>
         </div>
 

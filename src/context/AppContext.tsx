@@ -306,6 +306,7 @@ interface AppContextType {
   addProjectNote: (projectId: string, content: string, tag?: ProjectNote['tag']) => void;
   addProjectPhoto: (projectId: string, photo: Omit<ProjectPhoto, 'id' | 'projectId' | 'uploadedAt'>) => void;
   addCalendarEvent: (event: Omit<CalendarEvent, 'id'>) => void;
+  deleteCalendarEvent: (id: string) => void;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
   resetToDemoData: () => void;
@@ -2206,6 +2207,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCalendarEvents(prev => [newEvent, ...prev]);
   };
 
+  const deleteCalendarEvent = (id: string) => {
+    setCalendarEvents(prev => prev.filter(e => e.id !== id));
+  };
+
   const markNotificationRead = (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
   };
@@ -2413,6 +2418,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addProjectNote,
         addProjectPhoto,
         addCalendarEvent,
+        deleteCalendarEvent,
         markNotificationRead,
         markAllNotificationsRead,
         resetToDemoData,

@@ -229,14 +229,11 @@ export const EnterpriseManagementPage: React.FC = () => {
       {/* Architectural Header & Global Filters */}
       <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
-            Executive Governance
-          </span>
-          <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
-            Management Analytics
+          <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
+            Studio Analytics
           </h1>
-          <p className="text-sm text-[#4B5563] mt-1">
-            Studio-wide financial performance, procurement commitments, branch output, and risk alerts.
+          <p className="text-xs sm:text-sm text-[#4B5563] mt-0.5">
+            Financial performance, project margins, and risk alerts.
           </p>
         </div>
 

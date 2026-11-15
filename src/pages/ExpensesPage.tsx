@@ -125,20 +125,20 @@ export const ExpensesPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold font-display text-slate-900 tracking-tight">
-            Expense Ledger
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+            Expenses
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Track and verify every rupee spent across project materials, contractor advances, and site procurement.
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+            Track expenses across materials, labour, and site costs.
           </p>
         </div>
 
         <button
           onClick={() => setIsAddExpenseModalOpen(true)}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm shadow-md transition-all self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition-all self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          <span>Record Expense</span>
+          <span>Add Expense</span>
         </button>
       </div>
 
@@ -146,7 +146,7 @@ export const ExpensesPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="premium-card p-5">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Expenses</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Spend</span>
             <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
               <Receipt className="w-4 h-4" />
             </div>
@@ -154,7 +154,7 @@ export const ExpensesPage: React.FC = () => {
           <div className="text-2xl font-extrabold font-display text-slate-900">
             {formatINRCompact(totalExpensesSum)}
           </div>
-          <p className="text-xs text-slate-400 mt-1">{expenses.length} recorded ledger entries</p>
+          <p className="text-xs text-slate-400 mt-1">{expenses.length} entries</p>
         </div>
 
         <div className="premium-card p-5">
@@ -167,12 +167,12 @@ export const ExpensesPage: React.FC = () => {
           <div className="text-2xl font-extrabold font-display text-emerald-600">
             {formatINRCompact(thisMonthExpenses)}
           </div>
-          <p className="text-xs text-slate-400 mt-1">Current monthly spend</p>
+          <p className="text-xs text-slate-400 mt-1">Current month</p>
         </div>
 
         <div className="premium-card p-5">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Largest Category</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Top Category</span>
             <div className="p-2 rounded-xl bg-purple-50 text-purple-600">
               <Layers className="w-4 h-4" />
             </div>

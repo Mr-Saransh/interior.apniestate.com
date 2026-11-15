@@ -94,43 +94,40 @@ export const DocumentsPage: React.FC = () => {
   ).length;
 
   return (
-    <div className="space-y-6 pb-10">
-      {/* Architectural Header & Vault Summary */}
-      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-5 pb-10">
+      {/* Header & Vault Summary */}
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
-              Studio Vault
-            </span>
-            <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
-              Documents & Blueprints
+            <h1 className="font-editorial text-2xl font-medium text-[#111827]">
+              Documents & Drawings
             </h1>
-            <p className="text-sm text-[#4B5563] mt-1">
-              Store client contracts, moodboard decks, and CAD drawing sets in one central archive.
+            <p className="text-xs text-[#64748B] mt-0.5">
+              Drawings, 3D renders, specs, and signed contracts.
             </p>
           </div>
 
           <button
             onClick={() => setIsUploadModalOpen(true)}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold transition-colors self-start sm:self-auto cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold transition-colors self-start sm:self-auto cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Upload Document</span>
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Total Files</p>
-            <p className="text-xl font-bold text-[#111827] tabular-nums mt-1">{documents.length}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
+            <p className="text-[11px] font-semibold text-[#64748B]">Total Files</p>
+            <p className="text-lg font-bold text-[#111827] tabular-nums mt-0.5">{documents.length}</p>
           </div>
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Drawings & 3D Sets</p>
-            <p className="text-xl font-bold text-[#1D4ED8] tabular-nums mt-1">{drawingsCount}</p>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
+            <p className="text-[11px] font-semibold text-[#64748B]">Drawings & 3D Sets</p>
+            <p className="text-lg font-bold text-[#1D4ED8] tabular-nums mt-0.5">{drawingsCount}</p>
           </div>
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Contracts & Proposals</p>
-            <p className="text-xl font-bold text-emerald-700 tabular-nums mt-1">{contractsCount}</p>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
+            <p className="text-[11px] font-semibold text-[#64748B]">Contracts & Proposals</p>
+            <p className="text-lg font-bold text-emerald-700 tabular-nums mt-0.5">{contractsCount}</p>
           </div>
         </div>
       </div>

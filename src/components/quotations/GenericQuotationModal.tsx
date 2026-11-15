@@ -357,10 +357,10 @@ export const GenericQuotationModal: React.FC<GenericQuotationModalProps> = ({
             />
             <div className="min-w-0">
               <h2 className="text-sm sm:text-base font-bold text-[#111827] truncate">
-                Quotation Builder & Client Proposal
+                Quotation Builder
               </h2>
               <p className="text-[11px] text-slate-500 hidden sm:block">
-                Customize every field, add your own scope rows, or import an existing Excel / CSV / PDF BOQ.
+                Customize items, pricing, or import Excel/PDF.
               </p>
             </div>
           </div>

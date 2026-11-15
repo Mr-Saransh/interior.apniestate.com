@@ -312,64 +312,61 @@ export const SiteControlsPage: React.FC = () => {
     .reduce((sum, b) => sum + Number(b.amount || 0), 0);
 
   return (
-    <div className="space-y-6 pb-10">
-      {/* Architectural Header & KPI Summary */}
-      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-5 pb-10">
+      {/* Header & Summary */}
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
-              Site Operations & Controls
-            </span>
-            <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
-              Contractor Bills & Material Wastage
+            <h1 className="font-editorial text-2xl font-medium text-[#111827]">
+              Site Bills & Wastage
             </h1>
-            <p className="text-sm text-[#4B5563] mt-1">
-              Validate contractor invoices against approved BOQ rates and record audited stock wastage.
+            <p className="text-xs text-[#64748B] mt-0.5">
+              Contractor invoices against BOQ and material wastage logs.
             </p>
           </div>
 
-          <div className="inline-flex bg-[#F1F5F9] p-1 rounded-xl border border-[#E5E7EB] self-start">
+          <div className="inline-flex bg-[#F1F5F9] p-0.5 rounded-xl border border-[#E5E7EB] self-start">
             <button
               onClick={() => setTab('bills')}
-              className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-colors ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
                 tab === 'bills'
                   ? 'bg-[#1D4ED8] text-white'
                   : 'text-[#475569] hover:text-[#111827]'
               }`}
             >
               <FileText className="h-3.5 w-3.5" />
-              Contractor Bills
+              Bills ({bills.length})
             </button>
             <button
               onClick={() => setTab('wastage')}
-              className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-colors ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
                 tab === 'wastage'
                   ? 'bg-[#1D4ED8] text-white'
                   : 'text-[#475569] hover:text-[#111827]'
               }`}
             >
               <AlertTriangle className="h-3.5 w-3.5" />
-              Material Wastage
+              Wastage ({wastage.length})
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Contractor Bills</p>
-            <p className="text-xl font-bold text-[#111827] tabular-nums mt-1">{bills.length}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
+            <p className="text-[11px] font-semibold text-[#64748B]">Total Bills</p>
+            <p className="text-lg font-bold text-[#111827] tabular-nums mt-0.5">{bills.length}</p>
           </div>
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Awaiting Review</p>
-            <p className="text-xl font-bold text-amber-700 tabular-nums mt-1">{pendingBillsCount}</p>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
+            <p className="text-[11px] font-semibold text-[#64748B]">Pending Review</p>
+            <p className="text-lg font-bold text-amber-700 tabular-nums mt-0.5">{pendingBillsCount}</p>
           </div>
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Approved / Paid Value</p>
-            <p className="text-xl font-bold text-emerald-700 tabular-nums mt-1">{formatINR(approvedBillsValue)}</p>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
+            <p className="text-[11px] font-semibold text-[#64748B]">Approved Value</p>
+            <p className="text-lg font-bold text-emerald-700 tabular-nums mt-0.5">{formatINR(approvedBillsValue)}</p>
           </div>
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Wastage Logs</p>
-            <p className="text-xl font-bold text-[#111827] tabular-nums mt-1">{wastage.length}</p>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
+            <p className="text-[11px] font-semibold text-[#64748B]">Wastage Records</p>
+            <p className="text-lg font-bold text-[#111827] tabular-nums mt-0.5">{wastage.length}</p>
           </div>
         </div>
       </div>
@@ -379,7 +376,13 @@ export const SiteControlsPage: React.FC = () => {
       {tab === 'bills' ? (
         <div className="grid gap-5 xl:grid-cols-[minmax(300px,0.8fr)_minmax(0,1.4fr)]">
           <section className="h-fit rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="mb-4 flex items-center gap-2"><ClipboardCheck className="h-5 w-5 text-brand-600" /><div><h2 className="font-bold text-slate-900">Add contractor invoice</h2><p className="text-xs text-slate-500">Requires an approved BOQ item. Quantity and cost-rate limits are enforced again by the database.</p></div></div>
+            <div className="mb-4 flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5 text-[#1D4ED8]" />
+              <div>
+                <h2 className="font-bold text-slate-900 text-sm">Record Contractor Bill</h2>
+                <p className="text-xs text-slate-500">Track bills against approved scope quantities.</p>
+              </div>
+            </div>
             <form onSubmit={createBill} className="space-y-3">
               <label className="block text-xs font-bold text-slate-700">Project
                 <select required value={projectId} onChange={event => { setProjectId(event.target.value); setBOQItemId(''); }} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm">

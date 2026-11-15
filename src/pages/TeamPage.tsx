@@ -63,41 +63,29 @@ export const TeamPage: React.FC = () => {
   return (
     <div className="space-y-6 pb-10">
       {/* Architectural Header & Staff Summary */}
-      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-5">
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-4">
         <div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
-            Studio Workspace Access
-          </span>
-          <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
-            Team & Staff Directory
+          <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
+            Studio Team
           </h1>
-          <p className="text-sm text-[#4B5563] mt-1">
-            Manage studio designers, project managers, site supervisors, and permission levels.
+          <p className="text-xs sm:text-sm text-[#4B5563] mt-0.5">
+            Manage team members, designers, and site supervisors.
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Total Members</p>
-            <p className="text-xl font-bold text-[#111827] tabular-nums mt-1">{teamMembers.length}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Members</p>
+            <p className="text-xl font-bold text-[#111827] tabular-nums mt-0.5">{teamMembers.length}</p>
           </div>
           <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Admins & Owners</p>
-            <p className="text-xl font-bold text-[#1D4ED8] tabular-nums mt-1">{adminOrOwnerCount}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Admins</p>
+            <p className="text-xl font-bold text-[#1D4ED8] tabular-nums mt-0.5">{adminOrOwnerCount}</p>
           </div>
           <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Active Accounts</p>
-            <p className="text-xl font-bold text-emerald-700 tabular-nums mt-1">{activeCount}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Active</p>
+            <p className="text-xl font-bold text-emerald-700 tabular-nums mt-0.5">{activeCount}</p>
           </div>
-        </div>
-      </div>
-
-      {/* Security Architecture Notice */}
-      <div className="p-4 rounded-2xl bg-[#EFF6FF] border border-blue-200 flex items-start gap-3 text-[#1E3A8A] text-xs leading-relaxed">
-        <Info className="w-5 h-5 text-[#1D4ED8] shrink-0 mt-0.5" />
-        <div>
-          <strong className="font-semibold">Workspace Isolation:</strong> Every member profile is scoped strictly to{' '}
-          <span className="font-semibold">{organization?.name || 'Your Studio'}</span>. Invite team members securely from organization onboarding without sharing admin keys.
         </div>
       </div>
 

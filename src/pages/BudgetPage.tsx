@@ -58,19 +58,16 @@ export const BudgetPage: React.FC = () => {
   }));
 
   return (
-    <div className="space-y-6 pb-10">
-      {/* Architectural Header & Unified Filter */}
-      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-5 pb-10">
+      {/* Header & Filter */}
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
-              Financial Governance
-            </span>
-            <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
-              Budget Control & Health
+            <h1 className="font-editorial text-2xl font-medium text-[#111827]">
+              Budget Health
             </h1>
-            <p className="text-sm text-[#4B5563] mt-1">
-              Real-time financial variance tracking approved budget, BOQ estimates, and disbursements.
+            <p className="text-xs text-[#64748B] mt-0.5">
+              Project budgets, BOQ estimates, and actual disbursements.
             </p>
           </div>
 
@@ -80,7 +77,7 @@ export const BudgetPage: React.FC = () => {
             fields={[
               {
                 id: 'health',
-                label: 'Budget Health Status',
+                label: 'Health Filter',
                 type: 'pills',
                 value: filterHealth,
                 onChange: (val) => setFilterHealth(val as 'All' | BudgetHealthStatus),
@@ -97,50 +94,42 @@ export const BudgetPage: React.FC = () => {
         </div>
 
         {/* Portfolio Summary 4 Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">
-              Total Portfolio Budget
-            </span>
-            <div className="text-2xl font-bold text-[#111827] tabular-nums mt-1.5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
+            <span className="text-[11px] font-semibold text-[#64748B]">Total Budget</span>
+            <div className="text-lg font-bold text-[#111827] tabular-nums mt-0.5">
               {formatINRCompact(stats.totalBudget)}
             </div>
-            <p className="text-xs text-[#64748B] mt-1">Across {projects.length} active contracts</p>
+            <p className="text-[11px] text-[#64748B] mt-0.5">{projects.length} sites</p>
           </div>
 
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">
-              Total BOQ Estimated
-            </span>
-            <div className="text-2xl font-bold text-indigo-700 tabular-nums mt-1.5">
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
+            <span className="text-[11px] font-semibold text-[#64748B]">BOQ Total</span>
+            <div className="text-lg font-bold text-indigo-700 tabular-nums mt-0.5">
               {formatINRCompact(stats.totalBOQEstimate)}
             </div>
-            <p className="text-xs text-[#64748B] mt-1">Detailed scope rate estimates</p>
+            <p className="text-[11px] text-[#64748B] mt-0.5">Scope estimate</p>
           </div>
 
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">
-              Total Actual Spent
-            </span>
-            <div className="text-2xl font-bold text-[#1D4ED8] tabular-nums mt-1.5">
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
+            <span className="text-[11px] font-semibold text-[#64748B]">Actual Spent</span>
+            <div className="text-lg font-bold text-[#1D4ED8] tabular-nums mt-0.5">
               {formatINRCompact(stats.totalSpent)}
             </div>
-            <p className="text-xs text-[#64748B] mt-1">{stats.spentPercentage.toFixed(1)}% portfolio utilization</p>
+            <p className="text-[11px] text-[#64748B] mt-0.5">{stats.spentPercentage.toFixed(0)}% utilized</p>
           </div>
 
-          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">
-              Remaining Cushion
-            </span>
+          <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
+            <span className="text-[11px] font-semibold text-[#64748B]">Cushion</span>
             <div
-              className={`text-2xl font-bold tabular-nums mt-1.5 ${
+              className={`text-lg font-bold tabular-nums mt-0.5 ${
                 stats.totalRemaining < 0 ? 'text-rose-600' : 'text-emerald-700'
               }`}
             >
               {formatINRCompact(stats.totalRemaining)}
             </div>
-            <p className="text-xs text-[#64748B] mt-1">
-              {stats.totalRemaining < 0 ? 'Portfolio overrun detected' : 'Available uncommitted funds'}
+            <p className="text-[11px] text-[#64748B] mt-0.5">
+              {stats.totalRemaining < 0 ? 'Overrun' : 'Remaining balance'}
             </p>
           </div>
         </div>

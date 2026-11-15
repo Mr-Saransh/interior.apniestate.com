@@ -96,15 +96,15 @@ export const TasksPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold font-display text-slate-900 tracking-tight">
-              Task & Team Assignments
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+              Tasks
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-50 text-brand-700 border border-brand-200/60">
-              {tasks.length} Total
+              {tasks.length}
             </span>
           </div>
-          <p className="text-sm text-slate-500 mt-1">
-            Track site checklists, material approvals, drawing revisions, and assign team responsibilities.
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+            Track site deliverables, drawings, and to-dos.
           </p>
         </div>
 
@@ -113,10 +113,10 @@ export const TasksPage: React.FC = () => {
             setTaskToEdit(null);
             setIsTaskModalOpen(true);
           }}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm transition-all self-start sm:self-auto min-h-[42px] cursor-pointer"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition-all self-start sm:self-auto min-h-[40px] cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          <span>Create Task</span>
+          <span>New Task</span>
         </button>
       </div>
 
@@ -130,7 +130,7 @@ export const TasksPage: React.FC = () => {
           <div className="text-xl sm:text-2xl font-extrabold font-display text-slate-900">
             {todoCount}
           </div>
-          <span className="text-[11px] text-slate-400">Pending commencement</span>
+          <span className="text-[11px] text-slate-400">Pending</span>
         </div>
 
         <div className="premium-card p-4">
@@ -141,29 +141,29 @@ export const TasksPage: React.FC = () => {
           <div className="text-xl sm:text-2xl font-extrabold font-display text-indigo-700">
             {inProgressCount}
           </div>
-          <span className="text-[11px] text-slate-400">Active site/design execution</span>
+          <span className="text-[11px] text-slate-400">In progress</span>
         </div>
 
         <div className="premium-card p-4">
           <div className="flex items-center justify-between text-slate-500 mb-1">
-            <span className="text-xs font-semibold">High / Urgent</span>
+            <span className="text-xs font-semibold">Urgent</span>
             <AlertCircle className="w-4 h-4 text-rose-600" />
           </div>
           <div className="text-xl sm:text-2xl font-extrabold font-display text-rose-700">
             {urgentCount}
           </div>
-          <span className="text-[11px] text-slate-400">Needs immediate attention</span>
+          <span className="text-[11px] text-slate-400">Needs attention</span>
         </div>
 
         <div className="premium-card p-4">
           <div className="flex items-center justify-between text-slate-500 mb-1">
-            <span className="text-xs font-semibold">Completed</span>
+            <span className="text-xs font-semibold">Done</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-xl sm:text-2xl font-extrabold font-display text-emerald-700">
             {completedCount}
           </div>
-          <span className="text-[11px] text-slate-400">Finished milestones</span>
+          <span className="text-[11px] text-slate-400">Completed</span>
         </div>
       </div>
 

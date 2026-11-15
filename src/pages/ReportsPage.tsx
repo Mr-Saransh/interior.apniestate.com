@@ -166,17 +166,14 @@ export const ReportsPage: React.FC = () => {
   return (
     <div className="space-y-6 pb-10">
       {/* Architectural Header */}
-      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-5">
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
-              Analytics & Insights
-            </span>
-            <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
-              Reports & Business Analytics
+            <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
+              Reports
             </h1>
-            <p className="text-sm text-[#4B5563] mt-1">
-              Executive insights into project margins, client collections, vendor disbursements, and inventory flow.
+            <p className="text-xs sm:text-sm text-[#4B5563] mt-0.5">
+              Track project margins, client collections, expenses, and site progress.
             </p>
           </div>
 
@@ -205,7 +202,7 @@ export const ReportsPage: React.FC = () => {
                 onChange={(e) => setSelectedProjectId(e.target.value)}
                 className="bg-transparent focus:outline-none cursor-pointer"
               >
-                <option value="All">All Projects (Consolidated)</option>
+                <option value="All">All Projects</option>
                 {projects.map(p => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
@@ -217,15 +214,15 @@ export const ReportsPage: React.FC = () => {
         {/* Clean Architectural Pill Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-1 border-t border-[#F1F5F9] no-scrollbar">
           {[
-            { id: 'profitability', label: 'Profitability', icon: TrendingUp },
-            { id: 'branches', label: 'Branches', icon: Building },
+            { id: 'profitability', label: 'Profit', icon: TrendingUp },
             { id: 'payments', label: 'Collections', icon: IndianRupee },
             { id: 'expenses', label: 'Expenses', icon: PieChart },
-            { id: 'procurement', label: 'Procurement', icon: ShoppingBag },
+            { id: 'procurement', label: 'Orders', icon: ShoppingBag },
             { id: 'vendors', label: 'Vendors', icon: Building2 },
-            { id: 'approvals', label: 'Approvals', icon: ShieldCheck },
+            { id: 'inventory', label: 'Stock', icon: Package },
             { id: 'progress', label: 'Progress', icon: FolderKanban },
-            { id: 'inventory', label: 'Inventory', icon: Package }
+            { id: 'branches', label: 'Branches', icon: Building },
+            { id: 'approvals', label: 'Approvals', icon: ShieldCheck }
           ].map((tab) => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;
@@ -260,7 +257,7 @@ export const ReportsPage: React.FC = () => {
                 {formatINR(totalContractVal)}
               </span>
               <span className="text-xs text-[#64748B] mt-1 block">
-                Total contracted customer scope
+                Total agreed client value
               </span>
             </div>
 
@@ -272,7 +269,7 @@ export const ReportsPage: React.FC = () => {
                 {formatINR(totalGrossProfit)}
               </span>
               <span className="text-xs text-emerald-700 mt-1 font-medium block">
-                {Math.round(overallMarginPct * 10) / 10}% Gross Margin
+                {Math.round(overallMarginPct * 10) / 10}% margin
               </span>
             </div>
 
@@ -284,13 +281,13 @@ export const ReportsPage: React.FC = () => {
                 {formatINR(totalRevenueRec)}
               </span>
               <span className="text-xs text-[#64748B] mt-1 block">
-                Actual received client receipts
+                Collected to date
               </span>
             </div>
 
             <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB]">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B] block mb-1.5">
-                Realized Cash Position
+                Cash Net
               </span>
               <span className={`text-xl sm:text-2xl font-bold tabular-nums block ${
                 totalRealizedCash >= 0 ? 'text-emerald-700' : 'text-rose-600'
@@ -298,7 +295,7 @@ export const ReportsPage: React.FC = () => {
                 {formatINR(totalRealizedCash)}
               </span>
               <span className="text-xs text-[#64748B] mt-1 block">
-                Revenue Received minus Actual Costs
+                Received minus expenses
               </span>
             </div>
           </div>
@@ -393,10 +390,10 @@ export const ReportsPage: React.FC = () => {
           <div className="bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden">
             <div className="p-4 sm:p-5 border-b border-slate-100">
               <h3 className="text-base font-bold font-display text-slate-900">
-                Project Margin & Realized Cash Breakdown
+                Project Margins & Cash Position
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Calculated strictly from recorded contract values, real client receipts, and actual project expenses.
+                Calculated from contract value, collections, and expenses.
               </p>
             </div>
 
@@ -461,25 +458,25 @@ export const ReportsPage: React.FC = () => {
         <div className="space-y-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5E7EB]">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-1">Total Scheduled</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-1">Scheduled</span>
               <span className="text-lg sm:text-2xl font-black text-slate-900 font-display block">{formatINR(paymentMetrics.totalScheduled)}</span>
             </div>
-            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5E7EB] shadow-xs">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 block mb-1">Total Collected</span>
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5E7EB]">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 block mb-1">Collected</span>
               <span className="text-lg sm:text-2xl font-black text-emerald-700 font-display block">{formatINR(paymentMetrics.totalReceived)}</span>
             </div>
-            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5E7EB] shadow-xs">
-              <span className="text-xs font-bold uppercase tracking-wider text-indigo-800 block mb-1">Schedule Outstanding</span>
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5E7EB]">
+              <span className="text-xs font-bold uppercase tracking-wider text-indigo-800 block mb-1">Pending</span>
               <span className="text-lg sm:text-2xl font-black text-indigo-900 font-display block">{formatINR(paymentMetrics.scheduleOutstanding)}</span>
             </div>
-            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5E7EB] shadow-xs">
-              <span className="text-xs font-bold uppercase tracking-wider text-rose-800 block mb-1">Overdue Aging</span>
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5E7EB]">
+              <span className="text-xs font-bold uppercase tracking-wider text-rose-800 block mb-1">Overdue</span>
               <span className="text-lg sm:text-2xl font-black text-rose-600 font-display block">{formatINR(paymentMetrics.overdueAmount)}</span>
             </div>
           </div>
 
           <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5">
-            <h3 className="text-base font-bold font-display text-slate-900 mb-3">Milestone Aging Ledger</h3>
+            <h3 className="text-base font-bold font-display text-slate-900 mb-3">Milestone Schedule</h3>
             <div className="space-y-3">
               {filteredPayments.map(p => (
                 <div key={p.id} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -530,19 +527,19 @@ export const ReportsPage: React.FC = () => {
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB]">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-1">Total Orders</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-1">Orders</span>
               <span className="text-2xl font-black text-slate-900 font-display block">{procurementSummary.totalOrders}</span>
               <span className="text-[11px] text-slate-400 mt-1 block">Value: {formatINR(procurementSummary.totalAmount)}</span>
             </div>
-            <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB] shadow-xs">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 block mb-1">Delivered Scope</span>
+            <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB]">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 block mb-1">Delivered</span>
               <span className="text-2xl font-black text-emerald-700 font-display block">{formatINR(procurementSummary.receivedAmount)}</span>
               <span className="text-[11px] text-emerald-600 mt-1 block">Received on site</span>
             </div>
-            <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB] shadow-xs">
+            <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB]">
               <span className="text-xs font-bold uppercase tracking-wider text-indigo-800 block mb-1">In Transit</span>
               <span className="text-2xl font-black text-indigo-900 font-display block">{formatINR(procurementSummary.inTransitAmount)}</span>
-              <span className="text-[11px] text-indigo-600 mt-1 block">Ordered / awaiting fulfillment</span>
+              <span className="text-[11px] text-indigo-600 mt-1 block">Awaiting delivery</span>
             </div>
           </div>
         </div>
@@ -552,7 +549,7 @@ export const ReportsPage: React.FC = () => {
       {activeTab === 'vendors' && (
         <div className="space-y-6">
           <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5">
-            <h3 className="text-base font-bold font-display text-slate-900 mb-3">Active Vendor Directory & Scope</h3>
+            <h3 className="text-base font-bold font-display text-slate-900 mb-3">Vendors & Suppliers</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {vendors.map(v => (
                 <div key={v.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
@@ -560,7 +557,7 @@ export const ReportsPage: React.FC = () => {
                     <h4 className="font-bold text-xs text-slate-900">{v.name}</h4>
                     <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-200/80 text-slate-700">{v.category}</span>
                   </div>
-                  <span className="text-[11px] text-slate-500 block">{v.phone || 'No direct phone'}</span>
+                  <span className="text-[11px] text-slate-500 block">{v.phone || 'No phone'}</span>
                   {v.gst_number && <span className="text-[10px] font-mono text-slate-400 block mt-1">GST: {v.gst_number}</span>}
                 </div>
               ))}
@@ -575,16 +572,16 @@ export const ReportsPage: React.FC = () => {
           <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-bold font-display text-slate-900">Material & Site Inventory Summary</h3>
-                <p className="text-xs text-slate-500">Real on-site physical stock balances and replenishment alerts.</p>
+                <h3 className="text-base font-bold font-display text-slate-900">Materials & Site Stock</h3>
+                <p className="text-xs text-slate-500">Track on-site stock and reorder needs.</p>
               </div>
               <span className="text-xs font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-xl">
-                {filteredMaterials.length} Tracked SKUs
+                {filteredMaterials.length} Items
               </span>
             </div>
 
             {filteredMaterials.length === 0 ? (
-              <div className="text-xs text-slate-400 italic p-6 text-center">No materials registered for this project scope.</div>
+              <div className="text-xs text-slate-400 italic p-6 text-center">No materials registered for this project.</div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredMaterials.map(mat => {
@@ -597,7 +594,7 @@ export const ReportsPage: React.FC = () => {
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div>
                           <h4 className="font-bold text-xs text-slate-900 line-clamp-1">{mat.name}</h4>
-                          <span className="text-[11px] text-slate-400">{mat.category || 'General Material'}</span>
+                          <span className="text-[11px] text-slate-400">{mat.category || 'General'}</span>
                         </div>
                         <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-lg border ${
                           isLow ? 'bg-rose-100 text-rose-800 border-rose-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200'
@@ -629,17 +626,17 @@ export const ReportsPage: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 7: BRANCH PERFORMANCE REPORT (ENTERPRISE) */}
+      {/* TAB 7: BRANCH PERFORMANCE REPORT */}
       {activeTab === 'branches' && (
         <div className="space-y-6">
           <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-slate-100">
               <div>
-                <h3 className="text-base font-bold font-display text-slate-900">Multi-Branch Performance Report</h3>
-                <p className="text-xs text-slate-500">Comparative regional studio financial performance, project contracts, and margins.</p>
+                <h3 className="text-base font-bold font-display text-slate-900">Branch Studios</h3>
+                <p className="text-xs text-slate-500">Studio performance, contracts, and costs.</p>
               </div>
               <span className="text-xs font-bold bg-brand-50 text-brand-700 px-3 py-1 rounded-xl border border-brand-200">
-                {branches.length} Registered Studios
+                {branches.length} Studios
               </span>
             </div>
 
@@ -650,13 +647,13 @@ export const ReportsPage: React.FC = () => {
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="border-b border-slate-100 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
-                      <th className="py-2.5 px-3">Studio Name</th>
+                      <th className="py-2.5 px-3">Studio</th>
                       <th className="py-2.5 px-3">Manager</th>
                       <th className="py-2.5 px-3 text-center">Sites</th>
                       <th className="py-2.5 px-3 text-center">Staff</th>
-                      <th className="py-2.5 px-3 text-right">Contract Value</th>
-                      <th className="py-2.5 px-3 text-right">Actual Cost</th>
-                      <th className="py-2.5 px-3 text-right">Gross Profit</th>
+                      <th className="py-2.5 px-3 text-right">Contract</th>
+                      <th className="py-2.5 px-3 text-right">Cost</th>
+                      <th className="py-2.5 px-3 text-right">Profit</th>
                       <th className="py-2.5 px-3 text-right">Margin</th>
                     </tr>
                   </thead>
@@ -695,39 +692,36 @@ export const ReportsPage: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 8: APPROVAL ACTIVITY REPORT (ENTERPRISE) */}
+      {/* TAB 8: APPROVALS */}
       {activeTab === 'approvals' && (
         <div className="space-y-6">
           <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
-                <h3 className="text-base font-bold font-display text-slate-900">Governance & Approval Activity</h3>
-                <p className="text-xs text-slate-500">Audit log of submitted purchase orders and expenditure approval requests.</p>
+                <h3 className="text-base font-bold font-display text-slate-900">Approvals</h3>
+                <p className="text-xs text-slate-500">Purchase orders and expense requests.</p>
               </div>
-              <span className="text-xs font-bold bg-indigo-50 text-indigo-700 px-3 py-1 rounded-xl border border-indigo-200">
-                Enterprise Audit Trail
-              </span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Total Requests</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Total</span>
                 <span className="text-xl font-extrabold text-slate-900">{INITIAL_APPROVAL_REQUESTS.length}</span>
               </div>
               <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100">
-                <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block mb-1">Pending Review</span>
+                <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block mb-1">Pending</span>
                 <span className="text-xl font-extrabold text-amber-700">
                   {INITIAL_APPROVAL_REQUESTS.filter(r => r.status === 'pending').length}
                 </span>
               </div>
               <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
-                <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">Approved Sum</span>
+                <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">Approved</span>
                 <span className="text-xl font-extrabold text-emerald-700">
                   {formatINRCompact(INITIAL_APPROVAL_REQUESTS.filter(r => r.status === 'approved').reduce((s, r) => s + (r.amount || 0), 0))}
                 </span>
               </div>
               <div className="bg-rose-50 p-4 rounded-2xl border border-rose-100">
-                <span className="text-[10px] font-bold text-rose-800 uppercase tracking-wider block mb-1">Rejected Requests</span>
+                <span className="text-[10px] font-bold text-rose-800 uppercase tracking-wider block mb-1">Rejected</span>
                 <span className="text-xl font-extrabold text-rose-700">
                   {INITIAL_APPROVAL_REQUESTS.filter(r => r.status === 'rejected').length}
                 </span>
@@ -738,11 +732,11 @@ export const ReportsPage: React.FC = () => {
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-100 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
-                    <th className="py-2.5 px-3">Subject / Title</th>
+                    <th className="py-2.5 px-3">Subject</th>
                     <th className="py-2.5 px-3">Requester</th>
-                    <th className="py-2.5 px-3">Requested At</th>
+                    <th className="py-2.5 px-3">Date</th>
                     <th className="py-2.5 px-3">Reviewer</th>
-                    <th className="py-2.5 px-3 text-right">Value</th>
+                    <th className="py-2.5 px-3 text-right">Amount</th>
                     <th className="py-2.5 px-3 text-center">Status</th>
                   </tr>
                 </thead>
@@ -752,7 +746,7 @@ export const ReportsPage: React.FC = () => {
                       <td className="py-3 px-3 font-bold text-slate-900">{req.title}</td>
                       <td className="py-3 px-3 text-slate-600">{req.requesterName}</td>
                       <td className="py-3 px-3 text-slate-500">{formatDate(req.requested_at)}</td>
-                      <td className="py-3 px-3 text-slate-600">{req.reviewerName || 'Awaiting Review'}</td>
+                      <td className="py-3 px-3 text-slate-600">{req.reviewerName || 'Pending'}</td>
                       <td className="py-3 px-3 text-right font-extrabold text-slate-900">
                         {req.amount !== undefined ? formatINR(req.amount) : '—'}
                       </td>
@@ -774,17 +768,17 @@ export const ReportsPage: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 9: PROJECT PROGRESS REPORT (ENTERPRISE) */}
+      {/* TAB 9: PROJECT PROGRESS */}
       {activeTab === 'progress' && (
         <div className="space-y-6">
           <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
-                <h3 className="text-base font-bold font-display text-slate-900">Project Progress & Timeline Overview</h3>
-                <p className="text-xs text-slate-500">Real-time completion percentage, deadline schedules, and budget consumption.</p>
+                <h3 className="text-base font-bold font-display text-slate-900">Project Progress</h3>
+                <p className="text-xs text-slate-500">Site completion and handover deadlines.</p>
               </div>
               <span className="text-xs font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-xl">
-                {filteredProjects.length} Projects Analyzed
+                {filteredProjects.length} Projects
               </span>
             </div>
 
@@ -815,7 +809,7 @@ export const ReportsPage: React.FC = () => {
                     {/* Progress bar */}
                     <div className="space-y-1">
                       <div className="flex justify-between text-xs text-slate-600 font-semibold">
-                        <span>Physical Site Completion</span>
+                        <span>Physical Completion</span>
                         <span className="font-extrabold text-brand-600">{proj.progress}%</span>
                       </div>
                       <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
@@ -832,17 +826,17 @@ export const ReportsPage: React.FC = () => {
                         <span className="font-bold text-slate-800">{formatINR(proj.budget)}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-400 block uppercase">Incurred Cost</span>
+                        <span className="text-[10px] text-slate-400 block uppercase">Cost</span>
                         <span className={`font-bold ${isOverBudget ? 'text-rose-600' : 'text-slate-800'}`}>
                           {formatINR(proj.spent)}
                         </span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-400 block uppercase">Contract Scope</span>
+                        <span className="text-[10px] text-slate-400 block uppercase">Contract</span>
                         <span className="font-bold text-slate-800">{formatINR(proj.contract_value ?? proj.budget)}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-400 block uppercase">Branch Studio</span>
+                        <span className="text-[10px] text-slate-400 block uppercase">Studio</span>
                         <span className="font-bold text-slate-700">{proj.branchName || 'Head Office'}</span>
                       </div>
                     </div>

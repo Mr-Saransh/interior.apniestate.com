@@ -71,32 +71,32 @@ export const TopBar: React.FC = () => {
   // Page title calculation with interior design context
   const getPageTitle = () => {
     switch (currentPage) {
-      case 'overview': return workspaceMode === 'crm' ? 'CRM Overview' : 'Studio Overview';
-      case 'projects': return 'Projects & Rooms';
-      case 'clients': return 'Client Directory';
-      case 'leads': return 'Lead Pipeline';
-      case 'quotations': return 'Design Proposals & Sign-offs';
+      case 'overview': return 'Overview';
+      case 'projects': return 'Projects';
+      case 'clients': return 'Clients';
+      case 'leads': return 'Leads';
+      case 'quotations': return 'Quotations';
       case 'change-requests': return 'Change Requests';
-      case 'site-controls': return 'Site Controls & Contractor Bills';
+      case 'site-controls': return 'Site Bills';
       case 'client-portal': return 'Client Portal';
-      case 'tasks': return 'Tasks & Follow-ups';
-      case 'documents': return 'Drawings & Briefs';
-      case 'vendors': return 'Vendor Directory';
-      case 'payments': return 'Client Payments & Invoicing';
-      case 'purchases': return 'Purchase Orders';
-      case 'expenses': return 'Expense Ledger';
-      case 'budget': return 'Budget Analytics';
-      case 'reports': return 'Reports & Insights';
-      case 'team': return 'Studio Team';
-      case 'management': return 'Multi-Branch Management';
+      case 'tasks': return 'Tasks';
+      case 'documents': return 'Documents';
+      case 'vendors': return 'Vendors';
+      case 'payments': return 'Payments';
+      case 'purchases': return 'Orders';
+      case 'expenses': return 'Expenses';
+      case 'budget': return 'Budget';
+      case 'reports': return 'Reports';
+      case 'team': return 'Team';
+      case 'management': return 'Analytics';
       case 'branches': return 'Branches';
       case 'approvals': return 'Approvals';
-      case 'roles': return 'Roles & Permissions';
-      case 'export': return 'Data Export';
-      case 'settings': return 'Studio Settings';
+      case 'roles': return 'Permissions';
+      case 'export': return 'Export';
+      case 'settings': return 'Settings';
       case 'project-detail': return selectedProject ? selectedProject.name : 'Project Workspace';
-      case 'calendar': return 'Studio Calendar';
-      case 'workspace': return 'Team Workspace';
+      case 'calendar': return 'Schedule & Tasks';
+      case 'workspace': return 'Workspace';
       default: return 'Overview';
     }
   };

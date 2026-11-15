@@ -1,15 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
-  ArrowUpRight,
   Building2,
   Calculator,
   Calendar,
   CheckCircle2,
-  ClipboardList,
-  Clock,
-  ExternalLink,
-  FileText,
+  Circle,
   FolderPlus,
   IndianRupee,
   Layers,
@@ -19,6 +15,8 @@ import {
   Target,
   TrendingUp,
   Users,
+  ExternalLink,
+  FileText
 } from 'lucide-react';
 import {
   Bar,
@@ -36,8 +34,8 @@ import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { Badge } from '../components/common/Badge';
 import { quotationService } from '../services/quotationService';
-import { Quotation } from '../types';
-import { formatINR, formatINRCompact } from '../utils/formatters';
+import { Quotation, Task } from '../types';
+import { formatINR, formatINRCompact, formatDate } from '../utils/formatters';
 
 const CHART_PALETTE = ['#1D4ED8', '#0D9488', '#D97706', '#6366F1', '#059669', '#64748B'];
 
@@ -45,6 +43,7 @@ export const OverviewPage: React.FC = () => {
   const {
     projects,
     tasks,
+    updateTask,
     purchases,
     expenses,
     leads,
@@ -62,7 +61,7 @@ export const OverviewPage: React.FC = () => {
   const { profile, organization } = useAuth();
   const [recentQuotations, setRecentQuotations] = useState<Quotation[]>([]);
 
-  const firstName = profile?.full_name?.split(' ')[0] || 'Team';
+  const firstName = profile?.full_name?.split(' ')[0] || 'Designer';
 
   useEffect(() => {
     let active = true;
@@ -95,7 +94,7 @@ export const OverviewPage: React.FC = () => {
   );
 
   // -----------------------------
-  // ERP COMPUTED METRICS & CHARTS
+  // ERP COMPUTED METRICS
   // -----------------------------
   const activeProjectsCount = projects.filter((p) => p.status !== 'Completed').length;
   const onTrackCount = projects.filter((p) => p.status === 'On Track').length;
@@ -119,10 +118,6 @@ export const OverviewPage: React.FC = () => {
     () => clientPayments.reduce((sum, cp) => sum + Number(cp.paid_amount || 0), 0),
     [clientPayments]
   );
-  const totalScheduled = useMemo(
-    () => clientPayments.reduce((sum, cp) => sum + Number(cp.amount || 0), 0),
-    [clientPayments]
-  );
 
   const openOrdersCount = purchases.filter(
     (po) => !['Received', 'Delivered', 'Cancelled', 'received', 'delivered', 'cancelled'].includes(po.status)
@@ -131,7 +126,7 @@ export const OverviewPage: React.FC = () => {
   const projectBudgetChartData = useMemo(
     () =>
       projects.slice(0, 6).map((p) => ({
-        name: p.name.length > 15 ? `${p.name.slice(0, 14)}…` : p.name,
+        name: p.name.length > 12 ? `${p.name.slice(0, 11)}…` : p.name,
         Budget: Number(p.budget || 0),
         Spent: projectSpendMap.get(p.id) ?? Number(p.spent || 0),
       })),
@@ -154,17 +149,20 @@ export const OverviewPage: React.FC = () => {
   }, [expenses]);
 
   const urgentTasks = tasks
-    .filter((t) => t.status !== 'Completed' && t.status !== 'Cancelled' && (t.priority === 'Urgent' || t.priority === 'High'))
-    .slice(0, 4);
-  const flaggedProjects = projects
-    .filter((p) => p.status === 'Budget Alert' || p.status === 'Delayed' || p.status === 'Needs Attention')
-    .slice(0, 3);
-  const upcomingSiteEvents = calendarEvents
-    .filter((ev) => !ev.completed)
+    .filter((t) => t.status !== 'Completed' && t.status !== 'Cancelled')
     .slice(0, 4);
 
+  const handleToggleTask = async (task: Task) => {
+    const nextStatus = task.status === 'Completed' ? 'To Do' : 'Completed';
+    await updateTask(task.id, { status: nextStatus });
+  };
+
+  const upcomingSiteEvents = calendarEvents
+    .filter((ev) => !ev.completed)
+    .slice(0, 3);
+
   // -----------------------------
-  // CRM COMPUTED METRICS & CHARTS
+  // CRM COMPUTED METRICS
   // -----------------------------
   const filteredLeads = useMemo(
     () =>
@@ -184,18 +182,15 @@ export const OverviewPage: React.FC = () => {
   const wonLeads = leads.filter((l) => l.status === 'Won');
   const closedLeadsCount = wonLeads.length + leads.filter((l) => l.status === 'Lost').length;
   const winRatePct = closedLeadsCount > 0 ? Math.round((wonLeads.length / closedLeadsCount) * 100) : 0;
-
   const activePipelineValue = activeLeads.reduce((sum, l) => sum + Number(l.estimated_budget || 0), 0);
   const quotesTotalValue = recentQuotations.reduce((sum, q) => sum + Number(q.total || 0), 0);
-  const pendingQuotesCount = recentQuotations.filter((q) => ['draft', 'sent'].includes(q.status)).length;
 
   const crmFunnelData = useMemo(() => {
     const stages = ['New', 'Contacted', 'Site Visit Scheduled', 'Proposal Sent', 'Negotiation', 'Won'];
     return stages.map((stage) => {
       const stageLeads = leads.filter((l) => l.status === stage);
       return {
-        stage: stage === 'Site Visit Scheduled' ? 'Site Visit' : stage === 'Proposal Sent' ? 'Proposal' : stage,
-        Count: stageLeads.length,
+        stage: stage === 'Site Visit Scheduled' ? 'Visit' : stage === 'Proposal Sent' ? 'Quote' : stage,
         Value: stageLeads.reduce((s, l) => s + Number(l.estimated_budget || 0), 0),
       };
     });
@@ -204,13 +199,13 @@ export const OverviewPage: React.FC = () => {
   const leadSourceData = useMemo(() => {
     const bucket = new Map<string, number>();
     leads.forEach((l) => {
-      const src = l.source?.trim() || 'Direct Inquiry';
+      const src = l.source?.trim() || 'Direct';
       bucket.set(src, (bucket.get(src) || 0) + 1);
     });
     return Array.from(bucket.entries())
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
-      .slice(0, 6);
+      .slice(0, 5);
   }, [leads]);
 
   const priorityLeads = useMemo(
@@ -223,264 +218,199 @@ export const OverviewPage: React.FC = () => {
   );
 
   // ============================================================================
-  // CRM DASHBOARD MODE
+  // CRM MODE DASHBOARD
   // ============================================================================
   if (workspaceMode === 'crm') {
     return (
-      <div className="space-y-6 pb-10">
-        {/* Welcome Header */}
-        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+      <div className="space-y-5 pb-10">
+        {/* Crisp Header */}
+        <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#1D4ED8] mb-1.5">
-              <span>Apni Estate Interiors</span>
-              <span className="text-[#CBD5E1]">•</span>
-              <span className="text-[#64748B]">Studio CRM Workspace</span>
-            </div>
-            <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight">
-              Good day, {firstName}
+            <h1 className="font-editorial text-2xl font-medium text-[#111827]">
+              CRM Pipeline
             </h1>
-            <p className="text-sm text-[#4B5563] mt-1">
-              Track client inquiries, scheduled walkthroughs, proposals sent, and deal conversion velocity.
-            </p>
+            <p className="text-xs text-[#64748B] mt-0.5">Inquiries, proposals &amp; client walkthroughs</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setWorkspaceMode('erp')}
-              className="px-3.5 py-2.5 text-xs font-semibold text-[#475569] bg-[#F8FAFC] hover:bg-[#EFF6FF] hover:text-[#1D4ED8] border border-[#E5E7EB] rounded-xl transition-colors"
+              className="px-3 py-1.5 text-xs font-semibold text-[#475569] bg-[#F8FAFC] hover:bg-[#EFF6FF] hover:text-[#1D4ED8] border border-[#E5E7EB] rounded-xl transition-colors cursor-pointer"
             >
-              Switch to ERP
+              ERP Mode
             </button>
             <button
               onClick={() => setIsGenericQuoteModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-[#1D4ED8] bg-[#EFF6FF] hover:bg-blue-100/70 border border-blue-200 rounded-xl transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#1D4ED8] bg-[#EFF6FF] border border-blue-200 rounded-xl transition-colors cursor-pointer"
             >
-              <Calculator className="w-4 h-4" />
-              <span>Quote Estimator</span>
+              <Calculator className="w-3.5 h-3.5" />
+              <span>Quote</span>
             </button>
             <button
               onClick={() => setCurrentPage('leads')}
-              className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-[#1D4ED8] hover:bg-[#1E40AF] rounded-xl transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#1D4ED8] hover:bg-[#1E40AF] rounded-xl transition-colors cursor-pointer"
             >
-              <Target className="w-4 h-4" />
-              <span>Open Lead Pipeline</span>
+              <Plus className="w-3.5 h-3.5" />
+              <span>New Lead</span>
             </button>
           </div>
         </div>
 
-        {/* Beginner-Friendly Quick Action Strip */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* 1-Line Quick Actions */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           <button
             onClick={() => setCurrentPage('leads')}
-            className="flex items-center gap-3 p-3.5 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-left transition-colors group"
+            className="flex items-center justify-center gap-2 p-3 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-xs font-semibold text-[#111827] hover:text-[#1D4ED8] transition-colors cursor-pointer"
           >
-            <div className="w-9 h-9 rounded-lg bg-[#EFF6FF] text-[#1D4ED8] flex items-center justify-center shrink-0">
-              <Users className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-[#111827] group-hover:text-[#1D4ED8] truncate">Manage Leads</p>
-              <p className="text-[11px] text-[#64748B] truncate">Kanban & follow-ups</p>
-            </div>
+            <Users className="w-4 h-4 text-[#1D4ED8]" />
+            <span>Leads ({activeLeads.length})</span>
           </button>
-
           <button
             onClick={() => setIsGenericQuoteModalOpen(true)}
-            className="flex items-center gap-3 p-3.5 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-left transition-colors group"
+            className="flex items-center justify-center gap-2 p-3 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-xs font-semibold text-[#111827] hover:text-[#1D4ED8] transition-colors cursor-pointer"
           >
-            <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
-              <Calculator className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-[#111827] group-hover:text-[#1D4ED8] truncate">Quick Estimate</p>
-              <p className="text-[11px] text-[#64748B] truncate">1BHK to Villa BOQ</p>
-            </div>
+            <Calculator className="w-4 h-4 text-emerald-600" />
+            <span>Estimator</span>
           </button>
-
           <button
             onClick={() => setCurrentPage('quotations')}
-            className="flex items-center gap-3 p-3.5 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-left transition-colors group"
+            className="flex items-center justify-center gap-2 p-3 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-xs font-semibold text-[#111827] hover:text-[#1D4ED8] transition-colors cursor-pointer"
           >
-            <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
-              <FileText className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-[#111827] group-hover:text-[#1D4ED8] truncate">Client Proposals</p>
-              <p className="text-[11px] text-[#64748B] truncate">{recentQuotations.length} quotations saved</p>
-            </div>
+            <FileText className="w-4 h-4 text-amber-600" />
+            <span>Proposals ({recentQuotations.length})</span>
           </button>
-
           <button
             onClick={() => setCurrentPage('client-portal')}
-            className="flex items-center gap-3 p-3.5 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-left transition-colors group"
+            className="flex items-center justify-center gap-2 p-3 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-xs font-semibold text-[#111827] hover:text-[#1D4ED8] transition-colors cursor-pointer"
           >
-            <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
-              <ExternalLink className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-[#111827] group-hover:text-[#1D4ED8] truncate">Client Portal</p>
-              <p className="text-[11px] text-[#64748B] truncate">Share live site links</p>
-            </div>
+            <ExternalLink className="w-4 h-4 text-indigo-600" />
+            <span>Client Portal</span>
           </button>
         </div>
 
         {/* 4 CRM KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div
             onClick={() => setCurrentPage('leads')}
-            className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-2xl p-5 cursor-pointer transition-colors"
+            className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl p-4 cursor-pointer transition-colors"
           >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-[#64748B]">Active Inquiries</span>
-              <div className="w-8 h-8 rounded-lg bg-[#EFF6FF] text-[#1D4ED8] flex items-center justify-center">
-                <Users className="w-4 h-4" />
-              </div>
+            <div className="flex items-center justify-between text-xs text-[#64748B] mb-1">
+              <span>Active Inquiries</span>
+              <Users className="w-4 h-4 text-[#1D4ED8]" />
             </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-[#111827] tabular-nums">{activeLeads.length}</span>
-              <span className="text-xs text-[#64748B]">of {leads.length} total leads</span>
-            </div>
-            <p className="text-xs text-[#64748B] mt-2">
-              {leads.filter((l) => l.status === 'Site Visit Scheduled').length} site visits booked
-            </p>
+            <div className="text-xl font-bold text-[#111827] tabular-nums">{activeLeads.length}</div>
+            <p className="text-[11px] text-[#64748B] mt-0.5">of {leads.length} total</p>
           </div>
 
           <div
             onClick={() => setCurrentPage('leads')}
-            className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-2xl p-5 cursor-pointer transition-colors"
+            className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl p-4 cursor-pointer transition-colors"
           >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-[#64748B]">Pipeline Value</span>
-              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
-                <IndianRupee className="w-4 h-4" />
-              </div>
+            <div className="flex items-center justify-between text-xs text-[#64748B] mb-1">
+              <span>Pipeline Value</span>
+              <IndianRupee className="w-4 h-4 text-emerald-600" />
             </div>
-            <div className="text-2xl font-bold text-[#111827] tabular-nums">
+            <div className="text-xl font-bold text-[#111827] tabular-nums">
               {formatINRCompact(activePipelineValue)}
             </div>
-            <p className="text-xs text-[#64748B] mt-2">Estimated open opportunity value</p>
+            <p className="text-[11px] text-[#64748B] mt-0.5">Open budget</p>
           </div>
 
-          <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-[#64748B]">Conversion Rate</span>
-              <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center">
-                <TrendingUp className="w-4 h-4" />
-              </div>
+          <div className="bg-white border border-[#E5E7EB] rounded-xl p-4">
+            <div className="flex items-center justify-between text-xs text-[#64748B] mb-1">
+              <span>Win Rate</span>
+              <TrendingUp className="w-4 h-4 text-indigo-600" />
             </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-[#111827] tabular-nums">{winRatePct}%</span>
-              <span className="text-xs font-medium text-emerald-700">{wonLeads.length} won</span>
-            </div>
-            <p className="text-xs text-[#64748B] mt-2">
-              {closedLeadsCount > 0 ? `Across ${closedLeadsCount} closed deals` : 'Log won or lost deals to track'}
-            </p>
+            <div className="text-xl font-bold text-[#111827] tabular-nums">{winRatePct}%</div>
+            <p className="text-[11px] text-emerald-700 mt-0.5">{wonLeads.length} won deals</p>
           </div>
 
           <div
             onClick={() => setCurrentPage('quotations')}
-            className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-2xl p-5 cursor-pointer transition-colors"
+            className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl p-4 cursor-pointer transition-colors"
           >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-[#64748B]">Client Proposals</span>
-              <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
-                <FileText className="w-4 h-4" />
-              </div>
+            <div className="flex items-center justify-between text-xs text-[#64748B] mb-1">
+              <span>Proposals Sent</span>
+              <FileText className="w-4 h-4 text-amber-600" />
             </div>
-            <div className="text-2xl font-bold text-[#111827] tabular-nums">
+            <div className="text-xl font-bold text-[#111827] tabular-nums">
               {formatINRCompact(quotesTotalValue)}
             </div>
-            <p className="text-xs text-[#64748B] mt-2">
-              {recentQuotations.length} quotes ({pendingQuotesCount} awaiting sign-off)
-            </p>
+            <p className="text-[11px] text-[#64748B] mt-0.5">{recentQuotations.length} quotes</p>
           </div>
         </div>
 
-        {/* CRM Analytics Charts Row */}
+        {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          <div className="lg:col-span-7 bg-white border border-[#E5E7EB] rounded-2xl p-5">
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <div>
-                <h2 className="text-sm font-semibold text-[#111827]">Pipeline Value by Stage</h2>
-                <p className="text-xs text-[#64748B] mt-0.5">Estimated interior budget across your CRM funnel</p>
-              </div>
+          <div className="lg:col-span-7 bg-white border border-[#E5E7EB] rounded-xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xs font-semibold text-[#111827]">Pipeline by Stage</h2>
               <button
                 onClick={() => setCurrentPage('leads')}
-                className="text-xs font-semibold text-[#1D4ED8] hover:underline flex items-center gap-1"
+                className="text-[11px] font-semibold text-[#1D4ED8] hover:underline"
               >
-                Kanban <ArrowUpRight className="w-3.5 h-3.5" />
+                Pipeline →
               </button>
             </div>
-            {leads.length === 0 ? (
-              <div className="h-64 flex flex-col items-center justify-center text-center bg-[#F8FAFC] border border-dashed border-[#E5E7EB] rounded-xl p-6">
-                <Users className="w-7 h-7 text-[#94A3B8] mb-2" />
-                <p className="text-sm font-semibold text-[#111827]">No leads recorded yet</p>
-                <p className="text-xs text-[#64748B] mt-1">Add inquiries in Lead Pipeline to see your stage funnel.</p>
-              </div>
-            ) : (
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={crmFunnelData} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
-                    <XAxis dataKey="stage" tick={{ fontSize: 11, fill: '#64748B' }} axisLine={false} tickLine={false} />
-                    <YAxis
-                      tick={{ fontSize: 11, fill: '#64748B' }}
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={(v) => formatINRCompact(Number(v))}
-                    />
-                    <Tooltip
-                      formatter={(val: unknown) => formatINR(Number(val || 0))}
-                      contentStyle={{ borderRadius: 12, borderColor: '#E5E7EB', fontSize: 12 }}
-                    />
-                    <Bar dataKey="Value" name="Estimated Budget" fill="#1D4ED8" radius={[6, 6, 0, 0]} maxBarSize={42} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={crmFunnelData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                  <XAxis dataKey="stage" tick={{ fontSize: 10, fill: '#64748B' }} axisLine={false} tickLine={false} />
+                  <YAxis
+                    tick={{ fontSize: 10, fill: '#64748B' }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v) => formatINRCompact(Number(v))}
+                  />
+                  <Tooltip
+                    formatter={(val: unknown) => formatINR(Number(val || 0))}
+                    contentStyle={{ borderRadius: 10, borderColor: '#E5E7EB', fontSize: 11 }}
+                  />
+                  <Bar dataKey="Value" fill="#1D4ED8" radius={[4, 4, 0, 0]} maxBarSize={32} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          <div className="lg:col-span-5 bg-white border border-[#E5E7EB] rounded-2xl p-5 flex flex-col">
-            <div className="mb-4">
-              <h2 className="text-sm font-semibold text-[#111827]">Lead Source Mix</h2>
-              <p className="text-xs text-[#64748B] mt-0.5">Where your studio inquiries originate</p>
-            </div>
+          <div className="lg:col-span-5 bg-white border border-[#E5E7EB] rounded-xl p-4 flex flex-col">
+            <h2 className="text-xs font-semibold text-[#111827] mb-2">Inquiry Sources</h2>
             {leadSourceData.length === 0 ? (
-              <div className="flex-1 min-h-[220px] flex flex-col items-center justify-center text-center bg-[#F8FAFC] border border-dashed border-[#E5E7EB] rounded-xl p-6">
-                <Target className="w-7 h-7 text-[#94A3B8] mb-2" />
-                <p className="text-xs text-[#64748B]">Lead sources will chart here once inquiries are captured.</p>
+              <div className="flex-1 flex items-center justify-center text-xs text-[#94A3B8]">
+                No lead sources recorded
               </div>
             ) : (
-              <div className="flex-1 flex flex-col sm:flex-row items-center gap-4">
-                <div className="w-full sm:w-1/2 h-52">
+              <div className="flex-1 flex items-center gap-3">
+                <div className="w-1/2 h-36">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={leadSourceData}
                         dataKey="value"
                         nameKey="name"
-                        innerRadius={48}
-                        outerRadius={76}
+                        innerRadius={36}
+                        outerRadius={56}
                         paddingAngle={3}
                       >
                         {leadSourceData.map((_, i) => (
                           <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />
                         ))}
                       </Pie>
-                      <Tooltip contentStyle={{ borderRadius: 12, borderColor: '#E5E7EB', fontSize: 12 }} />
+                      <Tooltip contentStyle={{ borderRadius: 10, borderColor: '#E5E7EB', fontSize: 11 }} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="w-full sm:w-1/2 space-y-2">
+                <div className="w-1/2 space-y-1.5 text-xs">
                   {leadSourceData.map((row, idx) => (
-                    <div key={row.name} className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2 min-w-0">
+                    <div key={row.name} className="flex items-center justify-between text-[11px]">
+                      <div className="flex items-center gap-1.5 min-w-0">
                         <span
-                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          className="w-2 h-2 rounded-full shrink-0"
                           style={{ backgroundColor: CHART_PALETTE[idx % CHART_PALETTE.length] }}
                         />
-                        <span className="text-[#374151] font-medium truncate">{row.name}</span>
+                        <span className="text-[#374151] truncate">{row.name}</span>
                       </div>
-                      <span className="font-semibold text-[#111827] tabular-nums ml-2">{row.value}</span>
+                      <span className="font-semibold text-[#111827] tabular-nums ml-1">{row.value}</span>
                     </div>
                   ))}
                 </div>
@@ -489,56 +419,43 @@ export const OverviewPage: React.FC = () => {
           </div>
         </div>
 
-        {/* CRM Operational Lists Row */}
+        {/* Priority Inquiries + Proposals */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          <div className="lg:col-span-7 bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#E5E7EB] flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-[#111827]">Priority Inquiries</h3>
-                <p className="text-xs text-[#64748B]">Top active client prospects ranked by estimated budget</p>
-              </div>
+          <div className="lg:col-span-7 bg-white border border-[#E5E7EB] rounded-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#F1F5F9] flex items-center justify-between">
+              <h3 className="text-xs font-semibold text-[#111827]">Priority Inquiries</h3>
               <button
                 onClick={() => setCurrentPage('leads')}
-                className="text-xs font-semibold text-[#1D4ED8] hover:underline"
+                className="text-[11px] font-semibold text-[#1D4ED8] hover:underline"
               >
-                View All →
+                All Leads →
               </button>
             </div>
             <div className="divide-y divide-[#F1F5F9]">
               {priorityLeads.length === 0 ? (
-                <div className="p-8 text-center">
-                  <p className="text-sm font-medium text-[#111827]">No matching inquiries</p>
-                  <button
-                    onClick={() => setCurrentPage('leads')}
-                    className="mt-3 px-4 py-2 text-xs font-semibold text-white bg-[#1D4ED8] rounded-xl"
-                  >
-                    Go to Lead Pipeline
-                  </button>
-                </div>
+                <div className="p-6 text-center text-xs text-[#94A3B8]">No active leads</div>
               ) : (
                 priorityLeads.map((lead) => (
                   <div
                     key={lead.id}
                     onClick={() => setCurrentPage('leads')}
-                    className="px-5 py-3.5 hover:bg-[#F8FAFC] cursor-pointer flex items-center justify-between gap-4 transition-colors"
+                    className="px-4 py-2.5 hover:bg-[#F8FAFC] cursor-pointer flex items-center justify-between gap-3 transition-colors"
                   >
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-editorial text-base font-medium text-[#111827] truncate">
+                      <div className="flex items-center gap-2">
+                        <span className="font-editorial text-sm font-medium text-[#111827] truncate">
                           {lead.name}
                         </span>
                         <Badge status={lead.status} size="sm" />
                       </div>
-                      <p className="text-xs text-[#64748B] mt-0.5 truncate">
-                        {lead.requirement || 'Turnkey Interior Consultation'}
-                        {lead.phone ? ` • ${lead.phone}` : ''}
+                      <p className="text-[11px] text-[#64748B] truncate mt-0.5">
+                        {lead.requirement || 'Interior consultation'}
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-bold text-[#111827] tabular-nums">
+                      <span className="text-xs font-bold text-[#111827] tabular-nums">
                         {lead.estimated_budget ? formatINRCompact(lead.estimated_budget) : '—'}
-                      </p>
-                      <p className="text-[11px] text-[#64748B]">{lead.source || 'Direct'}</p>
+                      </span>
                     </div>
                   </div>
                 ))
@@ -546,51 +463,35 @@ export const OverviewPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="lg:col-span-5 bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden flex flex-col">
-            <div className="px-5 py-4 border-b border-[#E5E7EB] flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-[#111827]">Recent Client Quotations</h3>
-                <p className="text-xs text-[#64748B]">Latest generated & shared proposals</p>
-              </div>
+          <div className="lg:col-span-5 bg-white border border-[#E5E7EB] rounded-xl overflow-hidden flex flex-col">
+            <div className="px-4 py-3 border-b border-[#F1F5F9] flex items-center justify-between">
+              <h3 className="text-xs font-semibold text-[#111827]">Recent Proposals</h3>
               <button
                 onClick={() => setCurrentPage('quotations')}
-                className="text-xs font-semibold text-[#1D4ED8] hover:underline"
+                className="text-[11px] font-semibold text-[#1D4ED8] hover:underline"
               >
                 All Quotes →
               </button>
             </div>
             <div className="divide-y divide-[#F1F5F9] flex-1">
               {recentQuotations.length === 0 ? (
-                <div className="p-8 text-center">
-                  <FileText className="w-7 h-7 text-[#94A3B8] mx-auto mb-2" />
-                  <p className="text-xs text-[#64748B]">Create your first proposal in seconds using Quote Estimator.</p>
-                  <button
-                    onClick={() => setIsGenericQuoteModalOpen(true)}
-                    className="mt-3 px-4 py-2 text-xs font-semibold text-[#1D4ED8] bg-[#EFF6FF] rounded-xl"
-                  >
-                    Launch Estimator
-                  </button>
-                </div>
+                <div className="p-6 text-center text-xs text-[#94A3B8]">No proposals created yet</div>
               ) : (
                 recentQuotations.slice(0, 4).map((q) => (
                   <div
                     key={q.id}
                     onClick={() => setCurrentPage('quotations')}
-                    className="px-5 py-3.5 hover:bg-[#F8FAFC] cursor-pointer flex items-center justify-between gap-3 transition-colors"
+                    className="px-4 py-2.5 hover:bg-[#F8FAFC] cursor-pointer flex items-center justify-between gap-3 transition-colors"
                   >
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-[#111827] truncate">
-                        {q.client_snapshot?.name || 'Client Proposal'}
+                        {q.client_snapshot?.name || 'Client Quote'}
                       </p>
-                      <p className="text-[11px] text-[#64748B] truncate">
-                        {q.quote_number} • {q.project_snapshot?.name || 'Custom Interiors'}
-                      </p>
+                      <p className="text-[11px] text-[#64748B] truncate">{q.quote_number}</p>
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-xs font-bold text-[#111827] tabular-nums">{formatINRCompact(q.total)}</p>
-                      <span className="inline-block text-[10px] font-semibold uppercase tracking-wide text-[#1D4ED8] bg-[#EFF6FF] px-2 py-0.5 rounded-full mt-0.5">
-                        {q.status}
-                      </span>
+                      <span className="text-[10px] text-[#1D4ED8] font-medium">{q.status}</span>
                     </div>
                   </div>
                 ))
@@ -603,249 +504,196 @@ export const OverviewPage: React.FC = () => {
   }
 
   // ============================================================================
-  // ERP DASHBOARD MODE
+  // ERP MODE DASHBOARD
   // ============================================================================
   return (
-    <div className="space-y-6 pb-10">
-      {/* Studio Welcome & Quick Actions Header */}
-      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+    <div className="space-y-5 pb-10">
+      {/* Clean Studio Header */}
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#1D4ED8] mb-1.5">
-            <span>Apni Estate Interiors</span>
-            <span className="text-[#CBD5E1]">•</span>
-            <span className="text-[#64748B]">Interior ERP Workspace</span>
-          </div>
-          <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight">
-            Good day, {firstName}
+          <h1 className="font-editorial text-2xl font-medium text-[#111827]">
+            Overview
           </h1>
-          <p className="text-sm text-[#4B5563] mt-1">
-            Monitor site budgets, room-wise progress, purchase orders, and financial health from one place.
-          </p>
+          <p className="text-xs text-[#64748B] mt-0.5">Welcome back, {firstName}</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setWorkspaceMode('crm')}
-            className="px-3.5 py-2.5 text-xs font-semibold text-[#475569] bg-[#F8FAFC] hover:bg-[#EFF6FF] hover:text-[#1D4ED8] border border-[#E5E7EB] rounded-xl transition-colors"
+            className="px-3 py-1.5 text-xs font-semibold text-[#475569] bg-[#F8FAFC] hover:bg-[#EFF6FF] hover:text-[#1D4ED8] border border-[#E5E7EB] rounded-xl transition-colors cursor-pointer"
           >
-            Switch to CRM
+            CRM Mode
           </button>
           <button
             onClick={() => setIsAddExpenseModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-[#1D4ED8] bg-[#EFF6FF] hover:bg-blue-100/70 border border-blue-200 rounded-xl transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#1D4ED8] bg-[#EFF6FF] border border-blue-200 rounded-xl transition-colors cursor-pointer"
           >
-            <Receipt className="w-4 h-4" />
-            <span>Record Expense</span>
+            <Receipt className="w-3.5 h-3.5" />
+            <span>+ Expense</span>
           </button>
           <button
             onClick={() => setIsNewProjectModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-[#1D4ED8] hover:bg-[#1E40AF] rounded-xl transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#1D4ED8] hover:bg-[#1E40AF] rounded-xl transition-colors cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>New Project</span>
           </button>
         </div>
       </div>
 
-      {/* Beginner-Friendly Quick Action Strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* 1-Line Quick Actions */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         <button
           onClick={() => setIsNewProjectModalOpen(true)}
-          className="flex items-center gap-3 p-3.5 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-left transition-colors group"
+          className="flex items-center justify-center gap-2 p-3 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-xs font-semibold text-[#111827] hover:text-[#1D4ED8] transition-colors cursor-pointer"
         >
-          <div className="w-9 h-9 rounded-lg bg-[#EFF6FF] text-[#1D4ED8] flex items-center justify-center shrink-0">
-            <FolderPlus className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-semibold text-[#111827] group-hover:text-[#1D4ED8] truncate">Start Project</p>
-            <p className="text-[11px] text-[#64748B] truncate">Set budget & rooms</p>
-          </div>
+          <FolderPlus className="w-4 h-4 text-[#1D4ED8]" />
+          <span>New Project</span>
         </button>
 
         <button
           onClick={() => setIsAddExpenseModalOpen(true)}
-          className="flex items-center gap-3 p-3.5 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-left transition-colors group"
+          className="flex items-center justify-center gap-2 p-3 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-xs font-semibold text-[#111827] hover:text-[#1D4ED8] transition-colors cursor-pointer"
         >
-          <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
-            <Receipt className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-semibold text-[#111827] group-hover:text-[#1D4ED8] truncate">Log Expense</p>
-            <p className="text-[11px] text-[#64748B] truncate">Vendor or site cost</p>
-          </div>
+          <Receipt className="w-4 h-4 text-amber-600" />
+          <span>Add Expense</span>
         </button>
 
         <button
           onClick={() => setCurrentPage('purchases')}
-          className="flex items-center gap-3 p-3.5 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-left transition-colors group"
+          className="flex items-center justify-center gap-2 p-3 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-xs font-semibold text-[#111827] hover:text-[#1D4ED8] transition-colors cursor-pointer"
         >
-          <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
-            <ShoppingCart className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-semibold text-[#111827] group-hover:text-[#1D4ED8] truncate">Purchase Orders</p>
-            <p className="text-[11px] text-[#64748B] truncate">{openOrdersCount} open deliveries</p>
-          </div>
+          <ShoppingCart className="w-4 h-4 text-emerald-600" />
+          <span>Orders ({openOrdersCount})</span>
         </button>
 
         <button
           onClick={() => setIsGenericQuoteModalOpen(true)}
-          className="flex items-center gap-3 p-3.5 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-left transition-colors group"
+          className="flex items-center justify-center gap-2 p-3 bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl text-xs font-semibold text-[#111827] hover:text-[#1D4ED8] transition-colors cursor-pointer"
         >
-          <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
-            <Calculator className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-semibold text-[#111827] group-hover:text-[#1D4ED8] truncate">Quote Estimator</p>
-            <p className="text-[11px] text-[#64748B] truncate">Generate client PDF</p>
-          </div>
+          <Calculator className="w-4 h-4 text-indigo-600" />
+          <span>Estimator</span>
         </button>
       </div>
 
       {/* 4 ERP KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div
           onClick={() => setCurrentPage('projects')}
-          className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-2xl p-5 cursor-pointer transition-colors"
+          className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl p-4 cursor-pointer transition-colors"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-[#64748B]">Active Projects</span>
-            <div className="w-8 h-8 rounded-lg bg-[#EFF6FF] text-[#1D4ED8] flex items-center justify-center">
-              <Building2 className="w-4 h-4" />
-            </div>
+          <div className="flex items-center justify-between text-xs text-[#64748B] mb-1">
+            <span>Active Projects</span>
+            <Building2 className="w-4 h-4 text-[#1D4ED8]" />
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-[#111827] tabular-nums">{activeProjectsCount}</span>
-            <span className="text-xs text-[#64748B]">active of {projects.length}</span>
-          </div>
-          <p className="text-xs text-emerald-700 font-medium mt-2">{onTrackCount} running on schedule</p>
+          <div className="text-xl font-bold text-[#111827] tabular-nums">{activeProjectsCount}</div>
+          <p className="text-[11px] text-emerald-700 font-medium mt-0.5">{onTrackCount} on schedule</p>
         </div>
 
         <div
           onClick={() => setCurrentPage('budget')}
-          className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-2xl p-5 cursor-pointer transition-colors"
+          className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl p-4 cursor-pointer transition-colors"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-[#64748B]">Committed Portfolio</span>
-            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center">
-              <Layers className="w-4 h-4" />
-            </div>
+          <div className="flex items-center justify-between text-xs text-[#64748B] mb-1">
+            <span>Total Budget</span>
+            <Layers className="w-4 h-4 text-indigo-600" />
           </div>
-          <div className="text-2xl font-bold text-[#111827] tabular-nums">{formatINRCompact(totalBudget)}</div>
-          <p className="text-xs text-[#64748B] mt-2">Across {projects.length} interior sites</p>
+          <div className="text-xl font-bold text-[#111827] tabular-nums">{formatINRCompact(totalBudget)}</div>
+          <p className="text-[11px] text-[#64748B] mt-0.5">{projects.length} sites</p>
         </div>
 
         <div
           onClick={() => setCurrentPage('expenses')}
-          className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-2xl p-5 cursor-pointer transition-colors"
+          className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl p-4 cursor-pointer transition-colors"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-[#64748B]">Expenses Logged</span>
-            <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
-              <Receipt className="w-4 h-4" />
-            </div>
+          <div className="flex items-center justify-between text-xs text-[#64748B] mb-1">
+            <span>Total Spent</span>
+            <Receipt className="w-4 h-4 text-amber-600" />
           </div>
-          <div className="text-2xl font-bold text-[#111827] tabular-nums">{formatINRCompact(totalSpent)}</div>
-          <p className="text-xs text-[#64748B] mt-2">
-            {totalBudget > 0 ? `${Math.round((totalSpent / totalBudget) * 100)}% of total portfolio` : 'Verified expense ledger'}
-          </p>
+          <div className="text-xl font-bold text-[#111827] tabular-nums">{formatINRCompact(totalSpent)}</div>
+          <p className="text-[11px] text-[#64748B] mt-0.5">Site ledger</p>
         </div>
 
         <div
           onClick={() => setCurrentPage('payments')}
-          className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-2xl p-5 cursor-pointer transition-colors"
+          className="bg-white border border-[#E5E7EB] hover:border-[#1D4ED8] rounded-xl p-4 cursor-pointer transition-colors"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-[#64748B]">Client Collections</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
-              <IndianRupee className="w-4 h-4" />
-            </div>
+          <div className="flex items-center justify-between text-xs text-[#64748B] mb-1">
+            <span>Collections</span>
+            <IndianRupee className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-2xl font-bold text-[#111827] tabular-nums">{formatINRCompact(totalCollected)}</div>
-          <p className="text-xs text-[#64748B] mt-2">
-            {totalScheduled > 0
-              ? `of ${formatINRCompact(totalScheduled)} milestone schedule`
-              : `${openOrdersCount} open PO deliveries`}
-          </p>
+          <div className="text-xl font-bold text-[#111827] tabular-nums">{formatINRCompact(totalCollected)}</div>
+          <p className="text-[11px] text-emerald-700 mt-0.5">Received</p>
         </div>
       </div>
 
       {/* Recharts Analytics Row */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        <div className="lg:col-span-7 bg-white border border-[#E5E7EB] rounded-2xl p-5">
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <div>
-              <h2 className="text-sm font-semibold text-[#111827]">Project Budget vs. Actual Spend</h2>
-              <p className="text-xs text-[#64748B] mt-0.5">Comparing sanctioned site budgets with logged expenses</p>
-            </div>
+        <div className="lg:col-span-7 bg-white border border-[#E5E7EB] rounded-xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xs font-semibold text-[#111827]">Budget vs. Actual Spend</h2>
             <button
               onClick={() => setCurrentPage('budget')}
-              className="text-xs font-semibold text-[#1D4ED8] hover:underline flex items-center gap-1"
+              className="text-[11px] font-semibold text-[#1D4ED8] hover:underline"
             >
-              Budget Control <ArrowUpRight className="w-3.5 h-3.5" />
+              Budget Health →
             </button>
           </div>
 
           {projectBudgetChartData.length === 0 ? (
-            <div className="h-64 flex flex-col items-center justify-center text-center bg-[#F8FAFC] border border-dashed border-[#E5E7EB] rounded-xl p-6">
-              <Building2 className="w-7 h-7 text-[#94A3B8] mb-2" />
-              <p className="text-sm font-semibold text-[#111827]">No projects created yet</p>
-              <p className="text-xs text-[#64748B] mt-1">Create a project to compare budget vs. execution costs.</p>
+            <div className="h-48 flex items-center justify-center text-xs text-[#94A3B8]">
+              No projects created yet
             </div>
           ) : (
-            <div className="h-64">
+            <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={projectBudgetChartData} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748B' }} axisLine={false} tickLine={false} />
+                <BarChart data={projectBudgetChartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#64748B' }} axisLine={false} tickLine={false} />
                   <YAxis
-                    tick={{ fontSize: 11, fill: '#64748B' }}
+                    tick={{ fontSize: 10, fill: '#64748B' }}
                     axisLine={false}
                     tickLine={false}
                     tickFormatter={(v) => formatINRCompact(Number(v))}
                   />
                   <Tooltip
                     formatter={(val: unknown) => formatINR(Number(val || 0))}
-                    contentStyle={{ borderRadius: 12, borderColor: '#E5E7EB', fontSize: 12 }}
+                    contentStyle={{ borderRadius: 10, borderColor: '#E5E7EB', fontSize: 11 }}
                   />
-                  <Bar dataKey="Budget" fill="#CBD5E1" radius={[6, 6, 0, 0]} maxBarSize={28} />
-                  <Bar dataKey="Spent" fill="#1D4ED8" radius={[6, 6, 0, 0]} maxBarSize={28} />
+                  <Bar dataKey="Budget" fill="#CBD5E1" radius={[4, 4, 0, 0]} maxBarSize={20} />
+                  <Bar dataKey="Spent" fill="#1D4ED8" radius={[4, 4, 0, 0]} maxBarSize={20} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           )}
         </div>
 
-        <div className="lg:col-span-5 bg-white border border-[#E5E7EB] rounded-2xl p-5 flex flex-col">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-sm font-semibold text-[#111827]">Spend by Trade Category</h2>
-              <p className="text-xs text-[#64748B] mt-0.5">Live breakdown across materials, labour & vendors</p>
-            </div>
+        <div className="lg:col-span-5 bg-white border border-[#E5E7EB] rounded-xl p-4 flex flex-col">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xs font-semibold text-[#111827]">Spend by Trade</h2>
             <button
-              onClick={() => setCurrentPage('reports')}
-              className="text-xs font-semibold text-[#1D4ED8] hover:underline"
+              onClick={() => setCurrentPage('expenses')}
+              className="text-[11px] font-semibold text-[#1D4ED8] hover:underline"
             >
-              Reports →
+              Expenses →
             </button>
           </div>
 
           {spendCategoryData.length === 0 ? (
-            <div className="flex-1 min-h-[220px] flex flex-col items-center justify-center text-center bg-[#F8FAFC] border border-dashed border-[#E5E7EB] rounded-xl p-6">
-              <Receipt className="w-7 h-7 text-[#94A3B8] mb-2" />
-              <p className="text-xs text-[#64748B]">Log your first expense to visualize trade spend share.</p>
+            <div className="flex-1 flex items-center justify-center text-xs text-[#94A3B8]">
+              No expenses recorded
             </div>
           ) : (
-            <div className="flex-1 flex flex-col sm:flex-row items-center gap-4">
-              <div className="w-full sm:w-1/2 h-52">
+            <div className="flex-1 flex items-center gap-3">
+              <div className="w-1/2 h-36">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={spendCategoryData}
                       dataKey="value"
                       nameKey="name"
-                      innerRadius={48}
-                      outerRadius={76}
+                      innerRadius={36}
+                      outerRadius={56}
                       paddingAngle={3}
                     >
                       {spendCategoryData.map((_, i) => (
@@ -854,22 +702,22 @@ export const OverviewPage: React.FC = () => {
                     </Pie>
                     <Tooltip
                       formatter={(val: unknown) => formatINR(Number(val || 0))}
-                      contentStyle={{ borderRadius: 12, borderColor: '#E5E7EB', fontSize: 12 }}
+                      contentStyle={{ borderRadius: 10, borderColor: '#E5E7EB', fontSize: 11 }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="w-full sm:w-1/2 space-y-2.5">
+              <div className="w-1/2 space-y-1.5 text-xs">
                 {spendCategoryData.map((row, idx) => (
-                  <div key={row.name} className="flex items-center justify-between text-xs gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
+                  <div key={row.name} className="flex items-center justify-between text-[11px]">
+                    <div className="flex items-center gap-1.5 min-w-0">
                       <span
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        className="w-2 h-2 rounded-full shrink-0"
                         style={{ backgroundColor: CHART_PALETTE[idx % CHART_PALETTE.length] }}
                       />
-                      <span className="text-[#374151] font-medium truncate">{row.name}</span>
+                      <span className="text-[#374151] truncate">{row.name}</span>
                     </div>
-                    <span className="font-semibold text-[#111827] tabular-nums shrink-0">
+                    <span className="font-semibold text-[#111827] tabular-nums shrink-0 ml-1">
                       {formatINRCompact(row.value)}
                     </span>
                   </div>
@@ -880,17 +728,14 @@ export const OverviewPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Bottom Operational Split: Active Sites + Attention & Schedule */}
+      {/* Operational Split: Active Sites + Tasks & Schedule */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        <div className="lg:col-span-7 bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#E5E7EB] flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-semibold text-[#111827]">Active Projects & Site Rooms</h3>
-              <p className="text-xs text-[#64748B]">Click any project to manage rooms, BOQ, DPR photos & budget</p>
-            </div>
+        <div className="lg:col-span-7 bg-white border border-[#E5E7EB] rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-[#F1F5F9] flex items-center justify-between">
+            <h3 className="text-xs font-semibold text-[#111827]">Active Sites</h3>
             <button
               onClick={() => setCurrentPage('projects')}
-              className="text-xs font-semibold text-[#1D4ED8] hover:underline"
+              className="text-[11px] font-semibold text-[#1D4ED8] hover:underline"
             >
               All Projects →
             </button>
@@ -898,15 +743,7 @@ export const OverviewPage: React.FC = () => {
 
           <div className="divide-y divide-[#F1F5F9]">
             {filteredProjects.length === 0 ? (
-              <div className="p-8 text-center">
-                <p className="text-sm font-medium text-[#111827]">No projects found</p>
-                <button
-                  onClick={() => setIsNewProjectModalOpen(true)}
-                  className="mt-3 px-4 py-2 text-xs font-semibold text-white bg-[#1D4ED8] rounded-xl"
-                >
-                  Create Project
-                </button>
-              </div>
+              <div className="p-6 text-center text-xs text-[#94A3B8]">No projects found</div>
             ) : (
               filteredProjects.slice(0, 5).map((project) => {
                 const actualSpent = projectSpendMap.get(project.id) ?? Number(project.spent || 0);
@@ -914,30 +751,30 @@ export const OverviewPage: React.FC = () => {
                   <div
                     key={project.id}
                     onClick={() => openProjectDetail(project.id)}
-                    className="px-5 py-4 hover:bg-[#F8FAFC] cursor-pointer flex items-center justify-between gap-4 transition-colors"
+                    className="px-4 py-3 hover:bg-[#F8FAFC] cursor-pointer flex items-center justify-between gap-3 transition-colors"
                   >
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-editorial text-base font-medium text-[#111827] truncate">
+                      <div className="flex items-center gap-2">
+                        <span className="font-editorial text-sm font-medium text-[#111827] truncate">
                           {project.name}
                         </span>
                         <Badge status={project.status} size="sm" />
                       </div>
-                      <p className="text-xs text-[#64748B] mt-0.5 truncate">
-                        {project.client} • {project.city || project.location || 'Site'}
+                      <p className="text-[11px] text-[#64748B] mt-0.5 truncate">
+                        {project.client} • {project.city || 'Site'}
                       </p>
                     </div>
 
-                    <div className="w-36 sm:w-44 shrink-0 text-right">
-                      <div className="flex items-center justify-between text-xs mb-1.5">
-                        <span className="font-semibold text-[#111827] tabular-nums">
+                    <div className="w-28 sm:w-36 shrink-0 text-right">
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="font-bold text-[#111827] tabular-nums">
                           {formatINRCompact(actualSpent)}
                         </span>
-                        <span className="text-[#64748B] tabular-nums">{project.progress || 0}%</span>
+                        <span className="text-[#64748B] tabular-nums text-[11px]">{project.progress || 0}%</span>
                       </div>
                       <div className="h-1.5 w-full bg-[#E5E7EB] rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-[#1D4ED8] rounded-full transition-all"
+                          className="h-full bg-[#1D4ED8] rounded-full"
                           style={{ width: `${Math.min(100, Math.max(0, project.progress || 0))}%` }}
                         />
                       </div>
@@ -949,104 +786,93 @@ export const OverviewPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="lg:col-span-5 space-y-5">
-          {/* Priority Attention */}
-          <div className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#E5E7EB] flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-[#111827]">Priority Attention</h3>
-                <p className="text-xs text-[#64748B]">Site alerts, urgent tasks & budget flags</p>
-              </div>
+        <div className="lg:col-span-5 space-y-4">
+          {/* Tasks & Punch List */}
+          <div className="bg-white border border-[#E5E7EB] rounded-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#F1F5F9] flex items-center justify-between">
+              <h3 className="text-xs font-semibold text-[#111827]">Pending Tasks</h3>
               <button
-                onClick={() => setCurrentPage('tasks')}
-                className="text-xs font-semibold text-[#1D4ED8] hover:underline"
+                onClick={() => setCurrentPage('calendar')}
+                className="text-[11px] font-semibold text-[#1D4ED8] hover:underline"
               >
-                Tasks →
+                Calendar &amp; Tasks →
               </button>
             </div>
             <div className="divide-y divide-[#F1F5F9]">
-              {flaggedProjects.length === 0 && urgentTasks.length === 0 ? (
-                <div className="px-5 py-6 flex items-center gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                  <p className="text-xs text-[#4B5563]">All active sites and high-priority tasks are running smoothly.</p>
+              {urgentTasks.length === 0 ? (
+                <div className="px-4 py-4 flex items-center gap-2 text-xs text-[#64748B]">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>All site tasks completed</span>
                 </div>
               ) : (
-                <>
-                  {flaggedProjects.map((p) => (
-                    <div
-                      key={p.id}
-                      onClick={() => openProjectDetail(p.id)}
-                      className="px-5 py-3 hover:bg-[#F8FAFC] cursor-pointer flex items-center justify-between gap-3"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                        <div className="min-w-0">
-                          <p className="text-xs font-semibold text-[#111827] truncate">{p.name}</p>
-                          <p className="text-[11px] text-[#64748B]">{p.progress || 0}% complete</p>
-                        </div>
+                urgentTasks.map((t) => (
+                  <div
+                    key={t.id}
+                    className="px-4 py-2.5 flex items-center justify-between gap-3 hover:bg-[#F8FAFC]"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <button
+                        onClick={() => handleToggleTask(t)}
+                        className="text-slate-300 hover:text-emerald-600 shrink-0"
+                      >
+                        <Circle className="w-4 h-4" />
+                      </button>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-[#111827] truncate">{t.title}</p>
+                        <p className="text-[11px] text-[#64748B] truncate">{t.projectName || 'Studio'}</p>
                       </div>
-                      <Badge status={p.status} size="sm" />
                     </div>
-                  ))}
-                  {urgentTasks.map((t) => (
-                    <div
-                      key={t.id}
-                      onClick={() => setCurrentPage('tasks')}
-                      className="px-5 py-3 hover:bg-[#F8FAFC] cursor-pointer flex items-center justify-between gap-3"
+                    <span
+                      className={`text-[9px] font-bold px-1.5 py-0.2 rounded shrink-0 ${
+                        t.priority === 'Urgent'
+                          ? 'bg-rose-50 text-rose-700'
+                          : t.priority === 'High'
+                          ? 'bg-amber-50 text-amber-700'
+                          : 'bg-slate-100 text-slate-600'
+                      }`}
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <ClipboardList className="w-4 h-4 text-[#1D4ED8] shrink-0" />
-                        <div className="min-w-0">
-                          <p className="text-xs font-semibold text-[#111827] truncate">{t.title}</p>
-                          <p className="text-[11px] text-[#64748B] truncate">{t.projectName || 'Studio Task'}</p>
-                        </div>
-                      </div>
-                      <Badge status={t.priority} size="sm" />
-                    </div>
-                  ))}
-                </>
+                      {t.priority}
+                    </span>
+                  </div>
+                ))
               )}
             </div>
           </div>
 
           {/* Upcoming Schedule */}
-          <div className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#E5E7EB] flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-[#111827]">Upcoming Schedule</h3>
-                <p className="text-xs text-[#64748B]">Site visits, deliveries & deadlines</p>
-              </div>
+          <div className="bg-white border border-[#E5E7EB] rounded-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#F1F5F9] flex items-center justify-between">
+              <h3 className="text-xs font-semibold text-[#111827]">Upcoming Schedule</h3>
               <button
                 onClick={() => setCurrentPage('calendar')}
-                className="text-xs font-semibold text-[#1D4ED8] hover:underline"
+                className="text-[11px] font-semibold text-[#1D4ED8] hover:underline"
               >
-                Calendar →
+                View →
               </button>
             </div>
             <div className="divide-y divide-[#F1F5F9]">
               {upcomingSiteEvents.length === 0 ? (
-                <div className="px-5 py-6 text-center text-xs text-[#64748B]">
-                  No upcoming site events scheduled.
+                <div className="px-4 py-4 text-xs text-[#94A3B8] text-center">
+                  No upcoming site events
                 </div>
               ) : (
                 upcomingSiteEvents.map((ev) => (
                   <div
                     key={ev.id}
                     onClick={() => setCurrentPage('calendar')}
-                    className="px-5 py-3 hover:bg-[#F8FAFC] cursor-pointer flex items-center justify-between gap-3"
+                    className="px-4 py-2.5 hover:bg-[#F8FAFC] cursor-pointer flex items-center justify-between gap-3"
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <Calendar className="w-4 h-4 text-[#1D4ED8] shrink-0" />
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Calendar className="w-3.5 h-3.5 text-[#1D4ED8] shrink-0" />
                       <div className="min-w-0">
                         <p className="text-xs font-semibold text-[#111827] truncate">{ev.title}</p>
                         <p className="text-[11px] text-[#64748B] truncate">
-                          {ev.projectName || ev.location || 'Studio'}
+                          {ev.projectName || 'Studio'}
                         </p>
                       </div>
                     </div>
-                    <span className="text-[11px] font-medium text-[#4B5563] tabular-nums shrink-0 flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-[#94A3B8]" />
-                      {ev.date}
+                    <span className="text-[10px] font-medium text-[#64748B] tabular-nums shrink-0">
+                      {formatDate(ev.date)}
                     </span>
                   </div>
                 ))

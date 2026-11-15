@@ -111,46 +111,46 @@ export const Sidebar: React.FC = () => {
 
   // 1. Primary ERP Mode Navigation
   const erpNavItems: SidebarNavItem[] = [
-    { id: 'overview', label: 'Studio Overview', icon: LayoutDashboard },
-    { id: 'projects', label: 'Projects & Rooms', icon: FolderKanban, badge: stats.activeProjectsCount },
-    { id: 'expenses', label: 'Expense Ledger', icon: Receipt },
-    { id: 'purchases', label: 'Purchase Orders', icon: ShoppingBag, badge: activeOrdersCount > 0 ? activeOrdersCount : undefined },
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'projects', label: 'Projects', icon: FolderKanban, badge: stats.activeProjectsCount },
+    { id: 'expenses', label: 'Expenses', icon: Receipt },
+    { id: 'purchases', label: 'Orders', icon: ShoppingBag, badge: activeOrdersCount > 0 ? activeOrdersCount : undefined },
+    { id: 'calendar', label: 'Schedule & Tasks', icon: CalendarDays },
+  ];
+
+  // 2. Primary CRM Mode Navigation
+  const crmNavItems: SidebarNavItem[] = [
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'leads', label: 'Leads', icon: UserPlus, badge: activeLeadsCount > 0 ? activeLeadsCount : undefined, badgeVariant: 'blue' },
+    { id: 'clients', label: 'Clients', icon: Users },
+    { id: 'quotations', label: 'Quotations', icon: FileCheck2 },
+    { id: 'tasks', label: 'Tasks', icon: CheckSquare, badge: pendingTasksCount > 0 ? pendingTasksCount : undefined },
     { id: 'calendar', label: 'Schedule', icon: CalendarDays },
   ];
 
-  // 2. Primary CRM Mode Navigation (includes dedicated CRM Dashboard)
-  const crmNavItems: SidebarNavItem[] = [
-    { id: 'overview', label: 'CRM Overview', icon: LayoutDashboard },
-    { id: 'leads', label: 'Lead Pipeline', icon: UserPlus, badge: activeLeadsCount > 0 ? activeLeadsCount : undefined, badgeVariant: 'blue' },
-    { id: 'clients', label: 'Clients', icon: Users },
-    { id: 'quotations', label: 'Quotations', icon: FileCheck2 },
-    { id: 'tasks', label: 'Tasks & Follow-ups', icon: CheckSquare, badge: pendingTasksCount > 0 ? pendingTasksCount : undefined },
-    { id: 'calendar', label: 'Walkthroughs', icon: CalendarDays },
-  ];
-
-  // 3. Secondary Tools & Admin
+  // 3. Secondary Tools & Studio Management
   const secondaryNavItems: SidebarNavItem[] = workspaceMode === 'erp'
     ? [
-        { id: 'site-controls', label: 'Site Controls & Bills', icon: Layers },
-        { id: 'vendors', label: 'Vendor Directory', icon: Building2, badge: vendors.length > 0 ? vendors.length : undefined },
-        { id: 'budget', label: 'Budget Analytics', icon: PieChart },
+        { id: 'site-controls', label: 'Site Bills', icon: Layers },
+        { id: 'vendors', label: 'Vendors', icon: Building2, badge: vendors.length > 0 ? vendors.length : undefined },
+        { id: 'budget', label: 'Budget', icon: PieChart },
       ]
     : [
         { id: 'client-portal', label: 'Client Portal', icon: Briefcase },
-        { id: 'documents', label: 'Drawings & Briefs', icon: FileText, badge: documents.length > 0 ? documents.length : undefined },
+        { id: 'documents', label: 'Documents', icon: FileText, badge: documents.length > 0 ? documents.length : undefined },
       ];
 
   const adminNavItems: SidebarNavItem[] = [
     ...secondaryNavItems,
-    { id: 'reports', label: 'Reports & Audit', icon: BarChart3 },
-    ...(hasExportAccess ? [{ id: 'export' as NavigationPage, label: 'Data Export', icon: FileSpreadsheet }] : []),
-    { id: 'team', label: 'Studio Team', icon: UserCheck, badge: teamMembers.length },
+    { id: 'reports', label: 'Reports', icon: BarChart3 },
+    ...(hasExportAccess ? [{ id: 'export' as NavigationPage, label: 'Export', icon: FileSpreadsheet }] : []),
+    { id: 'team', label: 'Team', icon: UserCheck, badge: teamMembers.length },
     { id: 'settings', label: 'Settings', icon: Settings },
     ...(hasEnterpriseAccess ? [
-      { id: 'management' as NavigationPage, label: 'Multi-Branch HQ', icon: TrendingUp },
+      { id: 'management' as NavigationPage, label: 'Analytics HQ', icon: TrendingUp },
       { id: 'branches' as NavigationPage, label: 'Branches', icon: Building },
       { id: 'approvals' as NavigationPage, label: 'Approvals', icon: ShieldCheck },
-      { id: 'roles' as NavigationPage, label: 'Roles & Access', icon: Shield }
+      { id: 'roles' as NavigationPage, label: 'Permissions', icon: Shield }
     ] : [])
   ];
 

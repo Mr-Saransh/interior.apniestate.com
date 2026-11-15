@@ -8,6 +8,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { exportService } from '../services/exportService';
+import { checkRateLimit } from '../utils/rateLimit';
 import { 
   Download, 
   Database,  
@@ -43,7 +44,13 @@ export const DataExportPage: React.FC = () => {
 
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
 
-  const notifyDownload = (name: string) => {
+  const handleExport = (name: string, fn: () => void) => {
+    if (!checkRateLimit(`export-${name}`, 3, 5000)) {
+      setDownloadSuccess(`Please wait a few seconds before re-exporting.`);
+      setTimeout(() => setDownloadSuccess(null), 2500);
+      return;
+    }
+    fn();
     setDownloadSuccess(`Exported ${name} successfully!`);
     setTimeout(() => setDownloadSuccess(null), 3000);
   };
@@ -54,114 +61,89 @@ export const DataExportPage: React.FC = () => {
       title: 'Projects & Sites',
       count: projects.length,
       icon: FolderKanban,
-      description: 'Project scopes, locations, status, completion rates, budgets, and contract values.',
-      action: () => {
-        exportService.exportProjects(projects);
-        notifyDownload('Projects');
-      }
+      description: 'Projects, budgets, timelines, and progress.',
+      action: () => handleExport('Projects', () => exportService.exportProjects(projects))
     },
     {
       id: 'clients',
-      title: 'Clients Directory',
+      title: 'Clients',
       count: clients.length,
       icon: Users,
-      description: 'Full client list, primary phone, email, registered site addresses, and contact notes.',
-      action: () => {
-        exportService.exportClients(clients);
-        notifyDownload('Clients');
-      }
+      description: 'Client directory, phone numbers, and addresses.',
+      action: () => handleExport('Clients', () => exportService.exportClients(clients))
     },
     {
       id: 'leads',
-      title: 'Sales Leads Pipeline',
+      title: 'Leads',
       count: leads.length,
       icon: UserPlus,
-      description: 'Active inquiries, pipeline stages, lead sources, requirements, and estimated budgets.',
-      action: () => {
-        exportService.exportLeads(leads);
-        notifyDownload('Leads');
-      }
+      description: 'Active inquiries and pipeline status.',
+      action: () => handleExport('Leads', () => exportService.exportLeads(leads))
     },
     {
       id: 'expenses',
-      title: 'Project Expenses Ledger',
+      title: 'Expenses',
       count: expenses.length,
       icon: Receipt,
-      description: 'Expenditure titles, categories, amounts in INR, linked vendors, and payment dates.',
-      action: () => {
-        exportService.exportExpenses(expenses, projects);
-        notifyDownload('Expenses');
-      }
+      description: 'Project expense logs and receipts.',
+      action: () => handleExport('Expenses', () => exportService.exportExpenses(expenses, projects))
     },
     {
       id: 'boq',
-      title: 'Bill of Quantities (BOQ)',
+      title: 'BOQ Estimations',
       count: boqItems.length,
       icon: Layers,
-      description: 'Detailed estimation specifications, quantity takeoffs, unit rates, and totals.',
-      action: () => {
-        exportService.exportBOQ(boqItems, projects);
-        notifyDownload('BOQ Items');
-      }
+      description: 'Itemized specifications and estimates.',
+      action: () => handleExport('BOQ Items', () => exportService.exportBOQ(boqItems, projects))
     },
     {
       id: 'purchases',
-      title: 'Purchase Orders (PO)',
+      title: 'Purchase Orders',
       count: purchases.length,
       icon: ShoppingBag,
-      description: 'Procurement orders, PO numbers, delivery milestones, status, and vendor commitments.',
-      action: () => {
-        exportService.exportPurchases(purchases);
-        notifyDownload('Purchases');
-      }
+      description: 'Material orders and delivery status.',
+      action: () => handleExport('Purchases', () => exportService.exportPurchases(purchases))
     },
     {
       id: 'vendors',
-      title: 'Vendor Directory',
+      title: 'Vendors',
       count: vendors.length,
       icon: Building,
-      description: 'Suppliers, fabricators, contractors, trade categories, phone numbers, and GSTINs.',
-      action: () => {
-        exportService.exportVendors(vendors);
-        notifyDownload('Vendors');
-      }
+      description: 'Suppliers, contractors, and contact details.',
+      action: () => handleExport('Vendors', () => exportService.exportVendors(vendors))
     },
     {
       id: 'payments',
-      title: 'Client Payment Collections',
+      title: 'Client Payments',
       count: clientPayments.length,
       icon: IndianRupee,
-      description: 'Milestone payment schedules, received sums, payment modes, and bank UTRs.',
-      action: () => {
-        exportService.exportClientPayments(clientPayments);
-        notifyDownload('Client Payments');
-      }
+      description: 'Payment milestones and receipts.',
+      action: () => handleExport('Client Payments', () => exportService.exportClientPayments(clientPayments))
     },
     {
       id: 'materials',
-      title: 'Materials Inventory',
+      title: 'Materials Stock',
       count: materials.length,
       icon: Package,
-      description: 'Stock catalog, ordered quantities, received stock, installed units, and costs.',
-      action: () => {
-        exportService.exportMaterials(materials, projects);
-        notifyDownload('Materials');
-      }
+      description: 'Material items and stock levels.',
+      action: () => handleExport('Materials', () => exportService.exportMaterials(materials, projects))
     },
     {
       id: 'tasks',
-      title: 'Tasks & Deliverables',
+      title: 'Tasks',
       count: tasks.length,
       icon: CheckSquare,
-      description: 'Site deliverables, assigned personnel, deadlines, priorities, and status.',
-      action: () => {
-        exportService.exportTasks(tasks);
-        notifyDownload('Tasks');
-      }
+      description: 'Project tasks and deliverables.',
+      action: () => handleExport('Tasks', () => exportService.exportTasks(tasks))
     }
   ];
 
   const handleFullJSONExport = () => {
+    if (!checkRateLimit('export-full-json', 2, 10000)) {
+      setDownloadSuccess('Please wait a few seconds before re-exporting.');
+      setTimeout(() => setDownloadSuccess(null), 2500);
+      return;
+    }
     exportService.exportFullOrganizationJSON({
       organizationName: organization?.name || (isDemoMode ? 'Apni Estate Interiors' : 'My Studio'),
       clients,
@@ -175,7 +157,8 @@ export const DataExportPage: React.FC = () => {
       materials,
       tasks
     });
-    notifyDownload('Full Organization JSON');
+    setDownloadSuccess('Exported Full Organization JSON successfully!');
+    setTimeout(() => setDownloadSuccess(null), 3000);
   };
 
   const totalRecordsCount = datasets.reduce((sum, d) => sum + Number(d.count || 0), 0);
@@ -183,17 +166,14 @@ export const DataExportPage: React.FC = () => {
   return (
     <div className="space-y-6 pb-10">
       {/* Architectural Header & Export Summary */}
-      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-5">
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
-              Data Portability
-            </span>
-            <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
-              Data Export Center
+            <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
+              Data Export
             </h1>
-            <p className="text-sm text-[#4B5563] mt-1">
-              Download your organization&apos;s project records, financial ledgers, and procurement logs in CSV or JSON.
+            <p className="text-xs sm:text-sm text-[#4B5563] mt-0.5">
+              Download CSV or JSON copies of your studio records.
             </p>
           </div>
 
@@ -202,22 +182,22 @@ export const DataExportPage: React.FC = () => {
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-semibold transition-colors cursor-pointer self-start sm:self-auto"
           >
             <Database className="w-4 h-4" />
-            <span>Export All Data (JSON)</span>
+            <span>Export All (JSON)</span>
           </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Exportable Modules</p>
-            <p className="text-xl font-bold text-[#111827] tabular-nums mt-1">{datasets.length}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Modules</p>
+            <p className="text-xl font-bold text-[#111827] tabular-nums mt-0.5">{datasets.length}</p>
           </div>
           <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Total Records Available</p>
-            <p className="text-xl font-bold text-[#1D4ED8] tabular-nums mt-1">{totalRecordsCount.toLocaleString()}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Total Records</p>
+            <p className="text-xl font-bold text-[#1D4ED8] tabular-nums mt-0.5">{totalRecordsCount.toLocaleString()}</p>
           </div>
           <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Supported Formats</p>
-            <p className="text-xl font-bold text-emerald-700 mt-1">CSV & JSON</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Formats</p>
+            <p className="text-xl font-bold text-emerald-700 mt-0.5">CSV & JSON</p>
           </div>
         </div>
       </div>
@@ -229,14 +209,6 @@ export const DataExportPage: React.FC = () => {
           <span>{downloadSuccess} Check your browser's download folder.</span>
         </div>
       )}
-
-      {/* Important Infrastructure / Terminology Clarification Banner */}
-      <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-start gap-3">
-        <ShieldCheck className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
-        <div className="text-xs text-slate-600 leading-relaxed">
-          <strong className="text-slate-800">Application Data Export vs. Infrastructure Backups:</strong> This center generates client-side CSV/JSON exports strictly for your tenant organization's records and external reporting. Database replication, automated snapshots, and physical disaster-recovery backups are managed separately at the cloud infrastructure and platform level.
-        </div>
-      </div>
 
       {/* Datasets Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

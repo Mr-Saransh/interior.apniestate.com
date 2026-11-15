@@ -122,21 +122,18 @@ export const SettingsPage: React.FC = () => {
       <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
-              Workspace Administration
-            </span>
-            <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
-              Company & Studio Settings
+            <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
+              Settings
             </h1>
-            <p className="text-sm text-[#4B5563] mt-1">
-              Configure your studio profile, GST/billing identity, base currency, and plan entitlements.
+            <p className="text-xs sm:text-sm text-[#4B5563] mt-0.5">
+              Manage studio profile, billing details, and preferences.
             </p>
           </div>
 
           <div className="inline-flex bg-[#F1F5F9] p-1 rounded-xl border border-[#E5E7EB] self-start">
             {[
-              { id: 'identity', label: 'Studio Identity' },
-              { id: 'billing', label: 'Billing & Tax' },
+              { id: 'identity', label: 'Profile' },
+              { id: 'billing', label: 'Billing & GST' },
               { id: 'plan', label: 'Plan & Reset' },
             ].map((tab) => (
               <button
@@ -162,12 +159,12 @@ export const SettingsPage: React.FC = () => {
         <div className="premium-card p-6 space-y-4">
           <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
             <Building className="w-5 h-5 text-brand-600" />
-            <h2 className="text-base font-bold font-display text-slate-900">Studio & Profile Information</h2>
+            <h2 className="text-base font-bold font-display text-slate-900">Studio Profile</h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold uppercase text-slate-600 mb-1">Company / Studio Name</label>
+              <label className="block text-xs font-bold uppercase text-slate-600 mb-1">Studio Name</label>
               <input
                 type="text"
                 value={studioName}
@@ -177,7 +174,7 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase text-slate-600 mb-1">Account Owner / Principal</label>
+              <label className="block text-xs font-bold uppercase text-slate-600 mb-1">Owner / Lead Designer</label>
               <input
                 type="text"
                 value={ownerName}
@@ -187,7 +184,7 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase text-slate-600 mb-1">Account Login Email</label>
+              <label className="block text-xs font-bold uppercase text-slate-600 mb-1">Login Email</label>
               <input
                 type="email"
                 disabled={!isDemoMode}
@@ -199,7 +196,7 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase text-slate-600 mb-1">Contact Phone</label>
+              <label className="block text-xs font-bold uppercase text-slate-600 mb-1">Phone</label>
               <input
                 type="tel"
                 value={phone}
@@ -217,7 +214,7 @@ export const SettingsPage: React.FC = () => {
         <div className="premium-card p-6 space-y-4">
           <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
             <FileText className="w-5 h-5 text-indigo-600" />
-            <h2 className="text-base font-bold font-display text-slate-900">Legal Entity & Billing Details</h2>
+            <h2 className="text-base font-bold font-display text-slate-900">Billing & GST</h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

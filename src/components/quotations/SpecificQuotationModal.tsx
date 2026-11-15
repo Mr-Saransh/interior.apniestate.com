@@ -120,14 +120,14 @@ export const SpecificQuotationModal: React.FC<SpecificQuotationModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-[#111827]">
-                  Specific Project BOQ Quotation
+                  Project Quotation
                 </h2>
                 <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
-                  PROJECT LINKED
+                  BOQ Linked
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Authoritative room-by-room proposal linked to real project specifications and BOQs.
+                Room-by-room proposal generated from project BOQ.
               </p>
             </div>
           </div>

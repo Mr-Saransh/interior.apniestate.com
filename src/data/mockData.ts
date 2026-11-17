@@ -105,6 +105,73 @@ export const INITIAL_PROJECTS: Project[] = [
         uploadedAt: '2026-09-02',
         uploadedBy: 'Aarav Mehta'
       }
+    ],
+    rooms: [
+      {
+        id: 'room-1-1',
+        organization_id: 'demo-org',
+        project_id: 'proj-1',
+        name: 'Living Room',
+        room_type: 'Living Room',
+        area_sqft: 220,
+        rate_per_sqft: 250,
+        budget: 55000,
+        progress: 75,
+        status: 'In Progress',
+        notes: 'Double height chandelier, Italian Botticino marble & fluted paneling.'
+      },
+      {
+        id: 'room-1-2',
+        organization_id: 'demo-org',
+        project_id: 'proj-1',
+        name: 'Master Bedroom',
+        room_type: 'Master Bedroom',
+        area_sqft: 180,
+        rate_per_sqft: 280,
+        budget: 50400,
+        progress: 60,
+        status: 'In Progress',
+        notes: 'Full-height sliding wardrobe in walnut veneer & hydraulic bed.'
+      },
+      {
+        id: 'room-1-3',
+        organization_id: 'demo-org',
+        project_id: 'proj-1',
+        name: 'Modular Kitchen',
+        room_type: 'Kitchen',
+        area_sqft: 90,
+        rate_per_sqft: 450,
+        budget: 40500,
+        progress: 100,
+        status: 'Completed',
+        notes: 'Marine ply base cabinets, Hafele tandem drawers & quartz top.'
+      },
+      {
+        id: 'room-1-4',
+        organization_id: 'demo-org',
+        project_id: 'proj-1',
+        name: 'Dining & Foyer',
+        room_type: 'Dining Room',
+        area_sqft: 120,
+        rate_per_sqft: 220,
+        budget: 26400,
+        progress: 40,
+        status: 'In Progress',
+        notes: 'Crockery unit, entry shoe console & pendant lighting.'
+      },
+      {
+        id: 'room-1-5',
+        organization_id: 'demo-org',
+        project_id: 'proj-1',
+        name: 'Master Bathroom',
+        room_type: 'Bathroom',
+        area_sqft: 45,
+        rate_per_sqft: 350,
+        budget: 15750,
+        progress: 0,
+        status: 'Not Started',
+        notes: 'Vanity counter, diverter fittings & full-height tile cladding.'
+      }
     ]
   },
   {
@@ -1142,6 +1209,7 @@ export const INITIAL_BOQ_ITEMS: any[] = [
     id: 'boq-1',
     organization_id: 'demo-org',
     project_id: 'proj-1',
+    room_id: 'room-1-1',
     item_name: 'Italian Marble Flooring (Botticino)',
     description: 'Supplying and laying Botticino Italian marble with mirror polishing and epoxy filling.',
     category: 'Civil Work',
@@ -1154,6 +1222,7 @@ export const INITIAL_BOQ_ITEMS: any[] = [
     id: 'boq-2',
     organization_id: 'demo-org',
     project_id: 'proj-1',
+    room_id: 'room-1-2',
     item_name: 'Master Bed Walnut Wardrobe & Paneling',
     description: 'Floor-to-ceiling wardrobe in commercial ply with smoked walnut veneer finish and profile lighting.',
     category: 'Carpentry',
@@ -1166,6 +1235,7 @@ export const INITIAL_BOQ_ITEMS: any[] = [
     id: 'boq-3',
     organization_id: 'demo-org',
     project_id: 'proj-1',
+    room_id: 'room-1-3',
     item_name: 'Modular Acrylic Kitchen Cabinets',
     description: 'High gloss acrylic finish shutters, Blum soft-close tandem boxes and stainless steel baskets.',
     category: 'Carpentry',

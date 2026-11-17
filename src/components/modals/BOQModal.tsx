@@ -173,11 +173,6 @@ export const BOQModal: React.FC<BOQModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={itemToEdit ? 'Edit BOQ Item' : 'Add BOQ Line Item'}
-      subtitle={
-        currentProject
-          ? `For ${currentProject.name} estimate and costing scope`
-          : 'Record cost estimate line item'
-      }
       maxWidth="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">

@@ -150,7 +150,6 @@ export const AddExpenseModal: React.FC = () => {
       isOpen={isAddExpenseModalOpen}
       onClose={() => !isSubmitting && setIsAddExpenseModalOpen(false)}
       title={expenseToEdit ? 'Edit Expense Record' : 'Record Project Expense'}
-      subtitle={expenseToEdit ? 'Update bill details or payment ledger entry' : 'Record a verified bill, material invoice, or contractor payout.'}
       maxWidth="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">

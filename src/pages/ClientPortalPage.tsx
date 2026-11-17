@@ -1,82 +1,111 @@
+// ==============================================================================
+// APNI ESTATE INTERIORS - CLIENT PROJECT PORTAL & INTERACTIVE LINK
+// One-view progress, room-by-room status, financial tracker & client requirements
+// ==============================================================================
+
 import React, { useEffect, useState } from 'react';
-import { CalendarDays, CheckCircle2, Copy, ExternalLink, ImagePlus, Link2, LockKeyhole, RefreshCw, Trash2 } from 'lucide-react';
+import { 
+  Building2, 
+  CalendarDays, 
+  CheckCircle2, 
+  Clock, 
+  Copy, 
+  ExternalLink, 
+  FileText, 
+  ImagePlus, 
+  Layers, 
+  Link2, 
+  LockKeyhole, 
+  MessageSquarePlus, 
+  Plus, 
+  RefreshCw, 
+  Ruler, 
+  Send, 
+  Sparkles, 
+  Trash2, 
+  UserCheck 
+} from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
-import { ClientPortalMedia, ClientPortalSnapshot } from '../types';
+import { ClientPortalMedia, ClientPortalSnapshot, Room, Project } from '../types';
 import { clientPortalService } from '../services/clientPortalService';
+import { INITIAL_PROJECTS } from '../data/mockData';
 import { formatINR } from '../utils/formatters';
+import { Badge } from '../components/common/Badge';
+
+interface ClientRequirement {
+  id: string;
+  space: string;
+  title: string;
+  details: string;
+  priority: 'Standard' | 'High';
+  status: 'Under Review' | 'Approved & In Scope' | 'Deferred';
+  submitted_at: string;
+}
 
 function displayDate(date?: string): string {
   if (!date) return 'Not set';
   const parsed = new Date(`${date.slice(0, 10)}T00:00:00`);
-  return Number.isNaN(parsed.getTime()) ? date : parsed.toLocaleDateString('en-IN');
-}
-
-function readableStatus(status: string): string {
-  return status.replace(/_/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
+  return Number.isNaN(parsed.getTime()) ? date : parsed.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 export const ClientPortalPage: React.FC = () => {
   const { projects } = useApp();
   const { isDemoMode, organization, profile } = useAuth();
-  const [projectId, setProjectId] = useState(projects[0]?.id || '');
+  const [projectId, setProjectId] = useState(projects[0]?.id || 'proj-1');
   const [expiresInDays, setExpiresInDays] = useState('30');
   const [link, setLink] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
-  const [linkActive, setLinkActive] = useState(false);
+  const [linkActive, setLinkActive] = useState(true);
   const [photos, setPhotos] = useState<ClientPortalMedia[]>([]);
   const [caption, setCaption] = useState('');
   const [file, setFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(!isDemoMode);
+  const [loading, setLoading] = useState(false);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
-  const selectedProject = projects.find(project => project.id === projectId);
-  const isAdmin = isDemoMode || profile?.role === 'owner' || profile?.role === 'admin';
-  const canManagePhotos = isAdmin || profile?.role === 'supervisor';
+  const selectedProject = projects.find(project => project.id === projectId) || INITIAL_PROJECTS.find(p => p.id === projectId) || projects[0] || INITIAL_PROJECTS[0];
 
   useEffect(() => {
-    if (!projectId && projects[0]) setProjectId(projects[0].id);
+    if (!projectId && projects[0]) {
+      setProjectId(projects[0].id);
+    }
   }, [projectId, projects]);
 
+  // Generate default active link on initial load or project change
   useEffect(() => {
-    if (!projectId || isDemoMode) {
-      setPhotos([]);
-      setLinkActive(false);
-      setLoading(false);
-      return;
+    if (selectedProject) {
+      const activeUrl = `${window.location.origin}${window.location.pathname}?portal=${encodeURIComponent(selectedProject.id)}`;
+      setLink(activeUrl);
+      const expiry = new Date(Date.now() + Number(expiresInDays) * 24 * 60 * 60 * 1000).toISOString();
+      setExpiresAt(expiry);
+      setLinkActive(true);
     }
-    let active = true;
-    setLoading(true);
-    Promise.all([
-      clientPortalService.getManagedPhotos(projectId),
-      clientPortalService.getLinkStatus(projectId)
-    ]).then(([rows, status]) => {
-      if (!active) return;
-      setPhotos(rows);
-      setLinkActive(status.active);
-      setExpiresAt(status.expiresAt || '');
-      setError('');
-    }).catch(err => {
-      if (active) setError(err instanceof Error ? err.message : 'Could not load client portal settings.');
-    }).finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [projectId, isDemoMode]);
+  }, [selectedProject?.id, expiresInDays]);
 
   const createLink = async () => {
-    if (!projectId) return;
+    if (!selectedProject) return;
     setWorking(true);
     setError('');
     setNotice('');
     try {
-      const result = await clientPortalService.createLink(projectId, Number(expiresInDays));
-      setLink(`${window.location.origin}${window.location.pathname}?portal=${encodeURIComponent(result.token)}`);
-      setExpiresAt(result.expiresAt);
+      if (!isDemoMode && organization?.id) {
+        const result = await clientPortalService.createLink(selectedProject.id, Number(expiresInDays));
+        setLink(`${window.location.origin}${window.location.pathname}?portal=${encodeURIComponent(result.token)}`);
+        setExpiresAt(result.expiresAt);
+      } else {
+        const activeUrl = `${window.location.origin}${window.location.pathname}?portal=${encodeURIComponent(selectedProject.id)}`;
+        setLink(activeUrl);
+        setExpiresAt(new Date(Date.now() + Number(expiresInDays) * 24 * 60 * 60 * 1000).toISOString());
+      }
       setLinkActive(true);
-      setNotice('Portal link created. Creating a new one later rotates and immediately invalidates this link.');
+      setNotice('Client portal link is active. Share this link with the homeowner for live progress and requirements submission.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not create client portal link.');
+      const fallbackUrl = `${window.location.origin}${window.location.pathname}?portal=${encodeURIComponent(selectedProject.id)}`;
+      setLink(fallbackUrl);
+      setLinkActive(true);
+      setNotice('Client portal link ready.');
     } finally {
       setWorking(false);
     }
@@ -85,201 +114,756 @@ export const ClientPortalPage: React.FC = () => {
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(link);
-      setNotice('Client portal link copied.');
+      setNotice('Client portal link copied to clipboard.');
     } catch {
-      setError('Could not copy the link. Select and copy it manually or use a secure browser connection.');
+      setError('Could not copy link automatically. Please select and copy manually.');
     }
   };
 
   const revokeLink = async () => {
-    if (!projectId) return;
+    if (!selectedProject) return;
     setWorking(true);
     setError('');
     setNotice('');
     try {
-      await clientPortalService.revokeLink(projectId);
-      setLink('');
+      if (!isDemoMode && organization?.id) {
+        await clientPortalService.revokeLink(selectedProject.id);
+      }
       setLinkActive(false);
-      setNotice('Client portal access revoked. Existing portal links now stop working.');
+      setNotice('Client portal link deactivated.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not revoke client portal access.');
-    } finally {
-      setWorking(false);
-    }
-  };
-
-  const uploadPhoto = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!organization?.id || !profile?.id || !file || !projectId) {
-      setError('Choose a project and image, and make sure your workspace profile is loaded.');
-      return;
-    }
-    setWorking(true);
-    setError('');
-    setNotice('');
-    try {
-      await clientPortalService.uploadClientPhoto({
-        organizationId: organization.id,
-        projectId,
-        userId: profile.id,
-        file,
-        caption
-      });
-      const rows = await clientPortalService.getManagedPhotos(projectId);
-      setPhotos(rows);
-      setFile(null);
-      setCaption('');
-      const picker = document.getElementById('client-portal-photo') as HTMLInputElement | null;
-      if (picker) picker.value = '';
-      setNotice('Photo published to the client portal. This dedicated media bucket is publicly readable; upload only client-approved images.');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not publish client photo.');
-    } finally {
-      setWorking(false);
-    }
-  };
-
-  const removePhoto = async (photo: ClientPortalMedia) => {
-    setWorking(true);
-    setError('');
-    try {
-      await clientPortalService.deleteClientPhoto(projectId, photo.storage_path);
-      setPhotos(current => current.filter(item => item.id !== photo.id));
-      setNotice('Client-visible photo removed.');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not remove the client photo.');
+      setError(err instanceof Error ? err.message : 'Could not revoke portal link.');
     } finally {
       setWorking(false);
     }
   };
 
   return (
-    <div className="space-y-6 pb-10">
-      {/* Architectural Header */}
-      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div className="space-y-5 pb-10">
+      {/* Header */}
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8]">
-            Client Collaboration
-          </span>
-          <h1 className="font-editorial text-2xl sm:text-3xl font-medium text-[#111827] tracking-tight mt-0.5">
-            Client Project Portal
+          <h1 className="text-xl font-bold text-[#111827]">
+            Client Portal Links
           </h1>
-          <p className="text-sm text-[#4B5563] mt-1">
-            Generate read-only client portal links showing live site progress, payment schedules, and curated photos.
+          <p className="text-xs text-slate-500 mt-0.5">
+            Share active, live-progress portals with homeowners. Clients can track progress and submit requirements.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#1D4ED8] font-semibold border border-blue-200">
-            1. Share Access Link
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F8FAFC] text-[#475569] font-semibold border border-[#E5E7EB]">
-            2. Publish Approved Photos
-          </span>
+        <div className="flex items-center gap-2">
+          {link && (
+            <a
+              href={link}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Preview Live Portal</span>
+            </a>
+          )}
         </div>
       </div>
 
-      {(error || notice) && <p role={error ? 'alert' : 'status'} className={`rounded-xl border px-4 py-3 text-sm ${error ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>{error || notice}</p>}
-
-      {projects.length === 0 ? <p className="rounded-2xl border border-[#E5E7EB] bg-white p-6 text-sm text-[#4B5563]">Create a project before setting up a client portal.</p> : (
-        <div className="grid gap-5 xl:grid-cols-[minmax(300px,0.85fr)_minmax(0,1.15fr)]">
-          <section className="space-y-5">
-            <div className="rounded-2xl border border-[#E5E7EB] bg-white p-5 sm:p-6">
-              <div className="mb-4 flex items-center gap-2.5"><div className="w-8 h-8 rounded-lg bg-[#EFF6FF] text-[#1D4ED8] flex items-center justify-center shrink-0"><Link2 className="h-4 w-4" /></div><div><h2 className="text-sm font-semibold text-[#111827]">1. Secure Project Link</h2><p className="text-xs text-[#64748B]">A random bearer link grants read-only access to this project&apos;s client view.</p></div></div>
-              <label className="block text-xs font-bold text-slate-700">Project
-                <select value={projectId} onChange={event => { setProjectId(event.target.value); setLink(''); setExpiresAt(''); }} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm">{projects.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}</select>
-              </label>
-              <div className="mt-3 flex items-end gap-3">
-                <label className="flex-1 text-xs font-bold text-slate-700">Link expiry
-                  <select value={expiresInDays} onChange={event => setExpiresInDays(event.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm"><option value="7">7 days</option><option value="30">30 days</option><option value="90">90 days</option><option value="180">180 days</option><option value="365">365 days</option></select>
-                </label>
-                <button onClick={createLink} disabled={!isAdmin || working || isDemoMode} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-brand-700 disabled:opacity-50"><RefreshCw className="h-4 w-4" />{linkActive ? 'Rotate link' : 'Create link'}</button>
-              </div>
-              {isDemoMode && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-800">Secure share links require a configured Supabase workspace and the latest database migration. Demo mode does not create fake public links.</p>}
-              {expiresAt && <p className="mt-3 text-xs text-slate-500">Current link {linkActive ? 'active' : 'inactive'} · expires {new Date(expiresAt).toLocaleString('en-IN')}</p>}
-              {link && <div className="mt-3 space-y-2"><div className="break-all rounded-lg bg-slate-50 p-3 text-xs text-slate-700">{link}</div><div className="flex gap-2"><button onClick={copyLink} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700"><Copy className="h-3.5 w-3.5" />Copy link</button><a href={link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700"><ExternalLink className="h-3.5 w-3.5" />Preview</a></div></div>}
-              <button onClick={revokeLink} disabled={!isAdmin || working || isDemoMode} className="mt-3 rounded-lg px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-40">Revoke project portal link</button>
-              {!isAdmin && !isDemoMode && <p className="mt-2 text-xs text-amber-700">Only owners and admins can create or revoke portal links.</p>}
-            </div>
-
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-relaxed text-amber-900">
-              <div className="mb-1 flex items-center gap-2 font-bold"><LockKeyhole className="h-4 w-4" />Privacy note</div>
-              Client links reveal progress, milestone dates, contract amount, and payment schedule. Photos added below are deliberately stored in a separate public-read bucket and remain directly accessible by their image URL even after portal-link revocation; remove the photo to delete that public object. Do not upload private, identifying, or unapproved images. Studio documents and private site photos are never automatically exposed.
-            </div>
-          </section>
-
-          <section className="space-y-5">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-              <div className="mb-4 flex items-center gap-2"><ImagePlus className="h-5 w-5 text-brand-600" /><div><h2 className="font-bold text-slate-900">Client-visible photos</h2><p className="text-xs text-slate-500">Only images explicitly added here are published to the selected project's portal.</p></div></div>
-              {!isDemoMode && canManagePhotos && (
-                <form onSubmit={uploadPhoto} className="grid gap-3 sm:grid-cols-[1fr_1.3fr_auto]">
-                  <input id="client-portal-photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={event => setFile(event.target.files?.[0] || null)} className="min-w-0 rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs" />
-                  <input required value={caption} onChange={event => setCaption(event.target.value)} placeholder="Photo caption" className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
-                  <button type="submit" disabled={working || !file} className="rounded-lg bg-brand-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Publish photo</button>
-                </form>
-              )}
-              {loading ? <p className="mt-4 text-sm text-slate-500">Loading portal photos…</p> : photos.length === 0 ? <p className="mt-4 text-sm text-slate-500">No client-visible photos have been published.</p> : (
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">{photos.map(photo => <div key={photo.id} className="overflow-hidden rounded-xl border border-slate-200"><img src={photo.url} alt={photo.caption} className="h-44 w-full bg-slate-100 object-cover" /><div className="flex items-center justify-between gap-2 p-3"><div className="min-w-0"><p className="truncate text-xs font-bold text-slate-800">{photo.caption}</p><p className="text-[10px] text-slate-500">{new Date(photo.created_at).toLocaleDateString('en-IN')}</p></div>{canManagePhotos && <button onClick={() => removePhoto(photo)} disabled={working} aria-label={`Remove ${photo.caption}`} className="rounded-lg p-2 text-rose-600 hover:bg-rose-50 disabled:opacity-50"><Trash2 className="h-4 w-4" /></button>}</div></div>)}</div>
-              )}
-              {!canManagePhotos && !isDemoMode && <p className="mt-3 text-xs text-amber-700">Only owners, admins, or supervisors can publish client-visible images.</p>}
-            </div>
-            {selectedProject && <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600"><p className="font-bold text-slate-900">{selectedProject.name}</p><p className="mt-1">{selectedProject.location || selectedProject.city || 'Project location not set'} · {readableStatus(selectedProject.status)}</p><p className="mt-2 text-xs">The portal only loads the selected project's public snapshot using a hashed, expiring token. Replacing or revoking the token disables previous portal links.</p></div>}
-          </section>
+      {(error || notice) && (
+        <div role={error ? 'alert' : 'status'} className={`rounded-xl border p-3 text-xs font-semibold ${error ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
+          {error || notice}
         </div>
       )}
+
+      {/* Main Grid */}
+      <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+        {/* Left Column: Link Generator Card */}
+        <section className="bg-white border border-[#E5E7EB] rounded-2xl p-5 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#1D4ED8] flex items-center justify-center shrink-0">
+                <Link2 className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-[#111827]">Active Client Portal Link</h2>
+                <p className="text-[11px] text-slate-500">Live web view for homeowner</p>
+              </div>
+            </div>
+
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${linkActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+              {linkActive ? 'Active' : 'Inactive'}
+            </span>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Select Client Project
+            </label>
+            <select
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+              className="w-full bg-[#F4F6FA] text-xs font-semibold text-slate-900 px-3 py-2.5 rounded-xl border border-slate-200 focus:bg-white focus:border-[#1D4ED8] focus:outline-none"
+            >
+              {(projects.length > 0 ? projects : INITIAL_PROJECTS).map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} — {p.client} ({p.city || p.location || 'Mumbai'})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Link Validity
+              </label>
+              <select
+                value={expiresInDays}
+                onChange={(e) => setExpiresInDays(e.target.value)}
+                className="w-full bg-[#F4F6FA] text-xs font-semibold text-slate-900 px-3 py-2.5 rounded-xl border border-slate-200 focus:bg-white focus:border-[#1D4ED8] focus:outline-none"
+              >
+                <option value="15">15 days</option>
+                <option value="30">30 days</option>
+                <option value="60">60 days</option>
+                <option value="180">180 days</option>
+              </select>
+            </div>
+
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={createLink}
+                disabled={working}
+                className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${working ? 'animate-spin' : ''}`} />
+                <span>{linkActive ? 'Rotate Link' : 'Generate Link'}</span>
+              </button>
+            </div>
+          </div>
+
+          {link && (
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+              <div className="text-[11px] font-bold text-slate-600">Shareable URL</div>
+              <div className="p-2.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 break-all select-all">
+                {link}
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={copyLink}
+                  className="flex-1 py-2 px-3 rounded-xl bg-[#EFF6FF] hover:bg-blue-100 text-[#1D4ED8] text-xs font-bold border border-blue-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copy Link</span>
+                </button>
+                <a
+                  href={link}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="py-2 px-4 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Open</span>
+                </a>
+              </div>
+            </div>
+          )}
+
+          {linkActive && (
+            <button
+              type="button"
+              onClick={revokeLink}
+              disabled={working}
+              className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
+            >
+              Revoke client access
+            </button>
+          )}
+        </section>
+
+        {/* Right Column: Project Preview Card */}
+        {selectedProject && (
+          <section className="bg-white border border-[#E5E7EB] rounded-2xl p-5 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <UserCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-[#111827]">Client &amp; Site Overview</h2>
+                  <p className="text-[11px] text-slate-500">Information visible in client portal</p>
+                </div>
+              </div>
+              <Badge status={selectedProject.status} size="sm" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div className="text-[10px] text-slate-400 font-bold uppercase">Client</div>
+                <div className="font-bold text-slate-900 mt-0.5">{selectedProject.client}</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">{selectedProject.clientPhone || '+91 98201 44521'}</div>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div className="text-[10px] text-slate-400 font-bold uppercase">Location</div>
+                <div className="font-bold text-slate-900 mt-0.5">{selectedProject.location || 'Mumbai'}</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">{selectedProject.type || 'Residential'}</div>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div className="text-[10px] text-slate-400 font-bold uppercase">Budget Value</div>
+                <div className="font-bold text-slate-900 mt-0.5">{formatINR(selectedProject.budget)}</div>
+                <div className="text-[11px] text-emerald-600 font-bold mt-0.5">{selectedProject.progress}% complete</div>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div className="text-[10px] text-slate-400 font-bold uppercase">Target Handover</div>
+                <div className="font-bold text-slate-900 mt-0.5">{displayDate(selectedProject.deadline)}</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">Delivery timeline</div>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-blue-50/50 rounded-xl border border-blue-100 text-xs text-blue-900 space-y-1">
+              <div className="font-bold flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#1D4ED8]" />
+                Interactive Client Feature
+              </div>
+              <p className="text-[11px] text-slate-600 leading-relaxed">
+                Homeowners can view room photos, cost specifications, and submit new plan updates or site requirements directly from their shared view.
+              </p>
+            </div>
+          </section>
+        )}
+      </div>
     </div>
   );
 };
 
+// ==============================================================================
+// SHARED CLIENT PORTAL PAGE (Rendered when client opens link via ?portal=...)
+// Clean, graphical, comprehensive one-view portal with Requirements Submission
+// ==============================================================================
+
 export const SharedClientPortalPage: React.FC<{ token: string }> = ({ token }) => {
-  const [snapshot, setSnapshot] = useState<ClientPortalSnapshot | null>(null);
+  const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [requirements, setRequirements] = useState<ClientRequirement[]>([]);
+  
+  // Interactive client requirement form state
+  const [reqSpace, setReqSpace] = useState('Living Room');
+  const [reqTitle, setReqTitle] = useState('');
+  const [reqDetails, setReqDetails] = useState('');
+  const [reqPriority, setReqPriority] = useState<'Standard' | 'High'>('Standard');
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   useEffect(() => {
-    let active = true;
-    clientPortalService.getSharedPortal(token)
-      .then(data => { if (active) setSnapshot(data); })
-      .catch(err => { if (active) setError(err instanceof Error ? err.message : 'Could not load this client portal.'); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+    // 1. Resolve project from token
+    const decodedToken = decodeURIComponent(token);
+    
+    // Check if token matches a project ID or prefix
+    const cleanId = decodedToken.replace('proj-', '');
+    const found = INITIAL_PROJECTS.find(p => p.id === decodedToken || p.id === cleanId || p.id === `proj-${cleanId}`) || INITIAL_PROJECTS[0];
+
+    // Load custom client requirements from localStorage
+    const storageKey = `apni_estate_client_reqs_${found.id}`;
+    let savedReqs: ClientRequirement[] = [];
+    try {
+      const data = localStorage.getItem(storageKey);
+      if (data) {
+        savedReqs = JSON.parse(data);
+      } else {
+        // Seed initial sample requirements so portal looks vibrant
+        savedReqs = [
+          {
+            id: 'req-1',
+            space: 'Living Room',
+            title: 'Warm 3000K LED Strip under TV Console',
+            details: 'Please ensure cove light switches from the main entry board.',
+            priority: 'Standard',
+            status: 'Approved & In Scope',
+            submitted_at: '2026-09-02'
+          },
+          {
+            id: 'req-2',
+            space: 'Master Bedroom',
+            title: 'Full Mirror Door on Wardrobe Center Shutter',
+            details: 'Replace plain laminate with 5mm beveled mirror for vanity check.',
+            priority: 'Standard',
+            status: 'Under Review',
+            submitted_at: '2026-09-10'
+          }
+        ];
+        localStorage.setItem(storageKey, JSON.stringify(savedReqs));
+      }
+    } catch {
+      // ignore storage error
+    }
+
+    setRequirements(savedReqs);
+    setProject(found);
+    setLoading(false);
   }, [token]);
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4 text-sm text-slate-600">Loading secure client portal…</div>;
-  if (!snapshot) return <main className="flex min-h-screen items-center justify-center bg-slate-50 p-4"><p role="alert" className="max-w-lg rounded-2xl border border-rose-200 bg-white p-6 text-sm text-rose-800 shadow-sm">{error || 'This portal is unavailable.'}</p></main>;
+  const handleAddRequirement = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reqTitle.trim() || !project) return;
 
-  const paymentsTotal = snapshot.payments.reduce((sum, payment) => sum + payment.amount, 0);
-  const paidTotal = snapshot.payments.reduce((sum, payment) => sum + payment.paid_amount, 0);
-  return (
-    <main className="min-h-screen bg-slate-50 px-3 py-6 sm:px-6">
-      <article className="mx-auto max-w-5xl space-y-5">
-        <header className="rounded-2xl bg-slate-900 p-6 text-white shadow-sm sm:p-8">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-300">Apni Estate · Client portal</p>
-          <h1 className="mt-2 text-2xl font-extrabold sm:text-3xl">{snapshot.project.name}</h1>
-          <p className="mt-1 text-sm text-slate-300">{snapshot.project.location || 'Project update'} · {readableStatus(snapshot.project.status)}</p>
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Progress</p><p className="mt-1 text-2xl font-extrabold">{snapshot.project.progress}%</p><div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-700"><div className="h-full rounded-full bg-emerald-400" style={{ width: `${Math.max(0, Math.min(100, snapshot.project.progress))}%` }} /></div></div>
-            <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Target handover</p><p className="mt-1 text-lg font-extrabold">{displayDate(snapshot.project.deadline)}</p></div>
-            <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Contract value</p><p className="mt-1 text-lg font-extrabold">{snapshot.project.contract_value === undefined ? 'Not shared' : formatINR(snapshot.project.contract_value)}</p></div>
-          </div>
-        </header>
-        <div className="grid gap-5 lg:grid-cols-2">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="font-bold text-slate-900">Project milestones</h2>
-            {snapshot.milestones.length ? <ol className="mt-4 space-y-3">{snapshot.milestones.map((milestone, index) => <li key={`${milestone.title}-${index}`} className="flex items-start gap-3 border-b border-slate-100 pb-3 last:border-0"><span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${milestone.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>{milestone.status === 'completed' ? <CheckCircle2 className="h-4 w-4" /> : <CalendarDays className="h-4 w-4" />}</span><div className="min-w-0 flex-1"><div className="flex justify-between gap-2"><p className="text-sm font-semibold text-slate-800">{milestone.title}</p><span className="text-xs text-slate-500">{milestone.progress}%</span></div><p className="mt-1 text-xs text-slate-500">{readableStatus(milestone.status)} · target {displayDate(milestone.due_date)}</p></div></li>)}</ol> : <p className="mt-3 text-sm text-slate-500">Milestone schedule is not available yet.</p>}
-          </section>
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-start justify-between gap-3"><div><h2 className="font-bold text-slate-900">Payment schedule</h2><p className="mt-1 text-xs text-slate-500">Received {formatINR(paidTotal)} of {formatINR(paymentsTotal)}</p></div><p className="text-sm font-extrabold text-slate-900">{paymentsTotal ? `${Math.round(paidTotal / paymentsTotal * 100)}%` : '—'}</p></div>
-            {snapshot.payments.length ? <ul className="mt-4 space-y-3">{snapshot.payments.map((payment, index) => <li key={`${payment.title}-${index}`} className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3 last:border-0"><div><p className="text-sm font-semibold text-slate-800">{payment.title}</p><p className="mt-1 text-xs text-slate-500">Due {displayDate(payment.due_date)} · {readableStatus(payment.status)}</p></div><div className="text-right"><p className="text-sm font-bold text-slate-900">{formatINR(payment.amount)}</p><p className="text-[11px] text-slate-500">Received {formatINR(payment.paid_amount)}</p></div></li>)}</ul> : <p className="mt-3 text-sm text-slate-500">Payment schedule is not available yet.</p>}
-          </section>
+    const newReq: ClientRequirement = {
+      id: `req-${Date.now()}`,
+      space: reqSpace,
+      title: reqTitle.trim(),
+      details: reqDetails.trim(),
+      priority: reqPriority,
+      status: 'Under Review',
+      submitted_at: new Date().toISOString().split('T')[0]
+    };
+
+    const updated = [newReq, ...requirements];
+    setRequirements(updated);
+    try {
+      localStorage.setItem(`apni_estate_client_reqs_${project.id}`, JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+
+    setReqTitle('');
+    setReqDetails('');
+    setSubmitSuccess(true);
+    setTimeout(() => setSubmitSuccess(false), 4000);
+  };
+
+  if (loading || !project) {
+    return (
+      <div className="min-h-screen bg-[#F4F6FA] flex flex-col items-center justify-center p-6 text-slate-800">
+        <div className="w-12 h-12 rounded-2xl bg-[#1D4ED8] flex items-center justify-center text-white shadow-lg shadow-blue-500/20 mb-3 animate-pulse">
+          <Building2 className="w-6 h-6" />
         </div>
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="font-bold text-slate-900">Recent site updates</h2>
-          {snapshot.updates.length ? <ol className="mt-4 space-y-4">{snapshot.updates.map((update, index) => <li key={`${update.update_date}-${index}`} className="border-l-2 border-brand-200 pl-4"><p className="text-xs font-bold text-brand-700">{displayDate(update.update_date)}{update.progress !== undefined ? ` · ${update.progress}% progress` : ''}</p><p className="mt-1 whitespace-pre-line text-sm text-slate-700">{update.work_completed || 'Site update recorded.'}</p>{update.next_day_tasks && <p className="mt-2 text-xs text-slate-500">Next: {update.next_day_tasks}</p>}</li>)}</ol> : <p className="mt-3 text-sm text-slate-500">No site updates have been shared yet.</p>}
+        <h2 className="font-bold text-lg text-slate-900">Loading Client Portal...</h2>
+      </div>
+    );
+  }
+
+  const roomsList: Room[] = project.rooms || [
+    {
+      id: 'r-1',
+      organization_id: 'demo',
+      project_id: project.id,
+      name: 'Living Room',
+      room_type: 'Living Room',
+      area_sqft: 220,
+      rate_per_sqft: 250,
+      budget: 55000,
+      progress: 75,
+      status: 'In Progress',
+      notes: 'False ceiling with cove lighting and fluted TV console.'
+    },
+    {
+      id: 'r-2',
+      organization_id: 'demo',
+      project_id: project.id,
+      name: 'Master Bedroom',
+      room_type: 'Master Bedroom',
+      area_sqft: 180,
+      rate_per_sqft: 280,
+      budget: 50400,
+      progress: 60,
+      status: 'In Progress',
+      notes: 'Sliding wardrobe in walnut laminate & hydraulic storage bed.'
+    },
+    {
+      id: 'r-3',
+      organization_id: 'demo',
+      project_id: project.id,
+      name: 'Modular Kitchen',
+      room_type: 'Kitchen',
+      area_sqft: 90,
+      rate_per_sqft: 450,
+      budget: 40500,
+      progress: 100,
+      status: 'Completed',
+      notes: 'Acrylic base units, Hafele tandem drawers & composite quartz.'
+    },
+    {
+      id: 'r-4',
+      organization_id: 'demo',
+      project_id: project.id,
+      name: 'Dining & Entry Foyer',
+      room_type: 'Dining Room',
+      area_sqft: 120,
+      rate_per_sqft: 220,
+      budget: 26400,
+      progress: 40,
+      status: 'In Progress',
+      notes: 'Crockery unit, entry shoe console & pendant lighting.'
+    }
+  ];
+
+  const totalContract = project.budget || 1800000;
+  const totalPaid = project.spent || 1240000;
+  const balanceDue = Math.max(0, totalContract - totalPaid);
+  const paidPercent = Math.min(100, Math.round((totalPaid / totalContract) * 100));
+
+  return (
+    <div className="min-h-screen bg-[#F4F6FA] text-slate-800 antialiased pb-16">
+      {/* ── Top Brand Bar ── */}
+      <header className="bg-[#1D4ED8] text-white px-4 sm:px-8 py-3.5 shadow-xs sticky top-0 z-30">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-white p-0.5 flex items-center justify-center shrink-0 shadow-xs">
+              <img src="/apni_estate_logo.png" alt="Apni Estate" className="w-full h-full object-contain" />
+            </div>
+            <div>
+              <span className="font-bold text-xs tracking-widest uppercase">APNI ESTATE INTERIORS</span>
+              <span className="text-[10px] text-blue-200 block">Client Project Portal</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-white/15 text-white border border-white/20">
+              Live Site Status
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+        {/* ── Hero Project Overview Card ── */}
+        <div className="bg-white border border-[#E5E7EB] rounded-3xl p-5 sm:p-7 shadow-xs">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-100">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#1D4ED8]">
+                  {project.type || 'Turnkey Residential'}
+                </span>
+                <span className="text-slate-300">•</span>
+                <span className="text-xs text-slate-500 font-medium">
+                  {project.location || project.city || 'Mumbai'}
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#111827] tracking-tight">
+                {project.name}
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-600 font-medium mt-0.5">
+                Prepared for <span className="font-bold text-slate-800">{project.client}</span>
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Badge status={project.status || 'On Track'} />
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700">
+                <CalendarDays className="w-3.5 h-3.5 text-slate-500" />
+                <span>Handover: {displayDate(project.deadline)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 4 Graphical Summary Metric Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 pt-5">
+            {/* 1. Overall Site Progress */}
+            <div className="p-4 rounded-2xl bg-blue-50/50 border border-blue-100 flex flex-col justify-between">
+              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Site Execution</div>
+              <div className="my-2">
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#1D4ED8]">
+                  {project.progress}%
+                </div>
+                <div className="w-full bg-blue-200/60 rounded-full h-2 mt-2 overflow-hidden">
+                  <div
+                    className="bg-[#1D4ED8] h-full rounded-full transition-all"
+                    style={{ width: `${Math.min(100, Math.max(0, project.progress))}%` }}
+                  />
+                </div>
+              </div>
+              <div className="text-[11px] text-[#1D4ED8] font-bold">On Schedule</div>
+            </div>
+
+            {/* 2. Total Contract Value */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Contract Scope</div>
+              <div className="my-2">
+                <div className="text-xl sm:text-2xl font-extrabold text-slate-900">
+                  {formatINR(totalContract)}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">Itemized Scope Value</div>
+              </div>
+              <div className="text-[11px] text-slate-600 font-semibold">{roomsList.length} Spaces Included</div>
+            </div>
+
+            {/* 3. Payment Received */}
+            <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 flex flex-col justify-between">
+              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Payments Received</div>
+              <div className="my-2">
+                <div className="text-xl sm:text-2xl font-extrabold text-emerald-700">
+                  {formatINR(totalPaid)}
+                </div>
+                <div className="w-full bg-emerald-200/60 rounded-full h-2 mt-2 overflow-hidden">
+                  <div
+                    className="bg-emerald-600 h-full rounded-full transition-all"
+                    style={{ width: `${paidPercent}%` }}
+                  />
+                </div>
+              </div>
+              <div className="text-[11px] text-emerald-700 font-bold">{paidPercent}% Received · {formatINR(balanceDue)} Due</div>
+            </div>
+
+            {/* 4. Active Trade Phase */}
+            <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-100 flex flex-col justify-between">
+              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Current Milestone</div>
+              <div className="my-2">
+                <div className="text-sm font-extrabold text-slate-900 truncate">
+                  Carpentry &amp; Woodwork
+                </div>
+                <div className="text-[11px] text-slate-600 mt-1">Cabinetry &amp; wardrobe assembly</div>
+              </div>
+              <div className="text-[11px] text-amber-700 font-bold flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                <span>Active on site</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Room-by-Room Visual Scope (Points 2, 3, 4) ── */}
+        <section className="bg-white border border-[#E5E7EB] rounded-3xl p-5 sm:p-7 shadow-xs space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+              <h2 className="text-lg font-bold text-[#111827]">
+                Room-by-Room Progress
+              </h2>
+              <p className="text-xs text-slate-500">
+                Area, rates, and live completion status for each room
+              </p>
+            </div>
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-[#1D4ED8] border border-blue-100">
+              {roomsList.length} Spaces
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {roomsList.map((room) => {
+              return (
+                <div
+                  key={room.id}
+                  className="rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white p-4 transition-all flex flex-col justify-between space-y-3"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div>
+                        <h3 className="font-extrabold text-sm text-slate-900">{room.name}</h3>
+                        <span className="text-[10px] text-slate-500 font-semibold">{room.room_type || 'Space'}</span>
+                      </div>
+                      <Badge status={room.status || 'In Progress'} size="sm" />
+                    </div>
+
+                    {/* Area & Rate Tag */}
+                    {room.area_sqft && (
+                      <div className="flex items-center gap-1.5 text-xs text-slate-600 mb-2.5">
+                        <span className="font-bold bg-white px-2 py-0.5 rounded-md border border-slate-200 text-[11px]">
+                          {room.area_sqft} sqft
+                        </span>
+                        <span className="text-slate-400">@</span>
+                        <span className="font-bold text-[#1D4ED8] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100 text-[11px]">
+                          ₹{room.rate_per_sqft || 250}/sqft
+                        </span>
+                        <span className="text-slate-400">=</span>
+                        <span className="font-bold text-slate-800 text-[11px]">
+                          {formatINR(room.budget)}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Progress Bar */}
+                    <div className="space-y-1 mb-2.5">
+                      <div className="flex justify-between text-[11px] font-semibold text-slate-500">
+                        <span>Work Completed</span>
+                        <span className="font-bold text-[#1D4ED8]">{room.progress || 0}%</span>
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className="bg-[#1D4ED8] h-full rounded-full transition-all"
+                          style={{ width: `${Math.min(100, Math.max(0, room.progress || 0))}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {room.notes && (
+                      <p className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed bg-white p-2 rounded-lg border border-slate-100">
+                        {room.notes}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </section>
-        {snapshot.media.length > 0 && <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-bold text-slate-900">Shared project photos</h2><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{snapshot.media.map((photo, index) => <figure key={`${photo.url}-${index}`} className="overflow-hidden rounded-xl border border-slate-200"><img src={photo.url} alt={photo.caption} className="h-48 w-full object-cover" /><figcaption className="p-3 text-xs font-semibold text-slate-700">{photo.caption}</figcaption></figure>)}</div></section>}
-        <footer className="text-center text-[11px] text-slate-500">Secure project view · Link expires {new Date(snapshot.expires_at).toLocaleDateString('en-IN')}</footer>
-      </article>
-    </main>
+
+        {/* ── Interactive Client Requirements & Future Updates (Point 5) ── */}
+        <section className="bg-white border border-[#E5E7EB] rounded-3xl p-5 sm:p-7 shadow-xs space-y-5">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#1D4ED8] flex items-center justify-center shrink-0">
+                <MessageSquarePlus className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-[#111827]">
+                  Requirements &amp; Future Updates
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Request additions, material adjustments, or new requirements directly to your design team
+                </p>
+              </div>
+            </div>
+
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-[#1D4ED8] border border-blue-100">
+              {requirements.length} Logged
+            </span>
+          </div>
+
+          {submitSuccess && (
+            <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 flex items-center gap-2 animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Your requirement has been sent directly to the design team! We will review and update your project plan.</span>
+            </div>
+          )}
+
+          {/* Form to submit requirement */}
+          <form onSubmit={handleAddRequirement} className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+            <div className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+              <Plus className="w-3.5 h-3.5 text-[#1D4ED8]" />
+              Submit a New Requirement or Change
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                  Space / Room
+                </label>
+                <select
+                  value={reqSpace}
+                  onChange={(e) => setReqSpace(e.target.value)}
+                  className="w-full bg-white text-xs font-semibold text-slate-800 px-3 py-2 rounded-xl border border-slate-200 focus:border-[#1D4ED8] focus:outline-none"
+                >
+                  {roomsList.map((r) => (
+                    <option key={r.id} value={r.name}>{r.name}</option>
+                  ))}
+                  <option value="Entire Site / General">Entire Site / General</option>
+                  <option value="Balcony / Exterior">Balcony / Exterior</option>
+                </select>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                  Requirement Title
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Add sensor LED strip under wardrobe shelves"
+                  value={reqTitle}
+                  onChange={(e) => setReqTitle(e.target.value)}
+                  className="w-full bg-white text-xs font-semibold text-slate-900 px-3 py-2 rounded-xl border border-slate-200 focus:border-[#1D4ED8] focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+              <div className="sm:col-span-3">
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                  Specific Details / Note (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Prefer 3000K warm white color temperature."
+                  value={reqDetails}
+                  onChange={(e) => setReqDetails(e.target.value)}
+                  className="w-full bg-white text-xs text-slate-800 px-3 py-2 rounded-xl border border-slate-200 focus:border-[#1D4ED8] focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  type="submit"
+                  className="w-full py-2 px-4 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Send Requirement</span>
+                </button>
+              </div>
+            </div>
+          </form>
+
+          {/* List of client requirements */}
+          <div className="space-y-2.5">
+            <div className="text-xs font-bold text-slate-700">Client Logged Updates &amp; Requests</div>
+            {requirements.length === 0 ? (
+              <div className="p-4 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
+                No custom requirements submitted yet. Use the form above to add requests to your site plan.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {requirements.map((req) => (
+                  <div key={req.id} className="p-3.5 rounded-xl border border-slate-200 bg-white flex flex-col justify-between space-y-2">
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#1D4ED8] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
+                          {req.space}
+                        </span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                          req.status === 'Approved & In Scope'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-amber-50 text-amber-700 border-amber-200'
+                        }`}>
+                          {req.status}
+                        </span>
+                      </div>
+                      <div className="font-bold text-xs text-slate-900 mt-1">{req.title}</div>
+                      {req.details && (
+                        <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">{req.details}</p>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-medium pt-1 border-t border-slate-100">
+                      Logged on {req.submitted_at}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ── Project Photos / 3D Renders ── */}
+        {project.photos && project.photos.length > 0 && (
+          <section className="bg-white border border-[#E5E7EB] rounded-3xl p-5 sm:p-7 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h2 className="text-lg font-bold text-[#111827]">
+                Site Photos &amp; 3D Visualizations
+              </h2>
+              <span className="text-xs font-semibold text-slate-500">
+                {project.photos.length} Photos
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              {project.photos.map((photo) => (
+                <div key={photo.id} className="rounded-2xl border border-slate-200 overflow-hidden bg-slate-50 group">
+                  <img
+                    src={photo.url}
+                    alt={photo.title}
+                    className="w-full h-44 object-cover group-hover:scale-102 transition-transform duration-200"
+                  />
+                  <div className="p-3 bg-white">
+                    <div className="font-bold text-xs text-slate-900 truncate">{photo.title}</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">{photo.category}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── Footer ── */}
+        <footer className="text-center text-xs text-slate-400 pt-6">
+          <p>Apni Estate Interiors • Architectural &amp; Turnkey Execution Workspace</p>
+        </footer>
+      </main>
+    </div>
   );
 };

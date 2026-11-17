@@ -88,7 +88,6 @@ export const ClientModal: React.FC<ClientModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={isEdit ? 'Edit Client Details' : 'Add New Client'}
-      subtitle={isEdit ? 'Update client contact information and notes.' : 'Register a new homeowner or commercial client for your studio.'}
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">

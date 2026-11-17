@@ -144,7 +144,6 @@ export const NewProjectModal: React.FC = () => {
       isOpen={isNewProjectModalOpen}
       onClose={() => setIsNewProjectModalOpen(false)}
       title="Create New Project"
-      subtitle="Start with a name and client. You can add the rest later."
       maxWidth="xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">

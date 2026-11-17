@@ -130,7 +130,6 @@ export const LeadModal: React.FC<LeadModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={isEdit ? 'Edit Lead Opportunity' : 'Capture New Lead'}
-      subtitle={isEdit ? `Updating opportunity for ${leadToEdit?.name}` : 'Log client inquiry and track conversion through your design pipeline.'}
       maxWidth="2xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4">

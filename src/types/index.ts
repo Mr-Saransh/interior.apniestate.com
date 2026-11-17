@@ -161,12 +161,17 @@ export interface Project {
 // 3. ROOMS & BOQ SCOPE SCHEMAS
 // ==============================================================================
 
+export type RoomExecutionStatus = 'Not Started' | 'In Progress' | 'Completed' | 'On Hold';
+
 export interface Room {
   id: string;
   organization_id: string;
   project_id: string;
   name: string;
   room_type?: string;
+  area_sqft?: number;
+  rate_per_sqft?: number;
+  status?: RoomExecutionStatus;
   budget: number;
   progress: number;
   notes?: string;

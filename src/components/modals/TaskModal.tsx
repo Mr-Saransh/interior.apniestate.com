@@ -123,8 +123,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEdit ? 'Edit Studio / Site Task' : 'Assign New Task'}
-      subtitle={isEdit ? 'Update task progress and execution milestones.' : 'Delegate site inspections, CAD drawings, and vendor checkpoints.'}
+      title={isEdit ? 'Edit Task' : 'Assign New Task'}
       maxWidth="2xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4">

@@ -220,16 +220,16 @@ export const Sidebar: React.FC = () => {
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-sm text-white tracking-[0.16em] uppercase truncate font-display">
+                    <span className="font-bold text-sm text-amber-300 tracking-[0.16em] uppercase truncate font-display">
                       {isDemoMode ? 'APNI ESTATE' : studioName.toUpperCase()}
                     </span>
                   </div>
                   <div className="flex items-center gap-1 mt-0.5">
-                    <span className="text-[9px] font-extrabold tracking-widest text-white uppercase bg-white/20 border border-white/20 px-1.5 py-0.5 rounded">
+                    <span className="text-[9px] font-extrabold tracking-widest text-amber-950 uppercase bg-amber-400 px-1.5 py-0.5 rounded">
                       INTERIORS
                     </span>
                     {isDemoMode && !user && (
-                      <span className="text-[9px] font-bold text-amber-950 bg-amber-400 px-1.5 py-0.5 rounded shadow-xs">
+                      <span className="text-[9px] font-bold text-amber-950 bg-amber-300 px-1.5 py-0.5 rounded shadow-xs">
                         DEMO
                       </span>
                     )}
@@ -240,7 +240,7 @@ export const Sidebar: React.FC = () => {
               {isMobile ? (
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="p-2 rounded-xl text-blue-200 hover:text-white hover:bg-white/10 transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center -mr-2"
+                  className="p-2 rounded-xl text-amber-200 hover:text-white hover:bg-white/10 transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center -mr-2"
                   aria-label="Close Menu"
                 >
                   <X className="w-5 h-5" />
@@ -251,7 +251,7 @@ export const Sidebar: React.FC = () => {
                   onClick={toggleCollapse}
                   title="Collapse Sidebar"
                   aria-label="Collapse Sidebar"
-                  className="p-1.5 rounded-lg text-blue-200 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+                  className="p-1.5 rounded-lg text-amber-200 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
                 >
                   <PanelLeftClose className="w-4 h-4" />
                 </button>
@@ -259,17 +259,17 @@ export const Sidebar: React.FC = () => {
             </div>
           )}
 
-          {/* ── Prominent Segmented Mode Switch Pill ── */}
+          {/* ── Compact Segmented Mode Switch ── */}
           {collapsed ? (
-            <div className="mt-3 flex flex-col gap-1 p-1 rounded-xl bg-blue-900/60 border border-white/15">
+            <div className="mt-3 flex flex-col gap-1 p-1 rounded-xl bg-blue-950/70 border border-blue-400/30">
               <button
                 type="button"
                 onClick={() => handleModeSwitch('erp')}
                 title="Interior ERP Mode (Alt+S)"
-                className={`py-2 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
+                className={`py-2 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
                   workspaceMode === 'erp'
-                    ? 'bg-white text-[#1D4ED8] shadow-xs'
-                    : 'text-blue-200 hover:text-white'
+                    ? 'bg-amber-400 text-amber-950 shadow-xs font-bold'
+                    : 'text-amber-200/80 hover:text-white hover:bg-white/10'
                 }`}
               >
                 <FolderKanban className="w-4 h-4" />
@@ -278,54 +278,52 @@ export const Sidebar: React.FC = () => {
                 type="button"
                 onClick={() => handleModeSwitch('crm')}
                 title="Studio CRM Mode (Alt+S)"
-                className={`py-2 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
+                className={`py-2 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
                   workspaceMode === 'crm'
-                    ? 'bg-white text-[#1D4ED8] shadow-xs'
-                    : 'text-blue-200 hover:text-white'
+                    ? 'bg-amber-400 text-amber-950 shadow-xs font-bold'
+                    : 'text-amber-200/80 hover:text-white hover:bg-white/10'
                 }`}
               >
                 <Users className="w-4 h-4" />
               </button>
             </div>
           ) : (
-            <div className="mt-4">
-              <div className="mode-switch relative flex items-center p-1 rounded-xl bg-blue-900/60 border border-white/15">
-                <div
-                  className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-white shadow-xs transition-transform duration-250 ease-out ${
-                    workspaceMode === 'crm' ? 'translate-x-[calc(100%+4px)]' : 'translate-x-0'
-                  }`}
-                />
-
+            <div className="mt-3 px-1">
+              <div className="max-w-[196px] mx-auto p-1 rounded-xl bg-blue-950/80 border border-blue-400/40 flex items-center gap-1 shadow-xs">
                 <button
                   type="button"
                   onClick={() => handleModeSwitch('erp')}
-                  className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer min-h-[34px] ${
-                    workspaceMode === 'erp' ? 'text-[#1D4ED8] font-bold' : 'text-blue-100 hover:text-white'
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    workspaceMode === 'erp'
+                      ? 'bg-amber-400 text-amber-950 shadow-xs'
+                      : 'text-amber-200/90 hover:text-white hover:bg-white/10'
                   }`}
                   title="Interior ERP: Operations, BOQs, Site & Budgets (Alt+S)"
                 >
                   <FolderKanban className="w-3.5 h-3.5" />
-                  <span>Interior ERP</span>
+                  <span>ERP</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleModeSwitch('crm')}
-                  className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer min-h-[34px] ${
-                    workspaceMode === 'crm' ? 'text-[#1D4ED8] font-bold' : 'text-blue-100 hover:text-white'
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    workspaceMode === 'crm'
+                      ? 'bg-amber-400 text-amber-950 shadow-xs'
+                      : 'text-amber-200/90 hover:text-white hover:bg-white/10'
                   }`}
                   title="Studio CRM: Clients, Proposals & Leads (Alt+S)"
                 >
                   <Users className="w-3.5 h-3.5" />
-                  <span>Studio CRM</span>
+                  <span>CRM</span>
                 </button>
               </div>
 
-              <div className="flex items-center justify-between px-1 mt-1.5 text-[10px] text-blue-200/80">
-                <span className="font-medium">
-                  {workspaceMode === 'erp' ? 'Operations & Delivery' : 'Client & Sales Pipeline'}
+              <div className="flex items-center justify-between px-2.5 mt-1.5 text-[10px] text-amber-200/80">
+                <span className="font-semibold">
+                  {workspaceMode === 'erp' ? 'Interior ERP' : 'Studio CRM'}
                 </span>
-                <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded bg-white/15 text-blue-100 font-mono text-[9px] border border-white/20">
+                <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded bg-blue-950/60 text-amber-200 font-mono text-[9px] border border-blue-400/25">
                   Alt+S
                 </kbd>
               </div>
@@ -338,7 +336,7 @@ export const Sidebar: React.FC = () => {
           {/* Active Mode Nav */}
           <div key={workspaceMode} className="space-y-1 animate-mode-slide">
             {!collapsed && (
-              <div className="px-3 pt-1 pb-1 text-[10px] font-bold text-blue-200/80 uppercase tracking-wider">
+              <div className="px-3 pt-1 pb-1 text-[10px] font-bold text-amber-200/90 uppercase tracking-wider">
                 {workspaceMode === 'erp' ? 'Core Operations' : 'Client & Pipeline'}
               </div>
             )}
@@ -361,8 +359,8 @@ export const Sidebar: React.FC = () => {
                     <span
                       className={`rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 ${
                         isActive
-                          ? 'bg-blue-100 text-[#1D4ED8]'
-                          : 'bg-white/20 text-white border border-white/20'
+                          ? 'bg-amber-950 text-amber-300'
+                          : 'bg-amber-400/20 text-amber-200 border border-amber-300/30'
                       }`}
                     >
                       {item.badge}
@@ -384,7 +382,7 @@ export const Sidebar: React.FC = () => {
                 onClick={() => setIsMoreExpanded((prev) => !prev)}
                 title="Studio & Admin Tools"
                 aria-label="Toggle Studio & Admin Tools"
-                className={`sidebar-nav-item collapsed ${isMoreExpanded || isSecondaryActive ? 'bg-white/20 text-white' : ''}`}
+                className={`sidebar-nav-item collapsed ${isMoreExpanded || isSecondaryActive ? 'bg-amber-400/25 text-amber-200' : ''}`}
               >
                 <MoreHorizontal className="nav-icon" />
               </button>
@@ -392,11 +390,11 @@ export const Sidebar: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsMoreExpanded((prev) => !prev)}
-                className="w-full px-3 py-2 flex items-center justify-between text-[11px] font-bold text-blue-200 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                className="w-full px-3 py-2 flex items-center justify-between text-[11px] font-bold text-amber-200 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <span className="uppercase tracking-wider">Studio &amp; Admin Tools</span>
                 <ChevronDown
-                  className={`w-3.5 h-3.5 text-blue-200 transition-transform duration-150 ${
+                  className={`w-3.5 h-3.5 text-amber-300 transition-transform duration-150 ${
                     isMoreExpanded || isSecondaryActive ? 'rotate-180 text-white' : ''
                   }`}
                 />
@@ -420,7 +418,9 @@ export const Sidebar: React.FC = () => {
                       <Icon className="nav-icon" aria-hidden="true" />
                       {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
                       {!collapsed && item.badge !== undefined && item.badge > 0 && (
-                        <span className="rounded-full px-2 py-0.5 text-[10px] font-bold bg-white/20 text-white border border-white/20 shrink-0">
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 ${
+                          isActive ? 'bg-amber-950 text-amber-300' : 'bg-amber-400/20 text-amber-200 border border-amber-300/30'
+                        }`}>
                           {item.badge}
                         </span>
                       )}
@@ -534,8 +534,8 @@ export const Sidebar: React.FC = () => {
                   <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-400 rounded-full border border-[#1D4ED8]" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs font-semibold text-white truncate">{displayName}</div>
-                  <div className="text-[10px] text-blue-200/80 truncate">{roleDisplay()}</div>
+                  <div className="text-xs font-semibold text-amber-200 truncate">{displayName}</div>
+                  <div className="text-[10px] text-amber-300/80 truncate">{roleDisplay()}</div>
                 </div>
               </div>
 
@@ -545,7 +545,7 @@ export const Sidebar: React.FC = () => {
                   signOut();
                 }}
                 title={user ? 'Sign Out' : 'Exit Demo'}
-                className="p-1.5 rounded-lg text-blue-200 hover:text-rose-300 hover:bg-white/10 transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center"
+                className="p-1.5 rounded-lg text-amber-200 hover:text-rose-300 hover:bg-white/10 transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center"
               >
                 <LogOut className="w-4 h-4" />
               </button>

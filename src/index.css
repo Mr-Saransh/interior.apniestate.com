@@ -173,7 +173,7 @@
   border-radius: 10px;
   font-size: 13.5px;
   font-weight: 500;
-  color: #DBEAFE;
+  color: #FEF08A; /* yellow-200 */
   transition: all 150ms ease;
   cursor: pointer;
   min-height: 40px;
@@ -193,20 +193,20 @@
 }
 
 .sidebar-nav-item.active {
-  background: #FFFFFF;
-  color: #1D4ED8;
-  font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  background: #FBBF24; /* amber-400 matching DEMO badge */
+  color: #451A03; /* amber-950 */
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 .sidebar-nav-item.active .nav-icon {
-  color: #1D4ED8;
+  color: #451A03;
 }
 
 .sidebar-nav-item .nav-icon {
   width: 18px;
   height: 18px;
-  color: #BFDBFE;
+  color: #FDE047; /* yellow-300 */
   flex-shrink: 0;
   transition: color 150ms ease;
 }

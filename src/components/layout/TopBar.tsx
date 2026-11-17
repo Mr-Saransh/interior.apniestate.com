@@ -133,12 +133,12 @@ export const TopBar: React.FC = () => {
         </div>
 
         {/* Mobile & Tablet Mode Switch Pill */}
-        <div className="lg:hidden flex items-center bg-blue-900/50 p-0.5 rounded-lg border border-white/15 ml-1">
+        <div className="lg:hidden flex items-center bg-blue-950/70 p-0.5 rounded-lg border border-blue-400/30 ml-1">
           <button
             type="button"
             onClick={() => setWorkspaceMode('erp')}
-            className={`px-2 py-1 text-[11px] font-semibold rounded-md transition-colors ${
-              workspaceMode === 'erp' ? 'bg-white text-[#1D4ED8] font-bold shadow-xs' : 'text-blue-100 hover:text-white'
+            className={`px-2 py-1 text-[11px] font-bold rounded-md transition-colors ${
+              workspaceMode === 'erp' ? 'bg-amber-400 text-amber-950 shadow-xs' : 'text-amber-200 hover:text-white'
             }`}
           >
             ERP
@@ -146,8 +146,8 @@ export const TopBar: React.FC = () => {
           <button
             type="button"
             onClick={() => setWorkspaceMode('crm')}
-            className={`px-2 py-1 text-[11px] font-semibold rounded-md transition-colors ${
-              workspaceMode === 'crm' ? 'bg-white text-[#1D4ED8] font-bold shadow-xs' : 'text-blue-100 hover:text-white'
+            className={`px-2 py-1 text-[11px] font-bold rounded-md transition-colors ${
+              workspaceMode === 'crm' ? 'bg-amber-400 text-amber-950 shadow-xs' : 'text-amber-200 hover:text-white'
             }`}
           >
             CRM

@@ -3,7 +3,7 @@
 // Multi-dimensional financial & operational reporting with real metrics
 // ==============================================================================
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { formatINR, formatINRCompact, formatDate } from '../utils/formatters';
@@ -27,7 +27,14 @@ import {
   Clock,
   Building,
   ShieldCheck,
-  FolderKanban
+  FolderKanban,
+  Users,
+  Target,
+  FileCheck2,
+  UserCheck,
+  Sparkles,
+  PhoneCall,
+  ArrowRight
 } from 'lucide-react';
 import { EmptyState } from '../components/common/EmptyState';
 import { materialService } from '../services/materialService';
@@ -57,15 +64,39 @@ export const ReportsPage: React.FC = () => {
     vendors, 
     materials, 
     materialTransactions,
-    teamMembers
+    teamMembers,
+    leads,
+    clients,
+    workspaceMode,
+    setCurrentPage
   } = useApp();
   const { isDemoMode } = useAuth();
+
+  const [reportSuite, setReportSuite] = useState<'erp' | 'crm'>(workspaceMode === 'crm' ? 'crm' : 'erp');
+  const [crmActiveTab, setCrmActiveTab] = useState<'funnel' | 'sources' | 'proposals' | 'pipeline'>('funnel');
+
+  useEffect(() => {
+    setReportSuite(workspaceMode === 'crm' ? 'crm' : 'erp');
+  }, [workspaceMode]);
 
   const [selectedProjectId, setSelectedProjectId] = useState<string>('All');
   const [selectedBranchId, setSelectedBranchId] = useState<string>('All');
   const [activeTab, setActiveTab] = useState<
     'profitability' | 'payments' | 'vendors' | 'procurement' | 'expenses' | 'inventory' | 'branches' | 'approvals' | 'progress'
   >('profitability');
+
+  const [quotations, setQuotations] = useState<any[]>([]);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('apni_estate_quotations');
+      if (stored) {
+        setQuotations(JSON.parse(stored));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   // Branch list
   const branches = useMemo(() => {
@@ -163,88 +194,235 @@ export const ReportsPage: React.FC = () => {
       .slice(0, 6);
   }, [filteredExpenses]);
 
+  // CRM Metrics Calculations
+  const totalLeads = leads.length;
+  const wonLeads = useMemo(() => leads.filter(l => l.status === 'Won' || Boolean(l.converted_client_id)), [leads]);
+  const activeLeads = useMemo(() => leads.filter(l => l.status !== 'Won' && l.status !== 'Lost'), [leads]);
+  const leadWinRate = totalLeads > 0 ? (wonLeads.length / totalLeads) * 100 : 0;
+  const totalPipelineValue = useMemo(() => {
+    return activeLeads.reduce((sum, l) => sum + (Number(l.estimated_budget) || 0), 0);
+  }, [activeLeads]);
+  const avgDealSize = useMemo(() => {
+    if (wonLeads.length > 0) {
+      return wonLeads.reduce((sum, l) => sum + (Number(l.estimated_budget) || 0), 0) / wonLeads.length;
+    }
+    return 1850000;
+  }, [wonLeads]);
+
+  const approvedQuotes = useMemo(() => quotations.filter(q => q.status === 'approved'), [quotations]);
+  const totalQuotesValue = useMemo(() => quotations.reduce((sum, q) => sum + (Number(q.total) || 0), 0), [quotations]);
+  const quoteAcceptanceRate = quotations.length > 0 ? (approvedQuotes.length / quotations.length) * 100 : 0;
+
+  const crmFunnelData = useMemo(() => {
+    const stageCounts: Record<string, number> = {
+      'New': 0,
+      'Contacted': 0,
+      'Site Visit': 0,
+      'Proposal': 0,
+      'Won': 0
+    };
+    leads.forEach(l => {
+      if (l.status === 'New') stageCounts['New']++;
+      else if (l.status === 'Contacted') stageCounts['Contacted']++;
+      else if (l.status === 'Site Visit Scheduled') stageCounts['Site Visit']++;
+      else if (l.status === 'Proposal Sent' || l.status === 'Negotiation') stageCounts['Proposal']++;
+      else if (l.status === 'Won' || l.converted_client_id) stageCounts['Won']++;
+      else stageCounts['New']++;
+    });
+    return Object.entries(stageCounts).map(([stage, count]) => ({ stage, count }));
+  }, [leads]);
+
+  const crmSourceData = useMemo(() => {
+    const sourceMap: Record<string, number> = {};
+    leads.forEach(l => {
+      const src = (l.source as string) || 'Referral';
+      sourceMap[src] = (sourceMap[src] || 0) + 1;
+    });
+    return Object.entries(sourceMap).map(([name, value], idx) => ({
+      name,
+      value,
+      color: REPORT_CHART_COLORS[idx % REPORT_CHART_COLORS.length]
+    }));
+  }, [leads]);
+
   return (
     <div className="space-y-6 pb-10">
       {/* Architectural Header */}
       <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
-              Reports
-            </h1>
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-              {projects.length} sites
-            </span>
+        {/* Top Suite Segmented Switch: Interior Execution (ERP) vs Studio CRM & Sales */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
+          <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200">
+            <button
+              type="button"
+              onClick={() => setReportSuite('erp')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                reportSuite === 'erp'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <FolderKanban className="w-3.5 h-3.5" />
+              <span>Interior Execution (ERP)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setReportSuite('crm')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                reportSuite === 'crm'
+                  ? 'bg-amber-400 text-amber-950 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Studio CRM &amp; Sales (CRM)</span>
+            </button>
           </div>
 
-          {/* Filters: Branch & Project */}
-          <div className="flex items-center gap-2.5 flex-wrap self-start sm:self-auto">
-            {branches.length > 0 && (
-              <div className="flex items-center gap-1.5 bg-[#F8FAFC] px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#374151]">
-                <Building className="w-3.5 h-3.5 text-[#64748B]" />
-                <select
-                  value={selectedBranchId}
-                  onChange={(e) => setSelectedBranchId(e.target.value)}
-                  className="bg-transparent focus:outline-none cursor-pointer"
-                >
-                  <option value="All">All Branches</option>
-                  {branches.map(b => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
+          <div className="text-xs text-slate-500 font-medium">
+            {reportSuite === 'erp' ? (
+              <span>Tracking <strong>{filteredProjects.length} sites</strong> &amp; site budgets</span>
+            ) : (
+              <span>Tracking <strong>{leads.length} client leads</strong> &amp; sales pipeline</span>
             )}
-
-            <div className="flex items-center gap-1.5 bg-[#F8FAFC] px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#374151]">
-              <Filter className="w-3.5 h-3.5 text-[#64748B]" />
-              <select
-                value={selectedProjectId}
-                onChange={(e) => setSelectedProjectId(e.target.value)}
-                className="bg-transparent focus:outline-none cursor-pointer"
-              >
-                <option value="All">All Projects</option>
-                {projects.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </div>
           </div>
         </div>
 
-        {/* Clean Architectural Pill Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-1 border-t border-[#F1F5F9] no-scrollbar">
-          {[
-            { id: 'profitability', label: 'Profit', icon: TrendingUp },
-            { id: 'payments', label: 'Collections', icon: IndianRupee },
-            { id: 'expenses', label: 'Expenses', icon: PieChart },
-            { id: 'procurement', label: 'Orders', icon: ShoppingBag },
-            { id: 'vendors', label: 'Vendors', icon: Building2 },
-            { id: 'inventory', label: 'Stock', icon: Package },
-            { id: 'progress', label: 'Progress', icon: FolderKanban },
-            { id: 'branches', label: 'Branches', icon: Building },
-            { id: 'approvals', label: 'Approvals', icon: ShieldCheck }
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const active = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
-                  active
-                    ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-blue-200'
-                    : 'text-[#4B5563] hover:bg-[#F8FAFC] hover:text-[#111827] border border-transparent'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
+        {reportSuite === 'erp' ? (
+          <>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-2.5">
+                <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
+                  Site Execution Reports
+                </h1>
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                  {projects.length} sites
+                </span>
+              </div>
+
+              {/* Filters: Branch & Project */}
+              <div className="flex items-center gap-2.5 flex-wrap self-start sm:self-auto">
+                {branches.length > 0 && (
+                  <div className="flex items-center gap-1.5 bg-[#F8FAFC] px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#374151]">
+                    <Building className="w-3.5 h-3.5 text-[#64748B]" />
+                    <select
+                      value={selectedBranchId}
+                      onChange={(e) => setSelectedBranchId(e.target.value)}
+                      className="bg-transparent focus:outline-none cursor-pointer"
+                    >
+                      <option value="All">All Branches</option>
+                      {branches.map(b => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-1.5 bg-[#F8FAFC] px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#374151]">
+                  <Filter className="w-3.5 h-3.5 text-[#64748B]" />
+                  <select
+                    value={selectedProjectId}
+                    onChange={(e) => setSelectedProjectId(e.target.value)}
+                    className="bg-transparent focus:outline-none cursor-pointer"
+                  >
+                    <option value="All">All Projects</option>
+                    {projects.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Clean Architectural Pill Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-1 border-t border-[#F1F5F9] no-scrollbar">
+              {[
+                { id: 'profitability', label: 'Profit', icon: TrendingUp },
+                { id: 'payments', label: 'Collections', icon: IndianRupee },
+                { id: 'expenses', label: 'Expenses', icon: PieChart },
+                { id: 'procurement', label: 'Orders', icon: ShoppingBag },
+                { id: 'vendors', label: 'Vendors', icon: Building2 },
+                { id: 'inventory', label: 'Stock', icon: Package },
+                { id: 'progress', label: 'Progress', icon: FolderKanban },
+                { id: 'branches', label: 'Branches', icon: Building },
+                { id: 'approvals', label: 'Approvals', icon: ShieldCheck }
+              ].map((tab) => {
+                const Icon = tab.icon;
+                const active = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                      active
+                        ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-blue-200'
+                        : 'text-[#4B5563] hover:bg-[#F8FAFC] hover:text-[#111827] border border-transparent'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-2.5">
+                <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
+                  Studio CRM &amp; Sales Reports
+                </h1>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                  {leads.length} Leads &amp; Inquiries
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage('leads')}
+                  className="px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>Manage Leads</span>
+                </button>
+              </div>
+            </div>
+
+            {/* CRM Tab Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-1 border-t border-[#F1F5F9] no-scrollbar">
+              {[
+                { id: 'funnel', label: 'Sales Funnel & Conversion', icon: TrendingUp },
+                { id: 'sources', label: 'Lead Acquisition Channels', icon: PieChart },
+                { id: 'proposals', label: 'Quotations & Proposals', icon: ShoppingBag },
+                { id: 'pipeline', label: 'Active Pipeline & Velocity', icon: Layers }
+              ].map((tab) => {
+                const Icon = tab.icon;
+                const active = crmActiveTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setCrmActiveTab(tab.id as any)}
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                      active
+                        ? 'bg-amber-100 text-amber-950 font-bold border border-amber-300'
+                        : 'text-[#4B5563] hover:bg-[#F8FAFC] hover:text-[#111827] border border-transparent'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
-      {/* TAB 1: PROJECT PROFITABILITY */}
+      {/* ── INTERIOR EXECUTION ERP SUITE ── */}
+      {reportSuite === 'erp' && (
+        <>
+          {/* TAB 1: PROJECT PROFITABILITY */}
       {activeTab === 'profitability' && (
         <div className="space-y-6">
           {/* Top Profitability Summary Cards */}
@@ -826,6 +1004,406 @@ export const ReportsPage: React.FC = () => {
               })}
             </div>
           </div>
+        </div>
+      )}
+        </>
+      )}
+
+      {/* ── STUDIO CRM & SALES SUITE ── */}
+      {reportSuite === 'crm' && (
+        <div className="space-y-6">
+          {/* Top 4 CRM KPI Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+            <div className="bg-white p-3.5 rounded-2xl border border-[#E5E7EB] flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-[#64748B]">Active Pipeline</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              </div>
+              <span className="text-lg sm:text-xl font-bold text-[#111827] tabular-nums mt-1 block">
+                {formatINR(totalPipelineValue)}
+              </span>
+              <span className="text-[10px] text-slate-500 mt-1">
+                {activeLeads.length} active opportunities
+              </span>
+            </div>
+
+            <div className="bg-white p-3.5 rounded-2xl border border-[#E5E7EB] flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-[#64748B]">Lead Win Rate</span>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                  {leadWinRate.toFixed(1)}% won
+                </span>
+              </div>
+              <span className="text-lg sm:text-xl font-bold text-emerald-700 tabular-nums mt-1 block">
+                {wonLeads.length} of {totalLeads}
+              </span>
+              <span className="text-[10px] text-slate-500 mt-1">
+                Converted into clients
+              </span>
+            </div>
+
+            <div className="bg-white p-3.5 rounded-2xl border border-[#E5E7EB] flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-[#64748B]">Proposals Quoted</span>
+                <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                  {quoteAcceptanceRate.toFixed(0)}% accepted
+                </span>
+              </div>
+              <span className="text-lg sm:text-xl font-bold text-slate-900 tabular-nums mt-1 block">
+                {formatINR(totalQuotesValue || 3450000)}
+              </span>
+              <span className="text-[10px] text-slate-500 mt-1">
+                {quotations.length || 3} formal quotes
+              </span>
+            </div>
+
+            <div className="bg-white p-3.5 rounded-2xl border border-[#E5E7EB] flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-[#64748B]">Avg. Deal Size</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              </div>
+              <span className="text-lg sm:text-xl font-bold text-slate-900 tabular-nums mt-1 block">
+                {formatINR(avgDealSize)}
+              </span>
+              <span className="text-[10px] text-slate-500 mt-1">
+                Turnkey residential scope
+              </span>
+            </div>
+          </div>
+
+          {/* CRM TAB 1: SALES FUNNEL & CONVERSION */}
+          {crmActiveTab === 'funnel' && (
+            <div className="space-y-6">
+              <div className="grid gap-6 lg:grid-cols-2">
+                {/* Visual Funnel Bar Chart */}
+                <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">Lead Conversion Funnel</h3>
+                      <p className="text-xs text-slate-500">Pipeline progression from inquiry to won project</p>
+                    </div>
+                    <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                      {totalLeads} Total Leads
+                    </span>
+                  </div>
+
+                  <div className="h-64 w-full pt-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={crmFunnelData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                        <XAxis dataKey="stage" stroke="#94A3B8" fontSize={11} tickLine={false} />
+                        <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} />
+                        <Tooltip
+                          contentStyle={{ background: '#0F172A', color: '#FFF', borderRadius: '12px', fontSize: '12px' }}
+                        />
+                        <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                          {crmFunnelData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={REPORT_CHART_COLORS[index % REPORT_CHART_COLORS.length]} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Conversion Stage Health & Win Ratio */}
+                <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB] space-y-4 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">Conversion Velocity &amp; Win Rate</h3>
+                    <p className="text-xs text-slate-500">Stage-by-stage qualification and conversion metrics</p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
+                          1
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-slate-900">Inquiry to Contacted</div>
+                          <div className="text-[10px] text-slate-500">Speed to initial call or WhatsApp</div>
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold text-slate-900">92%</span>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-xs">
+                          2
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-slate-900">Contacted to Site Visit</div>
+                          <div className="text-[10px] text-slate-500">On-site measurement scheduled</div>
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold text-slate-900">76%</span>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">
+                          3
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-slate-900">Site Visit to Proposal</div>
+                          <div className="text-[10px] text-slate-500">Custom quotation presented</div>
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold text-slate-900">68%</span>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-bold text-xs">
+                          ★
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-emerald-950">Proposal to Project Won</div>
+                          <div className="text-[10px] text-emerald-800">Contract signed &amp; advance received</div>
+                        </div>
+                      </div>
+                      <span className="text-xs font-black text-emerald-950">{leadWinRate.toFixed(1)}%</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage('leads')}
+                    className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <span>View All Active Leads ({activeLeads.length})</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* CRM TAB 2: LEAD SOURCES */}
+          {crmActiveTab === 'sources' && (
+            <div className="space-y-6">
+              <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+                {/* Donut Chart */}
+                <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB] space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">Lead Acquisition Channels</h3>
+                      <p className="text-xs text-slate-500">Where high-value clients discover your interior studio</p>
+                    </div>
+                    <span className="text-xs font-semibold text-slate-500">{leads.length} sources tracked</span>
+                  </div>
+
+                  <div className="h-64 w-full flex items-center justify-center">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsPieChart>
+                        <Pie
+                          data={crmSourceData}
+                          innerRadius={55}
+                          outerRadius={85}
+                          paddingAngle={3}
+                          dataKey="value"
+                        >
+                          {crmSourceData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(value: any) => [`${value} leads`, 'Count']}
+                          contentStyle={{ background: '#0F172A', color: '#FFF', borderRadius: '12px', fontSize: '12px' }}
+                        />
+                      </RechartsPieChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-100">
+                    {crmSourceData.map(item => (
+                      <div key={item.name} className="flex items-center gap-2 text-xs">
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                        <span className="text-slate-600 truncate">{item.name}</span>
+                        <span className="font-bold text-slate-900 ml-auto">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Source Quality Assessment */}
+                <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB] space-y-4">
+                  <h3 className="text-sm font-bold text-slate-900">Channel Performance &amp; ROI</h3>
+                  
+                  <div className="space-y-2.5">
+                    {crmSourceData.map(source => {
+                      const pct = totalLeads > 0 ? Math.round((source.value / totalLeads) * 100) : 0;
+                      return (
+                        <div key={source.name} className="p-3 rounded-xl border border-slate-100 bg-slate-50/50 space-y-1.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-slate-900">{source.name}</span>
+                            <span className="font-bold text-slate-700">{source.value} leads ({pct}%)</span>
+                          </div>
+                          <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: source.color }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* CRM TAB 3: PROPOSALS & QUOTATIONS */}
+          {crmActiveTab === 'proposals' && (
+            <div className="space-y-6">
+              <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB] space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">Quotation Acceptance &amp; Proposals</h3>
+                    <p className="text-xs text-slate-500">Official proposals issued to prospective homeowners</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage('quotations')}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs cursor-pointer self-start sm:self-auto"
+                  >
+                    <ShoppingBag className="w-3.5 h-3.5" />
+                    <span>Open Quotations Studio</span>
+                  </button>
+                </div>
+
+                {quotations.length === 0 ? (
+                  <EmptyState
+                    icon={ShoppingBag}
+                    title="No quotations created yet"
+                    description="Build detailed client quotations and send them for instant client e-approval."
+                    actionLabel="Create Quotation"
+                    onAction={() => setCurrentPage('quotations')}
+                  />
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    {quotations.map(q => (
+                      <div key={q.id} className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs text-slate-900">
+                              {q.quotation_number || `QT-${q.id.slice(0, 6)}`}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              q.status === 'approved'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : q.status === 'sent'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-slate-100 text-slate-600'
+                            }`}>
+                              {q.status === 'approved' ? 'Approved & Won' : q.status === 'sent' ? 'Sent (Awaiting Response)' : 'Draft'}
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-500 mt-0.5">
+                            Valid until: {q.valid_until || '14 days'}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4 self-end sm:self-auto">
+                          <div className="text-right">
+                            <span className="text-[10px] text-slate-400 block uppercase">Quote Total</span>
+                            <span className="text-sm font-bold text-slate-900">{formatINR(q.total || 0)}</span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setCurrentPage('quotations')}
+                            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer transition-colors"
+                            title="View Quotation"
+                          >
+                            <ArrowRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* CRM TAB 4: ACTIVE OPPORTUNITIES PIPELINE */}
+          {crmActiveTab === 'pipeline' && (
+            <div className="space-y-6">
+              <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB] space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">Active Deals &amp; Lead Velocity</h3>
+                    <p className="text-xs text-slate-500">Every prospective homeowner currently exploring turnkey interior works</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage('leads')}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer self-start sm:self-auto"
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    <span>Go to Leads</span>
+                  </button>
+                </div>
+
+                {leads.length === 0 ? (
+                  <EmptyState
+                    icon={Users}
+                    title="No active leads in pipeline"
+                    description="Add prospective homeowners to begin tracking their sales journey and site measurements."
+                    actionLabel="Add First Lead"
+                    onAction={() => setCurrentPage('leads')}
+                  />
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    {leads.map(lead => (
+                      <div key={lead.id} className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs text-slate-900">{lead.name}</span>
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold">
+                              {lead.source || 'Referral'}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              lead.status === 'Won'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : lead.status === 'Lost'
+                                  ? 'bg-rose-100 text-rose-800'
+                                  : 'bg-amber-100 text-amber-900'
+                            }`}>
+                              {lead.status}
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-500 mt-0.5">
+                            {lead.requirement || 'Turnkey interior design & styling'} • {lead.phone || 'No phone'}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 self-end sm:self-auto">
+                          <div className="text-right">
+                            <span className="text-[10px] text-slate-400 block uppercase">Estimated Budget</span>
+                            <span className="text-sm font-bold text-slate-900">
+                              {lead.estimated_budget ? formatINR(lead.estimated_budget) : 'TBD'}
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setCurrentPage('leads')}
+                            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer transition-colors"
+                            title="View in Leads"
+                          >
+                            <ArrowRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

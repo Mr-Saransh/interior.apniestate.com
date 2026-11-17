@@ -2,7 +2,7 @@
 // APNI ESTATE INTERIORS - PROJECT DETAIL PAGE (OPERATIONAL SITE MVP & FINANCIALS)
 // ==============================================================================
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { Room, BOQItem, Expense, Material, Milestone, DailyUpdate, ProjectPhoto } from '../types';
@@ -100,14 +100,25 @@ import {
 } from 'recharts';
 import { Task, DocumentItem, DocumentCategory, TaskStatus, TaskPriority, ClientPayment, Purchase, Vendor } from '../types';
 
+interface ClientRequirement {
+  id: string;
+  space: string;
+  title: string;
+  details: string;
+  priority: 'Standard' | 'High';
+  status: 'Approved & In Scope' | 'Under Review' | 'Declined';
+  submitted_at: string;
+  estimated_cost?: number;
+}
+
 type ProjectTab =
-  | 'Overview' | 'Rooms' | 'BOQ' | 'Expenses' | 'Budget' | 'Materials'
+  | 'Overview' | 'Rooms' | 'BOQ' | 'Client Requests' | 'Expenses' | 'Budget' | 'Materials'
   | 'Milestones' | 'Daily Updates' | 'Photos' | 'Notes' | 'Tasks'
   | 'Documents' | 'Payments' | 'Purchases';
 
 const projectTabGroups: { label: string; tabs: ProjectTab[] }[] = [
   { label: 'Overview', tabs: ['Overview'] },
-  { label: 'Plan', tabs: ['Rooms', 'BOQ'] },
+  { label: 'Plan', tabs: ['Rooms', 'BOQ', 'Client Requests'] },
   { label: 'Site', tabs: ['Tasks', 'Milestones', 'Daily Updates', 'Photos', 'Materials'] },
   { label: 'Money', tabs: ['Expenses', 'Budget', 'Payments', 'Purchases'] },
   { label: 'Files', tabs: ['Documents', 'Notes'] }
@@ -117,6 +128,7 @@ const projectTabLabels: Record<ProjectTab, string> = {
   Overview: 'Overview',
   Rooms: 'Rooms',
   BOQ: 'Cost estimate',
+  'Client Requests': 'Client Requests',
   Expenses: 'Expenses',
   Budget: 'Budget',
   Materials: 'Materials',
@@ -161,6 +173,7 @@ export const ProjectDetailPage: React.FC = () => {
     approveProjectBOQ,
     deleteExpense,
     deleteBOQItem,
+    addBOQItem,
     updateProject,
     deleteProject,
     deleteRoom,
@@ -272,6 +285,139 @@ export const ProjectDetailPage: React.FC = () => {
 
   const project = projects.find(p => p.id === selectedProjectId) || projects[0];
   const activeTabGroup = projectTabGroups.find(group => group.tabs.includes(activeTab)) || projectTabGroups[0];
+
+  // Client Portal Requirements State & Sync
+  const [clientRequests, setClientRequests] = useState<ClientRequirement[]>([]);
+  const [clientReqFilter, setClientReqFilter] = useState<'All' | 'Under Review' | 'Approved & In Scope' | 'Declined'>('All');
+  const [isAddReqModalOpen, setIsAddReqModalOpen] = useState(false);
+  const [newReqSpace, setNewReqSpace] = useState('Living Room');
+  const [newReqTitle, setNewReqTitle] = useState('');
+  const [newReqDetails, setNewReqDetails] = useState('');
+  const [newReqPriority, setNewReqPriority] = useState<'Standard' | 'High'>('Standard');
+  const [actionToast, setActionToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
+
+  const loadClientRequests = useCallback(() => {
+    if (!project?.id) return;
+    const storageKey = `apni_estate_client_reqs_${project.id}`;
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        setClientRequests(JSON.parse(raw));
+      } else {
+        const initial: ClientRequirement[] = [
+          {
+            id: `req-${project.id}-1`,
+            space: 'Living Room',
+            title: 'Warm 3000K LED Strip under TV Console',
+            details: 'Please ensure cove light switches from the main entry board.',
+            priority: 'Standard',
+            status: 'Under Review',
+            submitted_at: new Date(Date.now() - 86400000 * 2).toISOString().split('T')[0]
+          },
+          {
+            id: `req-${project.id}-2`,
+            space: 'Master Bedroom',
+            title: 'Full Mirror Door on Wardrobe Center Shutter',
+            details: 'Replace plain laminate with 5mm beveled mirror for vanity check.',
+            priority: 'High',
+            status: 'Under Review',
+            submitted_at: new Date(Date.now() - 86400000).toISOString().split('T')[0]
+          }
+        ];
+        localStorage.setItem(storageKey, JSON.stringify(initial));
+        setClientRequests(initial);
+      }
+    } catch {
+      // ignore
+    }
+  }, [project?.id]);
+
+  useEffect(() => {
+    loadClientRequests();
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === `apni_estate_client_reqs_${project?.id}`) {
+        loadClientRequests();
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [loadClientRequests, project?.id]);
+
+  const pendingRequests = useMemo(() => {
+    return clientRequests.filter(r => r.status === 'Under Review');
+  }, [clientRequests]);
+
+  const handleApproveAndAddToBOQ = async (req: ClientRequirement) => {
+    try {
+      const roomsList = project.rooms || [];
+      const matchingRoom = roomsList.find(r => 
+        r.name.toLowerCase().includes(req.space.toLowerCase()) || 
+        req.space.toLowerCase().includes(r.name.toLowerCase())
+      ) || roomsList[0];
+
+      await addBOQItem({
+        project_id: project.id,
+        room_id: matchingRoom?.id,
+        item_name: req.title,
+        description: req.details ? `${req.details} (Client Portal Request for ${req.space})` : `Client Portal Request for ${req.space}`,
+        category: 'Carpentry / Loose',
+        quantity: 1,
+        unit: 'Lot',
+        rate: req.estimated_cost || 12000,
+        selling_rate: req.estimated_cost || 12000,
+        material_rate: Math.round((req.estimated_cost || 12000) * 0.65),
+        labour_rate: Math.round((req.estimated_cost || 12000) * 0.35)
+      });
+
+      const updated = clientRequests.map(r => r.id === req.id ? { ...r, status: 'Approved & In Scope' as const } : r);
+      setClientRequests(updated);
+      localStorage.setItem(`apni_estate_client_reqs_${project.id}`, JSON.stringify(updated));
+
+      setActionToast({
+        message: `"${req.title}" approved and added to Cost Estimate (BOQ)!`,
+        type: 'success'
+      });
+      setTimeout(() => setActionToast(null), 4000);
+    } catch (err) {
+      console.error('Failed to add client request to BOQ:', err);
+    }
+  };
+
+  const handleUpdateReqStatus = (reqId: string, newStatus: ClientRequirement['status']) => {
+    const updated = clientRequests.map(r => r.id === reqId ? { ...r, status: newStatus } : r);
+    setClientRequests(updated);
+    localStorage.setItem(`apni_estate_client_reqs_${project.id}`, JSON.stringify(updated));
+    setActionToast({
+      message: `Requirement status updated to "${newStatus}".`,
+      type: 'info'
+    });
+    setTimeout(() => setActionToast(null), 3000);
+  };
+
+  const handleCreateManualRequest = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newReqTitle.trim() || !project) return;
+    const newReq: ClientRequirement = {
+      id: `req-${Date.now()}`,
+      space: newReqSpace.trim() || 'General',
+      title: newReqTitle.trim(),
+      details: newReqDetails.trim(),
+      priority: newReqPriority,
+      status: 'Under Review',
+      submitted_at: new Date().toISOString().split('T')[0]
+    };
+    const updated = [newReq, ...clientRequests];
+    setClientRequests(updated);
+    localStorage.setItem(`apni_estate_client_reqs_${project.id}`, JSON.stringify(updated));
+    setNewReqTitle('');
+    setNewReqDetails('');
+    setIsAddReqModalOpen(false);
+    setActionToast({
+      message: 'New client requirement recorded.',
+      type: 'success'
+    });
+    setTimeout(() => setActionToast(null), 3000);
+  };
 
   useEffect(() => {
     if (!project?.id) {
@@ -669,19 +815,25 @@ export const ProjectDetailPage: React.FC = () => {
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
           {projectTabGroups.map(group => {
             const isActive = activeTabGroup.label === group.label;
+            const hasPendingPortal = group.label === 'Plan' && pendingRequests.length > 0;
             return (
               <button
                 type="button"
                 key={group.label}
                 aria-pressed={isActive}
                 onClick={() => setActiveTab(group.tabs[0])}
-                className={`min-h-11 rounded-lg px-3 text-sm font-semibold transition-colors ${
+                className={`min-h-11 rounded-lg px-3 text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 ${
                   isActive
                     ? 'bg-brand-50 text-brand-800 ring-1 ring-brand-200'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }`}
               >
-                {group.label}
+                <span>{group.label}</span>
+                {hasPendingPortal && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-amber-400 text-amber-950 shadow-2xs">
+                    {pendingRequests.length}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -694,13 +846,20 @@ export const ProjectDetailPage: React.FC = () => {
                 key={tab}
                 aria-current={activeTab === tab ? 'page' : undefined}
                 onClick={() => setActiveTab(tab)}
-                className={`min-h-10 rounded-lg px-3 text-sm font-medium transition-colors ${
+                className={`min-h-10 rounded-lg px-3 text-sm font-medium transition-colors flex items-center gap-1.5 ${
                   activeTab === tab
                     ? 'bg-brand-600 text-white'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
-                {projectTabLabels[tab]}
+                <span>{projectTabLabels[tab]}</span>
+                {tab === 'Client Requests' && pendingRequests.length > 0 && (
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                    activeTab === tab ? 'bg-amber-400 text-amber-950' : 'bg-amber-400 text-amber-950 shadow-xs'
+                  }`}>
+                    {pendingRequests.length}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -757,6 +916,40 @@ export const ProjectDetailPage: React.FC = () => {
 
         return (
           <div className="space-y-5">
+            {/* ── REAL-TIME ALERT: PENDING CLIENT PORTAL REQUIREMENTS ── */}
+            {pendingRequests.length > 0 && (
+              <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs">
+                <div className="flex items-start sm:items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center shrink-0 font-bold shadow-xs">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-950 bg-amber-300 px-2 py-0.5 rounded shadow-2xs">
+                        Portal Update
+                      </span>
+                      <span className="text-sm font-bold text-slate-900">
+                        {pendingRequests.length} New Space Requirement{pendingRequests.length > 1 ? 's' : ''} Received from Homeowner
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 mt-0.5">
+                      The client submitted changes via their live portal link. Review specs and approve them directly into your BOQ cost estimate.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('Client Requests')}
+                    className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>Review &amp; Approve ({pendingRequests.length})</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* ROW 1: 4 UNIFORM ARCHITECTURAL KPI CARDS */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="bg-white rounded-2xl border border-[#E5E7EB] p-3.5 flex flex-col justify-between">
@@ -1580,6 +1773,225 @@ export const ProjectDetailPage: React.FC = () => {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB: CLIENT REQUESTS & PORTAL REQUIREMENTS */}
+      {activeTab === 'Client Requests' && (
+        <div className="space-y-6">
+          <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-5">
+            {/* Top Toolbar */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-bold shadow-xs">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-slate-900">Client Requirements &amp; Portal Submissions</h2>
+                    {pendingRequests.length > 0 && (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                        {pendingRequests.length} Pending Review
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Live requirements submitted by {project.client} via the shared client portal link.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <a
+                  href={`${window.location.origin}${window.location.pathname}?portal=${encodeURIComponent(project.id)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all"
+                  title="Open live client portal view"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Preview Client View</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => setIsAddReqModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Record Requirement</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Filter Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+              {(['All', 'Under Review', 'Approved & In Scope', 'Declined'] as const).map(f => {
+                const count = f === 'All'
+                  ? clientRequests.length
+                  : clientRequests.filter(r => r.status === f).length;
+                return (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setClientReqFilter(f)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                      clientReqFilter === f
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <span>{f}</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${clientReqFilter === f ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Content List / Cards */}
+            {(() => {
+              const filtered = clientRequests.filter(r => clientReqFilter === 'All' || r.status === clientReqFilter);
+              if (filtered.length === 0) {
+                return (
+                  <EmptyState
+                    icon={Sparkles}
+                    title={clientReqFilter === 'All' ? 'No client requirements yet' : `No requests marked "${clientReqFilter}"`}
+                    description="When your client submits ideas or adjustments from the shared portal link, they appear here for your review and approval into the Cost Estimate."
+                    actionLabel="Add Client Request"
+                    onAction={() => setIsAddReqModalOpen(true)}
+                  />
+                );
+              }
+
+              return (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {filtered.map(req => {
+                    const isPending = req.status === 'Under Review';
+                    const isApproved = req.status === 'Approved & In Scope';
+                    const isDeclined = req.status === 'Declined';
+
+                    return (
+                      <div
+                        key={req.id}
+                        className={`rounded-2xl border p-4.5 transition-all flex flex-col justify-between ${
+                          isPending
+                            ? 'bg-amber-50/40 border-amber-300 shadow-xs ring-1 ring-amber-300/50'
+                            : isApproved
+                              ? 'bg-emerald-50/30 border-emerald-200'
+                              : 'bg-slate-50/50 border-slate-200 opacity-75'
+                        }`}
+                      >
+                        <div className="space-y-3">
+                          {/* Card Meta Row */}
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <div className="flex items-center gap-1.5">
+                              <span className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-800 shadow-2xs">
+                                🏠 {req.space}
+                              </span>
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                req.priority === 'High' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'
+                              }`}>
+                                {req.priority} Priority
+                              </span>
+                            </div>
+
+                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border flex items-center gap-1.5 ${
+                              isPending
+                                ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                : isApproved
+                                  ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                                  : 'bg-slate-200 text-slate-700 border-slate-300'
+                            }`}>
+                              {isPending && <Clock className="w-3 h-3 text-amber-700" />}
+                              {isApproved && <CheckCircle2 className="w-3 h-3 text-emerald-700" />}
+                              {isDeclined && <X className="w-3 h-3 text-slate-500" />}
+                              <span>{req.status}</span>
+                            </span>
+                          </div>
+
+                          {/* Requirement Details */}
+                          <div>
+                            <h3 className="text-sm font-bold text-slate-900 leading-snug">{req.title}</h3>
+                            {req.details && (
+                              <p className="text-xs text-slate-600 mt-1 leading-relaxed bg-white/70 p-2.5 rounded-xl border border-slate-100">
+                                {req.details}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">
+                            <span>Submitted: {req.submitted_at || 'Recent'}</span>
+                            <span>Client Portal link</span>
+                          </div>
+                        </div>
+
+                        {/* Card Actions Bar */}
+                        <div className="pt-4 mt-3 border-t border-slate-200/80 flex items-center justify-between gap-2 flex-wrap">
+                          {isPending ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleApproveAndAddToBOQ(req)}
+                                className="flex-1 py-2 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                              >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span>Approve &amp; Add to BOQ</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateReqStatus(req.id, 'Approved & In Scope')}
+                                className="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-all cursor-pointer"
+                                title="Mark as approved without adding separate BOQ line"
+                              >
+                                Mark In Scope
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateReqStatus(req.id, 'Declined')}
+                                className="py-2 px-2.5 rounded-xl bg-white border border-slate-200 hover:bg-rose-50 hover:text-rose-600 text-slate-500 text-xs font-semibold transition-all cursor-pointer"
+                                title="Decline this requirement"
+                              >
+                                Decline
+                              </button>
+                            </>
+                          ) : isApproved ? (
+                            <div className="flex items-center justify-between w-full">
+                              <span className="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
+                                <CheckCircle2 className="w-4 h-4" />
+                                <span>Included in Project Scope / BOQ</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateReqStatus(req.id, 'Under Review')}
+                                className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 underline cursor-pointer"
+                              >
+                                Reopen Review
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between w-full">
+                              <span className="text-xs font-semibold text-slate-500">Declined for current phase</span>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateReqStatus(req.id, 'Under Review')}
+                                className="text-[11px] font-semibold text-brand-600 hover:underline cursor-pointer"
+                              >
+                                Reconsider
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -3373,6 +3785,133 @@ export const ProjectDetailPage: React.FC = () => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Manual Record Client Requirement Modal */}
+      {isAddReqModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-900 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Record Client Requirement</h3>
+                  <p className="text-[11px] text-slate-500">Capture client scope requests directly</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddReqModalOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateManualRequest} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Room / Space</label>
+                <select
+                  value={newReqSpace}
+                  onChange={(e) => setNewReqSpace(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:border-brand-600"
+                >
+                  {(project.rooms && project.rooms.length > 0) ? (
+                    project.rooms.map(r => (
+                      <option key={r.id} value={r.name}>{r.name}</option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="Living Room">Living Room</option>
+                      <option value="Master Bedroom">Master Bedroom</option>
+                      <option value="Kitchen">Kitchen</option>
+                      <option value="Dining Area">Dining Area</option>
+                      <option value="Balcony / Utility">Balcony / Utility</option>
+                      <option value="General Scope">General Scope</option>
+                    </>
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Requirement Title</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Fluted Charcoal Panelling behind TV"
+                  value={newReqTitle}
+                  onChange={(e) => setNewReqTitle(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:border-brand-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Details &amp; Specifications</label>
+                <textarea
+                  rows={3}
+                  placeholder="Enter specifications, material preference, dimensions or special notes..."
+                  value={newReqDetails}
+                  onChange={(e) => setNewReqDetails(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:border-brand-600 resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Priority</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewReqPriority('Standard')}
+                    className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                      newReqPriority === 'Standard'
+                        ? 'bg-slate-900 text-white border-slate-900'
+                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    Standard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewReqPriority('High')}
+                    className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                      newReqPriority === 'High'
+                        ? 'bg-rose-600 text-white border-rose-600'
+                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    High Priority
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAddReqModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-semibold hover:bg-slate-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                >
+                  Save Requirement
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Action Toast Notification */}
+      {actionToast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 animate-fadeIn">
+          <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+          <span>{actionToast.message}</span>
         </div>
       )}
     </div>

@@ -8,21 +8,21 @@ import { Modal } from '../common/Modal';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import { Room, RoomExecutionStatus } from '../../types';
-import { 
-  ROOM_TEMPLATES, 
-  EXECUTION_STATUSES, 
+import {
+  ROOM_TEMPLATES,
+  EXECUTION_STATUSES,
   RoomTemplate,
-  calculateRoomBudget 
+  calculateRoomBudget
 } from '../../data/roomTemplates';
-import { 
-  LayoutGrid, 
-  Ruler, 
-  CheckCircle2, 
-  Sparkles, 
-  ChevronDown, 
-  ChevronUp, 
-  ListChecks, 
-  Plus 
+import {
+  LayoutGrid,
+  Ruler,
+  CheckCircle2,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  ListChecks,
+  Plus
 } from 'lucide-react';
 import { formatINR } from '../../utils/formatters';
 
@@ -139,7 +139,7 @@ export const RoomModal: React.FC<RoomModalProps> = ({
 
   // Toggle item in template scope
   const toggleItemIndex = (index: number) => {
-    setSelectedItemIndices(prev => 
+    setSelectedItemIndices(prev =>
       prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
     );
   };
@@ -250,11 +250,10 @@ export const RoomModal: React.FC<RoomModalProps> = ({
                     key={tpl.id}
                     type="button"
                     onClick={() => handleSelectTemplate(tpl)}
-                    className={`px-3 py-2 rounded-xl text-xs font-semibold shrink-0 transition-all border text-left cursor-pointer ${
-                      isSelected
-                        ? 'bg-[#1D4ED8] text-white border-[#1D4ED8] shadow-xs'
-                        : 'bg-white text-slate-700 border-slate-200 hover:border-blue-200 hover:bg-blue-50/40'
-                    }`}
+                    className={`px-3 py-2 rounded-xl text-xs font-semibold shrink-0 transition-all border text-left cursor-pointer ${isSelected
+                      ? 'bg-[#1D4ED8] text-white border-[#1D4ED8] shadow-xs'
+                      : 'bg-white text-slate-700 border-slate-200 hover:border-blue-200 hover:bg-blue-50/40'
+                      }`}
                   >
                     <div className="font-bold">{tpl.name}</div>
                     <div className={`text-[10px] mt-0.5 ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
@@ -400,11 +399,10 @@ export const RoomModal: React.FC<RoomModalProps> = ({
                   key={st}
                   type="button"
                   onClick={() => setStatus(st)}
-                  className={`flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                    isSelected
-                      ? activeClass
-                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                  }`}
+                  className={`flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${isSelected
+                    ? activeClass
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
                 >
                   <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-white' : dotClass}`} />
                   <span>{st}</span>
@@ -464,14 +462,13 @@ export const RoomModal: React.FC<RoomModalProps> = ({
                     <div
                       key={item.item_name}
                       onClick={() => toggleItemIndex(idx)}
-                      className={`flex items-start gap-2.5 p-2 rounded-xl border text-xs cursor-pointer transition-colors ${
-                        isChecked ? 'bg-blue-50/40 border-blue-200' : 'bg-slate-50/50 border-slate-100 text-slate-400'
-                      }`}
+                      className={`flex items-start gap-2.5 p-2 rounded-xl border text-xs cursor-pointer transition-colors ${isChecked ? 'bg-blue-50/40 border-blue-200' : 'bg-slate-50/50 border-slate-100 text-slate-400'
+                        }`}
                     >
                       <input
                         type="checkbox"
                         checked={isChecked}
-                        onChange={() => {}} // handled by parent onClick
+                        onChange={() => { }} // handled by parent onClick
                         className="mt-0.5 rounded text-[#1D4ED8]"
                       />
                       <div className="flex-1 min-w-0">

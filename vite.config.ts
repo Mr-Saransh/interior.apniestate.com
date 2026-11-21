@@ -167,6 +167,36 @@ function otpAuthPlugin(env: Record<string, string>): Plugin {
           return;
         }
 
+        if (req.method === 'POST' && req.url === '/api/auth/send-approval-email') {
+          let body = '';
+          req.on('data', chunk => { body += chunk; });
+          req.on('end', async () => {
+            try {
+              const { email, fullName, studioName, trialEndsAt } = JSON.parse(body || '{}');
+              const cleanEmail = (email || '').toLowerCase().trim();
+              if (transporter) {
+                const formattedExpiry = trialEndsAt 
+                  ? new Date(trialEndsAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                  : '7 days from today';
+                await transporter.sendMail({
+                  from: `"Apni Estate Interiors" <${smtpUser}>`,
+                  to: cleanEmail,
+                  subject: 'Your 7-Day Free Trial is Activated! - Apni Estate Interiors',
+                  text: `Hello ${fullName || 'Studio Owner'},\n\nYour 7-day free trial for Apni Estate Interiors is activated until ${formattedExpiry}.\n\nAccess your workspace: https://interior.apniestate.com\n\nApni Estate Team`,
+                  html: `<p>Hello <strong>${fullName || 'Studio Owner'}</strong>,</p><p>Your 7-day free trial for <strong>${studioName || 'Your Studio'}</strong> is activated until <strong>${formattedExpiry}</strong>.</p><p><a href="https://interior.apniestate.com">Launch Workspace</a></p>`,
+                });
+                console.log(`[Approval Email] Sent activation notice to ${cleanEmail}`);
+              }
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: true, message: 'Approval email sent.' }));
+            } catch (err: any) {
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: true, warning: err.message }));
+            }
+          });
+          return;
+        }
+
         next();
       });
     },

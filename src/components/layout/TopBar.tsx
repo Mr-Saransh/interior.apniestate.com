@@ -39,11 +39,10 @@ export const TopBar: React.FC = () => {
     user, 
     profile, 
     organization, 
+    currentUser,
     signOut, 
     daysRemaining, 
-    trialStatus, 
-    isDemoMode,
-    setIsDemoMode
+    trialStatus
   } = useAuth();
 
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -62,9 +61,9 @@ export const TopBar: React.FC = () => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const displayName = profile?.full_name || (isDemoMode ? 'Aarav Mehta' : 'Studio Owner');
-  const userEmail = user?.email || (isDemoMode ? 'aarav@mehtadesign.in' : '');
-  const studioName = organization?.name || (isDemoMode ? 'Apni Estate Interiors' : 'My Studio');
+  const displayName = profile?.full_name || currentUser?.fullName || 'Studio Owner';
+  const userEmail = user?.email || currentUser?.email || '';
+  const studioName = organization?.name || currentUser?.studioName || 'My Studio';
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
@@ -212,26 +211,16 @@ export const TopBar: React.FC = () => {
           )}
         </button>
 
-        {/* Demo Mode Badge / Trial Pill */}
-        {isDemoMode && !user ? (
-          <button
-            onClick={() => setIsDemoMode(false)}
-            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-amber-950 font-bold text-xs shadow-xs transition-all cursor-pointer border border-amber-300"
-          >
-            <Building2 className="w-3.5 h-3.5 text-amber-950" />
-            <span>Demo</span>
-          </button>
-        ) : (
-          <button
-            onClick={() => setIsPricingModalOpen(true)}
-            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white border border-white/25 text-xs font-semibold transition-all cursor-pointer"
-          >
-            <CreditCard className="w-3.5 h-3.5 text-white" />
-            <span>
-              {trialStatus === 'active' ? 'Active' : `${daysRemaining}d Trial`}
-            </span>
-          </button>
-        )}
+        {/* Trial / Active Plan Pill */}
+        <button
+          onClick={() => setIsPricingModalOpen(true)}
+          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white border border-white/25 text-xs font-semibold transition-all cursor-pointer"
+        >
+          <CreditCard className="w-3.5 h-3.5 text-white" />
+          <span>
+            {trialStatus === 'active' ? 'Active Plan' : `${daysRemaining}d Trial`}
+          </span>
+        </button>
 
         {/* Profile Dropdown Container */}
         <div className="relative" ref={dropdownRef}>
@@ -286,35 +275,20 @@ export const TopBar: React.FC = () => {
                   <CreditCard className="w-4 h-4 text-slate-400" />
                   <span>Plans & Invoicing</span>
                 </button>
-
-                {isDemoMode && !user && (
-                  <button
-                    onClick={() => {
-                      setIsDemoMode(false);
-                      setIsProfileMenuOpen(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-xs text-amber-700 hover:bg-amber-50 font-semibold flex items-center gap-2.5 transition-colors cursor-pointer"
-                  >
-                    <ExternalLink className="w-4 h-4 text-amber-600" />
-                    <span>Exit Demo & Sign Up</span>
-                  </button>
-                )}
               </div>
 
-              {user && (
-                <div className="pt-1 border-t border-gray-100">
-                  <button
-                    onClick={() => {
-                      setIsProfileMenuOpen(false);
-                      signOut();
-                    }}
-                    className="w-full px-4 py-2 text-left text-xs text-rose-600 hover:bg-rose-50 font-semibold flex items-center gap-2.5 transition-colors cursor-pointer"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
-              )}
+              <div className="pt-1 border-t border-gray-100">
+                <button
+                  onClick={() => {
+                    setIsProfileMenuOpen(false);
+                    signOut();
+                  }}
+                  className="w-full px-4 py-2 text-left text-xs text-rose-600 hover:bg-rose-50 font-semibold flex items-center gap-2.5 transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
             </div>
           )}
         </div>

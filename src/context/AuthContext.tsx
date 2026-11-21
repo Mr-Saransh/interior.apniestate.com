@@ -2,12 +2,14 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useCall
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured, getSupabaseConfigStatus } from '../lib/supabase';
 import { Profile, Organization, SubscriptionStatus, PlanTier, UserRole } from '../types';
+import { userService, RegisteredUser } from '../services/userService';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
   organization: Organization | null;
+  currentUser: RegisteredUser | null;
   loading: boolean;
   isAuthenticated: boolean;
   isDemoMode: boolean;
@@ -22,19 +24,12 @@ interface AuthContextType {
   signUp: (params: {
     email: string;
     password: string;
-    fullName: string;
-    studioName: string;
+    fullName?: string;
+    studioName?: string;
     phone?: string;
-    plan?: PlanTier;
   }) => Promise<{ requiresEmailVerification: boolean }>;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithOtp: (email: string) => Promise<void>;
-  signUpWithOtp: (params: {
-    email: string;
-    fullName: string;
-    studioName: string;
-    phone?: string;
-  }) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -47,270 +42,178 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [organization, setOrganization] = useState<Organization | null>(null);
+  const [registeredUser, setRegisteredUser] = useState<RegisteredUser | null>(() => userService.getCurrentUser());
   const [loading, setLoading] = useState<boolean>(true);
-  const [isDemoMode, setIsDemoModeState] = useState<boolean>(() => {
-    // Demo mode NEVER has startup authority for fresh visitors.
-    // Only restore if explicitly initiated within the current active tab session.
-    try {
-      return sessionStorage.getItem('apni_estate_demo_session') === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const [isDemoMode, setIsDemoModeState] = useState<boolean>(false);
 
   const setIsDemoMode = useCallback((mode: boolean) => {
-    try {
-      if (mode) {
-        sessionStorage.setItem('apni_estate_demo_session', 'true');
-      } else {
-        sessionStorage.removeItem('apni_estate_demo_session');
-      }
-    } catch (e) {
-      console.warn('[Auth] SessionStorage access error:', e);
-    }
     setIsDemoModeState(mode);
   }, []);
 
-  // Fetch or bootstrap profile & organization
-  const loadProfileAndOrg = useCallback(async (userId: string, userMetadata?: any) => {
-    try {
-      if (!isSupabaseConfigured) return;
+  // Sync with userService changes across components/tabs
+  useEffect(() => {
+    const syncUser = () => {
+      const current = userService.getCurrentUser();
+      setRegisteredUser(current);
+      if (current) {
+        // Build mock profile & org for local registered user
+        const cleanName = current.fullName || current.email.split('@')[0];
+        const orgName = current.studioName || `${cleanName}'s Studio`;
+        
+        setProfile({
+          id: current.id,
+          organization_id: `org_${current.id}`,
+          full_name: cleanName,
+          role: 'owner',
+          created_at: current.registeredAt,
+        } as Profile);
 
-      // 1. Fetch profile
-      let { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
+        setOrganization({
+          id: `org_${current.id}`,
+          name: orgName,
+          subscription_status: current.status as any,
+          trial_ends_at: current.trialEndsAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          plan: (current.plan || 'professional') as any,
+          created_at: current.registeredAt,
+          updated_at: current.registeredAt,
+        } as Organization);
 
-      // 2. If profile is missing (e.g. initial login after signup confirmation or manual registration), bootstrap organization idempotently
-      if (!profileData) {
-        try {
-          const studioName = userMetadata?.studio_name?.trim() || (userMetadata?.full_name?.trim() ? `${userMetadata.full_name.trim()}'s Studio` : 'My Interior Studio');
-          const fullName = userMetadata?.full_name?.trim() || userMetadata?.name?.trim() || 'Studio Owner';
-          const phone = userMetadata?.phone?.trim() || null;
-          const planName = userMetadata?.plan || 'studio';
-
-          await supabase.rpc('create_trial_organization', {
-            org_name: studioName,
-            full_name: fullName,
-            phone: phone,
-            plan_name: planName
-          });
-
-          const { data: createdProfile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .maybeSingle();
-            
-          profileData = createdProfile;
-        } catch (bootstrapErr) {
-          console.error('[Auth] Bootstrap error:', bootstrapErr);
-        }
+        setUser({
+          id: current.id,
+          email: current.email,
+          user_metadata: { full_name: current.fullName, studio_name: current.studioName },
+          app_metadata: {},
+          aud: 'authenticated',
+          created_at: current.registeredAt,
+        } as User);
       }
+    };
 
-      if (profileData) {
-        setProfile(profileData as Profile);
-
-        // Fetch organization
-        const { data: orgData } = await supabase
-          .from('organizations')
-          .select('*')
-          .eq('id', profileData.organization_id)
-          .maybeSingle();
-
-        if (orgData) {
-          setOrganization(orgData as Organization);
-        }
-      }
-    } catch (err) {
-      console.error('[Auth] Error loading profile/org:', err);
-    }
+    syncUser();
+    window.addEventListener('apni_estate_users_updated', syncUser);
+    return () => window.removeEventListener('apni_estate_users_updated', syncUser);
   }, []);
 
-  // Initialize Session
-  useEffect(() => {
-    let isMounted = true;
-
-    async function initAuth() {
-      if (!isSupabaseConfigured) {
-        if (isMounted) setLoading(false);
-        return;
-      }
-
-      try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        if (isMounted) {
-          setSession(initialSession);
-          setUser(initialSession?.user ?? null);
-        }
-
-        if (initialSession?.user) {
-          if (isMounted) setIsDemoMode(false);
-          await loadProfileAndOrg(initialSession.user.id, initialSession.user.user_metadata);
-        }
-      } catch (err) {
-        console.error('[Auth] Session initialization error:', err);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-
-    initAuth();
-
-    // Subscribe to auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      if (!isMounted) return;
-      
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-
-      if (currentSession?.user) {
-        setIsDemoMode(false);
-        await loadProfileAndOrg(currentSession.user.id, currentSession.user.user_metadata);
-      } else {
-        setProfile(null);
-        setOrganization(null);
-      }
-
-      setLoading(false);
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, [loadProfileAndOrg]);
-
-  // Dynamic Trial Calculation from authoritative database organization record
+  // Dynamic Trial & Access Calculation
   const trialCalculations = useMemo(() => {
-    if (isDemoMode || !organization) {
-      // In demo mode or before org load, provide active trial simulation
+    if (!registeredUser) {
       return {
         trialStatus: 'trial' as SubscriptionStatus,
         isTrialExpired: false,
-        daysRemaining: 15
+        daysRemaining: 7,
       };
     }
 
-    const status = organization.subscription_status || 'trial';
-    
-    // Active subscription has unlimited access
+    const status = registeredUser.status;
+
+    // Active paid subscription
     if (status === 'active') {
       return {
         trialStatus: 'active' as SubscriptionStatus,
         isTrialExpired: false,
-        daysRemaining: 365
+        daysRemaining: 365,
       };
     }
 
-    // Expired or cancelled directly blocked
-    if (status === 'expired' || status === 'cancelled') {
+    // Pending states
+    if (status === 'pending_profile' || status === 'pending_approval') {
       return {
-        trialStatus: status,
-        isTrialExpired: true,
-        daysRemaining: 0
+        trialStatus: status as SubscriptionStatus,
+        isTrialExpired: false,
+        daysRemaining: 7,
       };
     }
 
-    // Trial status calculation based on trial_ends_at
-    const trialEnd = new Date(organization.trial_ends_at).getTime();
-    const now = Date.now();
-    const diffMs = trialEnd - now;
-    const daysRemaining = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-    const isExpired = diffMs <= 0;
+    // Expired or rejected
+    if (status === 'expired' || status === 'rejected') {
+      return {
+        trialStatus: status as SubscriptionStatus,
+        isTrialExpired: true,
+        daysRemaining: 0,
+      };
+    }
+
+    // Active 7-Day Free Trial
+    if (status === 'active_trial') {
+      if (!registeredUser.trialEndsAt) {
+        return {
+          trialStatus: 'active_trial' as SubscriptionStatus,
+          isTrialExpired: false,
+          daysRemaining: 7,
+        };
+      }
+      const trialEnd = new Date(registeredUser.trialEndsAt).getTime();
+      const now = Date.now();
+      const diffMs = trialEnd - now;
+      const daysRemaining = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+      const isExpired = diffMs <= 0;
+
+      return {
+        trialStatus: isExpired ? ('expired' as SubscriptionStatus) : ('active_trial' as SubscriptionStatus),
+        isTrialExpired: isExpired,
+        daysRemaining,
+      };
+    }
 
     return {
-      trialStatus: isExpired ? ('expired' as SubscriptionStatus) : ('trial' as SubscriptionStatus),
-      isTrialExpired: isExpired,
-      daysRemaining
+      trialStatus: 'trial' as SubscriptionStatus,
+      isTrialExpired: false,
+      daysRemaining: 7,
     };
-  }, [organization, isDemoMode]);
+  }, [registeredUser]);
+
+  // Session Bootstrapper
+  useEffect(() => {
+    async function initAuth() {
+      try {
+        const stored = userService.getCurrentUser();
+        if (stored) {
+          setRegisteredUser(stored);
+        }
+      } catch (err) {
+        console.error('[Auth] Init error:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    initAuth();
+  }, []);
 
   // Sign Up
   const signUp = async (params: {
     email: string;
     password: string;
-    fullName: string;
-    studioName: string;
+    fullName?: string;
+    studioName?: string;
     phone?: string;
-    plan?: PlanTier;
   }): Promise<{ requiresEmailVerification: boolean }> => {
-    if (!isSupabaseConfigured) {
-      throw new Error(`Supabase configuration missing in environment (${getSupabaseConfigStatus()}).`);
-    }
-
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: params.email.trim(),
-        password: params.password,
-        options: {
-          data: {
-            full_name: params.fullName.trim(),
-            studio_name: params.studioName.trim(),
-            phone: params.phone?.trim() || null,
-            plan: params.plan || 'studio'
-          }
-        }
-      });
-
-      if (error) throw error;
-      if (!data.user) throw new Error('Failed to create account.');
-
-      // CASE A: User has immediate session
-      if (data.session && data.user) {
-        setUser(data.user);
-        setSession(data.session);
-        setIsDemoMode(false);
-        try {
-          await supabase.rpc('create_trial_organization', {
-            org_name: params.studioName.trim(),
-            full_name: params.fullName.trim(),
-            phone: params.phone?.trim() || null,
-            plan_name: params.plan || 'studio'
-          });
-        } catch (rpcErr) {
-          console.error('[Auth] RPC creation error on signup:', rpcErr);
-        }
-        await loadProfileAndOrg(data.user.id, data.user.user_metadata);
-        return { requiresEmailVerification: false };
-      }
-
-      // CASE B: Email confirmation required
+      const reg = userService.registerUser(params.email, params.password);
+      setRegisteredUser(reg);
       return { requiresEmailVerification: true };
     } finally {
       setLoading(false);
     }
   };
 
-  // Sign In
+  // Sign In (Email + Password)
   const signIn = async (email: string, password: string): Promise<void> => {
-    if (!isSupabaseConfigured) {
-      throw new Error(`Supabase configuration missing in environment (${getSupabaseConfigStatus()}).`);
-    }
-
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password
-      });
+      const cleanEmail = email.trim().toLowerCase();
+      const userRecord = userService.getUserByEmail(cleanEmail);
 
-      if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          throw new Error('Invalid email or password. Please try again.');
-        }
-        throw error;
+      if (!userRecord) {
+        throw new Error('Account not found with this email. Please sign up first.');
       }
 
-      if (data.user && data.session) {
-        setUser(data.user);
-        setSession(data.session);
-        setIsDemoMode(false);
-        await loadProfileAndOrg(data.user.id, data.user.user_metadata);
+      if (userRecord.password && userRecord.password !== password) {
+        throw new Error('Invalid password. Please check your credentials or sign in with OTP.');
       }
+
+      userService.setCurrentUserEmail(cleanEmail);
+      setRegisteredUser(userRecord);
     } finally {
       setLoading(false);
     }
@@ -321,96 +224,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       const cleanEmail = email.trim().toLowerCase();
-      // Try to find if user profile exists in Supabase
-      if (isSupabaseConfigured) {
-        try {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user?.id || '')
-            .maybeSingle();
+      let userRecord = userService.getUserByEmail(cleanEmail);
 
-          if (profileData) {
-            setProfile(profileData as Profile);
-            return;
-          }
-        } catch {
-          // ignore
-        }
+      if (!userRecord) {
+        userRecord = userService.registerUser(cleanEmail);
       }
 
-      // Bootstrap verified workspace session for user
-      const namePart = cleanEmail.split('@')[0];
-      const capitalized = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-      const mockUser: any = {
-        id: `usr_${cleanEmail.replace(/[^a-z0-9]/g, '_')}`,
-        email: cleanEmail,
-        user_metadata: { full_name: capitalized, studio_name: `${capitalized}'s Studio` }
-      };
-      const mockOrg: any = {
-        id: `org_${cleanEmail.replace(/[^a-z0-9]/g, '_')}`,
-        name: `${capitalized}'s Studio`,
-        subscription_status: 'trial',
-        trial_ends_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-        plan: 'studio',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      const mockProfile: any = {
-        id: mockUser.id,
-        organization_id: mockOrg.id,
-        full_name: capitalized,
-        role: 'owner',
-        created_at: new Date().toISOString()
-      };
-      setUser(mockUser);
-      setProfile(mockProfile);
-      setOrganization(mockOrg);
-      setIsDemoMode(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Sign Up with OTP
-  const signUpWithOtp = async (params: {
-    email: string;
-    fullName: string;
-    studioName: string;
-    phone?: string;
-  }): Promise<void> => {
-    setLoading(true);
-    try {
-      const cleanEmail = params.email.trim().toLowerCase();
-      const mockUser: any = {
-        id: `usr_${Date.now()}`,
-        email: cleanEmail,
-        user_metadata: { 
-          full_name: params.fullName.trim(), 
-          studio_name: params.studioName.trim(),
-          phone: params.phone?.trim()
-        }
-      };
-      const mockOrg: any = {
-        id: `org_${Date.now()}`,
-        name: params.studioName.trim(),
-        subscription_status: 'trial',
-        trial_ends_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-        plan: 'studio',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      const mockProfile: any = {
-        id: mockUser.id,
-        organization_id: mockOrg.id,
-        full_name: params.fullName.trim(),
-        role: 'owner',
-        created_at: new Date().toISOString()
-      };
-      setUser(mockUser);
-      setProfile(mockProfile);
-      setOrganization(mockOrg);
-      setIsDemoMode(false);
+      userService.setCurrentUserEmail(cleanEmail);
+      setRegisteredUser(userRecord);
     } finally {
       setLoading(false);
     }
@@ -420,9 +241,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async (): Promise<void> => {
     setLoading(true);
     try {
-      if (isSupabaseConfigured) {
-        await supabase.auth.signOut();
-      }
+      userService.setCurrentUserEmail(null);
+      setRegisteredUser(null);
       setUser(null);
       setSession(null);
       setProfile(null);
@@ -433,23 +253,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Reset Password
   const resetPassword = async (email: string): Promise<void> => {
-    if (!isSupabaseConfigured) {
-      throw new Error(`Supabase configuration missing in environment (${getSupabaseConfigStatus()}).`);
-    }
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
-    if (error) throw error;
+    // handled via OTP
   };
 
-  // Refresh Profile
   const refreshProfile = async (): Promise<void> => {
-    if (user) {
-      await loadProfileAndOrg(user.id);
-    }
+    const current = userService.getCurrentUser();
+    setRegisteredUser(current);
   };
 
-  const isAuthenticated = Boolean(user && session);
+  const isAuthenticated = Boolean(registeredUser);
 
   return (
     <AuthContext.Provider
@@ -458,6 +271,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         session,
         profile,
         organization,
+        currentUser: registeredUser,
         loading,
         isAuthenticated,
         isDemoMode,
@@ -468,7 +282,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signUp,
         signIn,
         signInWithOtp,
-        signUpWithOtp,
         signOut,
         resetPassword,
         refreshProfile

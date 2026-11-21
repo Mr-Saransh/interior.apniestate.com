@@ -68,7 +68,7 @@ export const Sidebar: React.FC = () => {
     purchases
   } = useApp();
 
-  const { user, profile, organization, daysRemaining, trialStatus, isDemoMode, setIsDemoMode, signOut } = useAuth();
+  const { user, profile, organization, currentUser, daysRemaining, trialStatus, signOut } = useAuth();
 
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
     try {
@@ -106,8 +106,8 @@ export const Sidebar: React.FC = () => {
   const pendingTasksCount = tasks.filter(t => t.status !== 'Completed').length;
   const activeOrdersCount = purchases.filter(p => p.status === 'Ordered' || p.status === 'Partially Received').length;
 
-  const hasEnterpriseAccess = isDemoMode || canUseFeature(organization, 'multi_branch', { isDemoMode });
-  const hasExportAccess = isDemoMode || canUseFeature(organization, 'data_export', { isDemoMode });
+  const hasEnterpriseAccess = canUseFeature(organization, 'multi_branch');
+  const hasExportAccess = canUseFeature(organization, 'data_export');
 
   // 1. Primary ERP Mode Navigation
   const erpNavItems: SidebarNavItem[] = [
@@ -167,10 +167,10 @@ export const Sidebar: React.FC = () => {
     }
   };
 
-  const displayName = profile?.full_name || (isDemoMode ? 'Aarav Mehta' : 'Studio Owner');
-  const studioName = organization?.name || (isDemoMode ? 'Apni Estate Interiors' : 'My Studio');
+  const displayName = profile?.full_name || currentUser?.fullName || 'Studio Owner';
+  const studioName = organization?.name || currentUser?.studioName || 'My Studio';
   const planInfo = getPlanDetails(organization?.plan);
-  const planDisplayName = planInfo?.name ? planInfo.name.toUpperCase() : 'STUDIO';
+  const planDisplayName = planInfo?.name ? planInfo.name.toUpperCase() : 'PROFESSIONAL';
 
   const handleNavClick = (pageId: NavigationPage) => {
     setCurrentPage(pageId);
@@ -198,7 +198,7 @@ export const Sidebar: React.FC = () => {
                 src="/apni_estate_logo.png"
                 alt="Apni Estate"
                 className="w-8 h-8 rounded-lg object-contain shrink-0 bg-white p-0.5 shadow-xs"
-                title={isDemoMode ? 'Apni Estate Interiors' : studioName}
+                title={studioName}
               />
               <button
                 type="button"
@@ -221,18 +221,13 @@ export const Sidebar: React.FC = () => {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <span className="font-bold text-sm text-amber-300 tracking-[0.16em] uppercase truncate font-display">
-                      {isDemoMode ? 'APNI ESTATE' : studioName.toUpperCase()}
+                      {studioName.toUpperCase()}
                     </span>
                   </div>
                   <div className="flex items-center gap-1 mt-0.5">
                     <span className="text-[9px] font-extrabold tracking-widest text-amber-950 uppercase bg-amber-400 px-1.5 py-0.5 rounded">
                       INTERIORS
                     </span>
-                    {isDemoMode && !user && (
-                      <span className="text-[9px] font-bold text-amber-950 bg-amber-300 px-1.5 py-0.5 rounded shadow-xs">
-                        DEMO
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>
@@ -431,64 +426,40 @@ export const Sidebar: React.FC = () => {
             )}
           </div>
 
-          {/* Demo Workspace Banner or Subscription Card (expanded view only) */}
+          {/* Subscription / Trial Status Card (expanded view only) */}
           {!collapsed && (
-            isDemoMode && !user ? (
-              <div className="pt-2 px-1">
-                <div className="p-3 rounded-xl bg-amber-400/20 border border-amber-300/30">
-                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-200 mb-1">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                    <span>Demo Workspace</span>
+            <div className="pt-2 px-1">
+              <div
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  setIsPricingModalOpen(true);
+                }}
+                className="p-3 rounded-xl bg-blue-900/40 border border-white/15 hover:bg-blue-900/60 hover:border-white/30 cursor-pointer transition-colors group"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-white">
+                    <Crown className="w-3.5 h-3.5 text-amber-300" />
+                    <span>{planDisplayName} Plan</span>
                   </div>
-                  <p className="text-[11px] text-blue-100/90 leading-relaxed mb-2">
-                    Sample studio data. Register to start your 15-day private trial.
-                  </p>
-                  <button
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      setIsDemoMode(false);
-                    }}
-                    className="w-full py-1.5 px-3 rounded-lg bg-amber-400 hover:bg-amber-300 text-amber-950 text-[11px] font-bold transition-colors text-center flex items-center justify-center gap-1 cursor-pointer min-h-[32px] shadow-xs"
+                  <span
+                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
+                      trialStatus === 'active'
+                        ? 'bg-emerald-400/20 text-emerald-200 border-emerald-400/30'
+                        : 'bg-white/20 text-white border-white/30'
+                    }`}
                   >
-                    <span>Exit Demo &amp; Sign Up</span>
-                    <ChevronRight className="w-3 h-3" />
-                  </button>
+                    {trialStatus === 'active' ? 'Active' : `${daysRemaining}d Trial`}
+                  </span>
+                </div>
+                <p className="text-[11px] text-blue-100/80 leading-relaxed mb-1">
+                  {trialStatus === 'active' ? 'Active studio subscription' : `7-day trial • ${daysRemaining} days left`}
+                </p>
+                <div className="flex items-center gap-1 text-[10px] font-semibold text-white group-hover:underline">
+                  <Sparkles className="w-3 h-3 text-amber-300" />
+                  <span>Plans &amp; Invoicing →</span>
                 </div>
               </div>
-            ) : (
-              <div className="pt-2 px-1">
-                <div
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    setIsPricingModalOpen(true);
-                  }}
-                  className="p-3 rounded-xl bg-blue-900/40 border border-white/15 hover:bg-blue-900/60 hover:border-white/30 cursor-pointer transition-colors group"
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-white">
-                      <Crown className="w-3.5 h-3.5 text-amber-300" />
-                      <span>{planDisplayName} Plan</span>
-                    </div>
-                    <span
-                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
-                        trialStatus === 'active'
-                          ? 'bg-emerald-400/20 text-emerald-200 border-emerald-400/30'
-                          : 'bg-white/20 text-white border-white/30'
-                      }`}
-                    >
-                      {trialStatus === 'active' ? 'Active' : `${daysRemaining}d Trial`}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-blue-100/80 leading-relaxed mb-1">
-                    {trialStatus === 'active' ? 'Active studio subscription' : `15-day trial • ${daysRemaining} days left`}
-                  </p>
-                  <div className="flex items-center gap-1 text-[10px] font-semibold text-white group-hover:underline">
-                    <Sparkles className="w-3 h-3 text-amber-300" />
-                    <span>Plans &amp; Invoicing →</span>
-                  </div>
-                </div>
-              </div>
-            )
+            </div>
           )}
         </div>
 
@@ -506,7 +477,7 @@ export const Sidebar: React.FC = () => {
               </div>
               <button
                 onClick={() => signOut()}
-                title={user ? 'Sign Out' : 'Exit Demo'}
+                title="Sign Out"
                 className="p-1.5 rounded-lg text-blue-200 hover:text-rose-300 hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
@@ -544,7 +515,7 @@ export const Sidebar: React.FC = () => {
                   setIsMobileMenuOpen(false);
                   signOut();
                 }}
-                title={user ? 'Sign Out' : 'Exit Demo'}
+                title="Sign Out"
                 className="p-1.5 rounded-lg text-amber-200 hover:text-rose-300 hover:bg-white/10 transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center"
               >
                 <LogOut className="w-4 h-4" />

@@ -2,13 +2,17 @@
 // APNI ESTATE INTERIORS - MAIN APPLICATION ROUTER & MODAL MOUNT
 // ==============================================================================
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AppProvider, useApp } from './context/AppContext';
 import { AppLayout } from './components/layout/AppLayout';
 import { LandingPage } from './pages/LandingPage';
 import { AuthScreen } from './components/auth/AuthScreen';
+import { ProfileSetupScreen } from './components/auth/ProfileSetupScreen';
+import { SubscriptionScreen } from './components/auth/SubscriptionScreen';
+import { TrialPendingScreen } from './components/auth/TrialPendingScreen';
 import { TrialExpiredScreen } from './components/auth/TrialExpiredScreen';
+import { AdminPortalPage } from './pages/AdminPortalPage';
 import { OverviewPage } from './pages/OverviewPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { ClientsPage } from './pages/ClientsPage';
@@ -60,13 +64,37 @@ const MainContent: React.FC = () => {
     addProject
   } = useApp();
 
-  const { loading, isAuthenticated, isDemoMode, setIsDemoMode, isTrialExpired } = useAuth();
+  const { 
+    loading, 
+    isAuthenticated, 
+    currentUser, 
+    isTrialExpired, 
+    signOut, 
+    refreshProfile 
+  } = useAuth();
+
   const [unauthView, setUnauthView] = useState<'landing' | 'auth'>('landing');
+  const [activeScreenOverride, setActiveScreenOverride] = useState<'subscription' | null>(null);
+
+  // Check URL routes & tokens
+  const urlPath = window.location.pathname;
+  const urlSearch = window.location.search;
+  const urlHash = window.location.hash;
+
+  const isAdminRoute = urlPath.includes('/login-admin') || 
+                       urlSearch.includes('login-admin') || 
+                       urlHash.includes('login-admin');
 
   const sharedQuotationToken = new URLSearchParams(window.location.search).get('quote');
   const sharedChangeRequestToken = new URLSearchParams(window.location.search).get('change');
   const sharedPortalToken = new URLSearchParams(window.location.search).get('portal');
 
+  // 1. Admin Portal Gate (/login-admin)
+  if (isAdminRoute) {
+    return <AdminPortalPage />;
+  }
+
+  // 2. Client Shared Pages
   if (sharedQuotationToken) {
     return <SharedQuotationPage token={sharedQuotationToken} />;
   }
@@ -77,7 +105,7 @@ const MainContent: React.FC = () => {
     return <SharedClientPortalPage token={sharedPortalToken} />;
   }
 
-  // 1. Initial Auth Loading State
+  // 3. Initial Auth Loading State
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F4F6FA] flex flex-col items-center justify-center p-6 text-slate-800">
@@ -92,13 +120,13 @@ const MainContent: React.FC = () => {
     );
   }
 
-  // 2. Unauthenticated User Flow: Landing Page ↔ Auth Screen
-  if (!isAuthenticated && !isDemoMode) {
+  // 4. Unauthenticated User Flow: Landing Page ↔ Auth Screen
+  if (!isAuthenticated || !currentUser) {
     if (unauthView === 'landing') {
       return (
         <LandingPage 
           onStartTrial={() => setUnauthView('auth')}
-          onExploreDemo={() => setIsDemoMode(true)}
+          onExploreDemo={() => setUnauthView('auth')}
         />
       );
     }
@@ -115,12 +143,56 @@ const MainContent: React.FC = () => {
     );
   }
 
-  // 3. Authenticated User with Expired Trial
-  if (isAuthenticated && isTrialExpired) {
+  // 5. Authenticated Step 2: Incomplete Studio Profile Setup
+  if (currentUser.status === 'pending_profile') {
+    return (
+      <ProfileSetupScreen
+        currentUser={currentUser}
+        onComplete={() => {
+          refreshProfile();
+          setActiveScreenOverride('subscription');
+        }}
+        onSignOut={signOut}
+      />
+    );
+  }
+
+  // 6. Subscription Screen (Explicitly opened or post-profile setup)
+  if (activeScreenOverride === 'subscription') {
+    return (
+      <SubscriptionScreen
+        currentUser={currentUser}
+        onRequestTrial={() => {
+          refreshProfile();
+          setActiveScreenOverride(null);
+        }}
+        onPaymentSuccess={() => {
+          refreshProfile();
+          setActiveScreenOverride(null);
+        }}
+        onSignOut={signOut}
+      />
+    );
+  }
+
+  // 7. Authenticated Step 3: 7-Day Free Trial Pending Approval
+  if (currentUser.status === 'pending_approval') {
+    return (
+      <TrialPendingScreen
+        currentUser={currentUser}
+        onCheckStatus={refreshProfile}
+        onOpenSubscription={() => setActiveScreenOverride('subscription')}
+        onSignOut={signOut}
+      />
+    );
+  }
+
+  // 8. Authenticated User with Expired Trial
+  if (currentUser.status === 'expired' || isTrialExpired) {
     return <TrialExpiredScreen />;
   }
 
-  // 4. Authenticated with Active/Valid Trial OR in Local Demo Sandbox
+  // 9. Authenticated with Active 7-Day Trial OR Paid Subscription
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'overview':

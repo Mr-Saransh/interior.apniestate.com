@@ -2,8 +2,8 @@
 // APNI ESTATE INTERIORS - CORE APPLICATION & DATABASE TYPE DEFINITIONS
 // ==============================================================================
 
-export type SubscriptionStatus = 'trial' | 'active' | 'expired' | 'cancelled';
-export type PlanTier = 'starter' | 'studio' | 'pro' | 'basic' | 'professional' | 'enterprise';
+export type SubscriptionStatus = 'pending_profile' | 'pending_approval' | 'active_trial' | 'trial' | 'active' | 'expired' | 'cancelled' | 'rejected';
+export type PlanTier = 'standard' | 'professional' | 'prime' | 'starter' | 'studio' | 'pro' | 'basic' | 'enterprise';
 export type UserRole = 'owner' | 'designer' | 'supervisor' | 'admin' | 'member';
 
 export type LeadStatus = 'New' | 'Contacted' | 'Site Visit Scheduled' | 'Proposal Sent' | 'Negotiation' | 'Won' | 'Lost';

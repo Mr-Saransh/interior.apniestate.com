@@ -29,7 +29,7 @@ import { formatINR } from '../utils/formatters';
 
 interface LandingPageProps {
   onStartTrial: () => void;
-  onExploreDemo: () => void;
+  onExploreDemo?: () => void;
   onOpenEstimator?: () => void;
 }
 
@@ -79,16 +79,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           <div className="flex items-center gap-2.5">
             <button
-              onClick={onExploreDemo}
-              className="px-3.5 py-2 rounded-xl text-xs font-bold text-[#1D4ED8] hover:bg-[#EFF6FF] border border-blue-200 transition-colors cursor-pointer"
-            >
-              Live Demo
-            </button>
-            <button
               onClick={onStartTrial}
               className="px-4 py-2 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-bold shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
             >
-              <span>15-Day Free Trial</span>
+              <span>Get Started</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -114,16 +108,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
             <button
               onClick={onStartTrial}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Start Your 15-Day Free Trial</span>
+              <span>Request 7-Day Free Trial</span>
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
-              onClick={onExploreDemo}
+              onClick={onStartTrial}
               className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm border border-[#E5E7EB] shadow-subtle transition-all cursor-pointer"
             >
-              Explore Demo Sandbox
+              Sign In to Studio
             </button>
           </div>
 
@@ -504,63 +498,80 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               Simple, Transparent Studio Plans
             </h2>
             <p className="text-sm text-slate-500">
-              Start with a 15-day unrestricted trial. Upgrade when your studio expands.
+              One powerful platform. Request a 7-day free trial or subscribe directly.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* STANDARD */}
             <div className="p-6 rounded-2xl border border-[#E5E7EB] bg-white space-y-4 flex flex-col justify-between">
               <div className="space-y-2">
-                <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Starter</div>
-                <div className="text-2xl font-bold text-[#111827]">₹3,000 <span className="text-xs font-normal text-slate-500">/mo</span></div>
-                <p className="text-xs text-slate-600">For freelance interior designers and boutique studios.</p>
+                <div className="text-xs font-black uppercase tracking-wider text-[#1D4ED8] bg-blue-50 px-2 py-0.5 rounded w-fit">STANDARD</div>
+                <div className="text-3xl font-extrabold text-[#111827] font-display">₹2,999 <span className="text-xs font-normal text-slate-500">/mo</span></div>
+                <div className="text-xs font-bold text-[#1D4ED8]">Manage up to 1 PROJECT</div>
                 <div className="pt-3 border-t border-slate-100 space-y-2 text-xs text-slate-600">
-                  <div>✓ Up to 5 Active Projects</div>
-                  <div>✓ Room-wise BOQs & Quotations</div>
-                  <div>✓ Client Portal Link Sharing</div>
+                  <div>✓ Project &amp; Task Management</div>
+                  <div>✓ BOQ &amp; Basic Costing</div>
+                  <div>✓ Vendor &amp; Purchase Orders</div>
+                  <div><div>✓ Inventory Tracking</div></div>
+                  <div>✓ Email Support</div>
                 </div>
               </div>
-              <button onClick={onStartTrial} className="w-full py-2.5 rounded-xl border border-slate-300 font-bold text-xs hover:bg-slate-50">
-                Start Trial
+              <button onClick={onStartTrial} className="w-full py-2.5 rounded-xl border border-slate-300 font-bold text-xs hover:bg-slate-50 cursor-pointer">
+                Select Standard
               </button>
             </div>
 
+            {/* PROFESSIONAL */}
             <div className="p-6 rounded-2xl border-2 border-[#1D4ED8] bg-[#EFF6FF]/40 space-y-4 flex flex-col justify-between relative shadow-sm">
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#1D4ED8] text-white text-[10px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider">
-                Most Popular
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-950 text-[10px] font-black px-3 py-0.5 rounded-full uppercase tracking-wider">
+                ★ Most Popular
               </span>
               <div className="space-y-2">
-                <div className="text-xs font-bold uppercase tracking-wider text-[#1D4ED8]">Studio Pro</div>
-                <div className="text-2xl font-bold text-[#111827]">₹5,000 <span className="text-xs font-normal text-slate-500">/mo</span></div>
-                <p className="text-xs text-slate-600">For growing interior architecture firms & turnkey contractors.</p>
+                <div className="text-xs font-black uppercase tracking-wider text-white bg-blue-600 px-2 py-0.5 rounded w-fit">PROFESSIONAL</div>
+                <div className="text-3xl font-extrabold text-[#111827] font-display">₹5,999 <span className="text-xs font-normal text-slate-500">/mo</span></div>
+                <div className="text-xs font-bold text-[#1D4ED8]">Manage up to 3 PROJECTS</div>
                 <div className="pt-3 border-t border-blue-200 space-y-2 text-xs text-slate-700 font-medium">
-                  <div>✓ Unlimited Projects & BOQs</div>
-                  <div>✓ Gantt Timeline & Milestones</div>
-                  <div>✓ Mobile DPR Photo Capture</div>
-                  <div>✓ Vendor Purchase Orders & Invoicing</div>
+                  <div>✓ Everything in Standard, plus:</div>
+                  <div>✓ Advanced BOQ &amp; Costing</div>
+                  <div>✓ Payments &amp; Expense Engine</div>
+                  <div>✓ Profitability &amp; Analytics</div>
+                  <div>✓ Priority Support</div>
                 </div>
               </div>
-              <button onClick={onStartTrial} className="w-full py-2.5 rounded-xl bg-[#1D4ED8] text-white font-bold text-xs hover:bg-[#1E40AF]">
-                Start 15-Day Free Trial
+              <button onClick={onStartTrial} className="w-full py-2.5 rounded-xl bg-[#1D4ED8] text-white font-bold text-xs hover:bg-[#1E40AF] cursor-pointer shadow-xs">
+                Request 7-Day Free Trial
               </button>
             </div>
 
+            {/* PRIME */}
             <div className="p-6 rounded-2xl border border-[#E5E7EB] bg-white space-y-4 flex flex-col justify-between">
               <div className="space-y-2">
-                <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Enterprise</div>
-                <div className="text-2xl font-bold text-[#111827]">₹7,000 <span className="text-xs font-normal text-slate-500">/mo</span></div>
-                <p className="text-xs text-slate-600">For multi-branch interior companies with multiple site teams.</p>
+                <div className="text-xs font-black uppercase tracking-wider text-white bg-slate-900 px-2 py-0.5 rounded w-fit">PRIME</div>
+                <div className="text-3xl font-extrabold text-[#111827] font-display">₹8,999 <span className="text-xs font-normal text-slate-500">/mo</span></div>
+                <div className="text-xs font-bold text-emerald-700">Manage UNLIMITED PROJECTS</div>
                 <div className="pt-3 border-t border-slate-100 space-y-2 text-xs text-slate-600">
-                  <div>✓ Multi-Branch Architecture</div>
-                  <div>✓ Granular Roles & Access Controls</div>
-                  <div>✓ Custom Role Approvals</div>
-                  <div>✓ Priority 24/7 Support</div>
+                  <div>✓ Everything in Professional, plus:</div>
+                  <div>✓ Multi-Site &amp; Resource Control</div>
+                  <div>✓ Margin Analysis &amp; Reports</div>
+                  <div>✓ Team &amp; Role Management</div>
+                  <div>✓ Dedicated Support</div>
                 </div>
               </div>
-              <button onClick={onStartTrial} className="w-full py-2.5 rounded-xl border border-slate-300 font-bold text-xs hover:bg-slate-50">
-                Contact Enterprise
+              <button onClick={onStartTrial} className="w-full py-2.5 rounded-xl border border-slate-300 font-bold text-xs hover:bg-slate-50 cursor-pointer">
+                Select Prime
               </button>
             </div>
+          </div>
+
+          {/* Setup Cost Callout */}
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <span className="text-slate-600 font-medium">
+              Optional assisted onboarding &amp; custom data configuration: <strong>ONE-TIME SETUP COST: ₹11,999</strong>
+            </span>
+            <button onClick={onStartTrial} className="text-[#1D4ED8] font-bold hover:underline">
+              Request Trial / Onboarding →
+            </button>
           </div>
         </div>
       </section>

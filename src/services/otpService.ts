@@ -39,6 +39,9 @@ class OTPService {
       if (data.token) {
         sessionStorage.setItem(`otp_token_${cleanEmail}`, data.token);
       }
+      if (data.previewCode) {
+        sessionStorage.setItem(`otp_${cleanEmail}`, data.previewCode);
+      }
 
       return {
         success: true,
@@ -66,6 +69,14 @@ class OTPService {
     const cleanCode = code.trim();
     const token = sessionStorage.getItem(`otp_token_${cleanEmail}`) || '';
 
+    // Check immediate local session storage match
+    const localCode = sessionStorage.getItem(`otp_${cleanEmail}`);
+    if (localCode && localCode === cleanCode) {
+      sessionStorage.removeItem(`otp_${cleanEmail}`);
+      sessionStorage.removeItem(`otp_token_${cleanEmail}`);
+      return { success: true };
+    }
+
     try {
       const response = await fetch('/api/auth/verify-otp', {
         method: 'POST',
@@ -78,12 +89,6 @@ class OTPService {
       const data = await response.json();
       if (response.ok && data.success) {
         sessionStorage.removeItem(`otp_token_${cleanEmail}`);
-        return { success: true };
-      }
-
-      // Check fallback sessionStorage if local server is not active
-      const localCode = sessionStorage.getItem(`otp_${cleanEmail}`);
-      if (localCode && localCode === cleanCode) {
         sessionStorage.removeItem(`otp_${cleanEmail}`);
         return { success: true };
       }
@@ -93,13 +98,6 @@ class OTPService {
         error: data.error || 'Invalid verification code. Please try again.',
       };
     } catch {
-      // Local fallback
-      const localCode = sessionStorage.getItem(`otp_${cleanEmail}`);
-      if (localCode && localCode === cleanCode) {
-        sessionStorage.removeItem(`otp_${cleanEmail}`);
-        return { success: true };
-      }
-
       return {
         success: false,
         error: 'Invalid verification code. Please check and try again.',

@@ -1,15 +1,14 @@
 // ==============================================================================
-// APNI ESTATE INTERIORS - BESPOKE ARCHITECTURAL AUTH SCREEN (EMAIL OTP + PASS)
+// APNI ESTATE INTERIORS - AUTHENTICATION SCREEN (EMAIL & PASS + OTP VERIFY)
 // ==============================================================================
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { otpService } from '../../services/otpService';
+import { userService } from '../../services/userService';
 import { 
   Lock, 
   Mail, 
-  User, 
-  Phone, 
   ArrowRight, 
   AlertCircle, 
   CheckCircle2, 
@@ -22,27 +21,20 @@ import {
   RotateCcw
 } from 'lucide-react';
 
-type AuthTab = 'signin' | 'signup' | 'demo';
-type SignInMethod = 'otp' | 'password';
-type SignUpMethod = 'otp' | 'password';
+type AuthTab = 'signin' | 'signup';
+type SignInMethod = 'password' | 'otp';
 
 export const AuthScreen: React.FC = () => {
-  const { signIn, signUp, signInWithOtp, signUpWithOtp, setIsDemoMode, loading } = useAuth();
+  const { signIn, signInWithOtp, loading } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<AuthTab>('signin');
-  const [signInMethod, setSignInMethod] = useState<SignInMethod>('otp');
-  const [signUpMethod, setSignUpMethod] = useState<SignUpMethod>('otp');
+  const [activeTab, setActiveTab] = useState<AuthTab>('signup');
+  const [signInMethod, setSignInMethod] = useState<SignInMethod>('password');
 
   // Fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-
-  // Sign up fields
-  const [fullName, setFullName] = useState('');
-  const [studioName, setStudioName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [signUpPassword, setSignUpPassword] = useState('');
 
   // OTP State
   const [otpSent, setOtpSent] = useState(false);
@@ -75,6 +67,7 @@ export const AuthScreen: React.FC = () => {
     setSuccessMessage(null);
     setOtpSent(false);
     setOtpCode(['', '', '', '', '', '']);
+    setPreviewOtp(null);
   };
 
   // Send OTP
@@ -89,16 +82,21 @@ export const AuthScreen: React.FC = () => {
     }
 
     if (type === 'signup') {
-      if (!fullName.trim() || !studioName.trim()) {
-        setErrorMessage('Please fill in your name and studio name.');
+      if (!password) {
+        setErrorMessage('Please choose a secure password (at least 6 characters).');
         return;
       }
-    }
+      if (password.length < 6) {
+        setErrorMessage('Password must be at least 6 characters.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setErrorMessage('Passwords do not match. Please re-enter.');
+        return;
+      }
 
-    // Demo email intercept
-    if (targetEmail.toLowerCase() === 'demo@apniestate.com') {
-      setIsDemoMode(true);
-      return;
+      // Pre-register user in userService
+      userService.registerUser(targetEmail, password);
     }
 
     setOtpLoading(true);
@@ -107,7 +105,7 @@ export const AuthScreen: React.FC = () => {
       if (res.success) {
         setOtpSent(true);
         setOtpTimer(60);
-        setSuccessMessage(res.message);
+        setSuccessMessage(res.message || 'Verification code sent to your email.');
         if (res.previewCode) {
           setPreviewOtp(res.previewCode);
         }
@@ -135,7 +133,7 @@ export const AuthScreen: React.FC = () => {
       otpInputRefs.current[index + 1]?.focus();
     }
 
-    // If all 6 digits entered, auto-verify
+    // Auto verify if all 6 digits entered
     if (digit && index === 5 && newCode.every(d => d.trim() !== '')) {
       const fullCode = newCode.join('');
       submitOtpVerification(fullCode);
@@ -166,17 +164,9 @@ export const AuthScreen: React.FC = () => {
         return;
       }
 
-      // Success! Sign in or Sign up
-      if (activeTab === 'signup') {
-        await signUpWithOtp({
-          email: email.trim(),
-          fullName: fullName.trim(),
-          studioName: studioName.trim(),
-          phone: phone.trim()
-        });
-      } else {
-        await signInWithOtp(email.trim());
-      }
+      // Mark email verified in userService and establish session
+      userService.verifyEmail(email);
+      await signInWithOtp(email.trim());
     } catch (err: any) {
       setErrorMessage(err.message || 'Verification failed. Please try again.');
     } finally {
@@ -195,43 +185,10 @@ export const AuthScreen: React.FC = () => {
       return;
     }
 
-    if (cleanEmail.toLowerCase() === 'demo@apniestate.com' && password === 'demo123') {
-      setIsDemoMode(true);
-      return;
-    }
-
     try {
       await signIn(cleanEmail, password);
     } catch (err: any) {
       setErrorMessage(err.message || 'Invalid email or password.');
-    }
-  };
-
-  // Password Sign Up Handler
-  const handlePasswordSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
-
-    if (!fullName.trim() || !studioName.trim() || !email.trim()) {
-      setErrorMessage('Please fill in all required fields.');
-      return;
-    }
-    if (signUpPassword.length < 6) {
-      setErrorMessage('Password must be at least 6 characters.');
-      return;
-    }
-
-    try {
-      await signUp({
-        fullName: fullName.trim(),
-        studioName: studioName.trim(),
-        email: email.trim(),
-        phone: phone.trim(),
-        password: signUpPassword,
-        plan: 'studio'
-      });
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Registration failed.');
     }
   };
 
@@ -280,11 +237,11 @@ export const AuthScreen: React.FC = () => {
             <div className="grid grid-cols-2 gap-3 max-w-md pt-2">
               <div className="p-3.5 rounded-xl bg-white border border-[#E5E7EB] shadow-subtle">
                 <div className="text-xs font-semibold text-[#111827] mb-1">Room-Wise BOQs</div>
-                <div className="text-[11px] text-slate-500">Itemized rates, materials & vendor margins.</div>
+                <div className="text-[11px] text-slate-500">Itemized rates, materials &amp; vendor margins.</div>
               </div>
               <div className="p-3.5 rounded-xl bg-white border border-[#E5E7EB] shadow-subtle">
                 <div className="text-xs font-semibold text-[#111827] mb-1">Dual Mode Workspace</div>
-                <div className="text-[11px] text-slate-500">Switch between Studio CRM & Interior ERP.</div>
+                <div className="text-[11px] text-slate-500">Switch between Studio CRM &amp; Interior ERP.</div>
               </div>
             </div>
 
@@ -311,40 +268,29 @@ export const AuthScreen: React.FC = () => {
 
             <div className="w-full max-w-[420px] bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-7 shadow-card">
               
-              {/* Segmented Tab Bar */}
+              {/* Segmented Tab Bar (Sign In / Sign Up) */}
               <div className="flex items-center p-1 bg-gray-100 rounded-xl mb-5 text-xs font-semibold border border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => switchTab('signin')}
-                  className={`flex-1 py-2 px-2 rounded-lg transition-all text-center cursor-pointer ${
-                    activeTab === 'signin'
-                      ? 'bg-white text-[#1D4ED8] shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Sign In
-                </button>
                 <button
                   type="button"
                   onClick={() => switchTab('signup')}
                   className={`flex-1 py-2 px-2 rounded-lg transition-all text-center cursor-pointer ${
                     activeTab === 'signup'
-                      ? 'bg-white text-[#1D4ED8] shadow-xs'
+                      ? 'bg-white text-[#1D4ED8] shadow-xs font-bold'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  Free Trial
+                  Create Account
                 </button>
                 <button
                   type="button"
-                  onClick={() => switchTab('demo')}
+                  onClick={() => switchTab('signin')}
                   className={`flex-1 py-2 px-2 rounded-lg transition-all text-center cursor-pointer ${
-                    activeTab === 'demo'
-                      ? 'bg-white text-[#1D4ED8] shadow-xs'
+                    activeTab === 'signin'
+                      ? 'bg-white text-[#1D4ED8] shadow-xs font-bold'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  Demo
+                  Sign In
                 </button>
               </div>
 
@@ -363,54 +309,259 @@ export const AuthScreen: React.FC = () => {
                 </div>
               )}
 
-              {/* Preview Code Alert if offline */}
+              {/* Preview Code Alert if offline/dev */}
               {previewOtp && (
                 <div className="mb-4 p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-[#1D4ED8] text-xs flex items-center justify-between">
-                  <span className="font-semibold">Verification Code:</span>
+                  <span className="font-semibold">Dev Verification Code:</span>
                   <span className="font-mono font-bold text-sm bg-white px-2 py-0.5 rounded border border-blue-200">{previewOtp}</span>
                 </div>
               )}
 
               {/* ────────────────────────────────────────────────
-                  TAB 1: SIGN IN (OTP or Password)
+                  TAB 1: SIGN UP (Email + Password -> OTP -> Profile)
+                 ──────────────────────────────────────────────── */}
+              {activeTab === 'signup' && (
+                <div className="space-y-4">
+                  <div className="text-left space-y-1">
+                    <h2 className="text-xl font-editorial font-bold text-[#111827]">
+                      Join Apni Estate
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Sign up with your email to configure your interior studio workspace.
+                    </p>
+                  </div>
+
+                  {!otpSent ? (
+                    <div className="space-y-3.5 text-left">
+                      <div>
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                          Work Email
+                        </label>
+                        <div className="relative">
+                          <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="email"
+                            required
+                            placeholder="you@interiorstudio.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full pl-10 pr-3.5 py-2.5 bg-gray-50 focus:bg-white border border-[#E5E7EB] focus:border-[#1D4ED8] rounded-xl text-xs text-[#111827] outline-none transition-all"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                          Create Password
+                        </label>
+                        <div className="relative">
+                          <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            required
+                            placeholder="At least 6 characters"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full pl-10 pr-9 py-2.5 bg-gray-50 focus:bg-white border border-[#E5E7EB] focus:border-[#1D4ED8] rounded-xl text-xs text-[#111827] outline-none transition-all"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                          >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                          Confirm Password
+                        </label>
+                        <div className="relative">
+                          <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            required
+                            placeholder="Re-enter password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className="w-full pl-10 pr-3.5 py-2.5 bg-gray-50 focus:bg-white border border-[#E5E7EB] focus:border-[#1D4ED8] rounded-xl text-xs text-[#111827] outline-none transition-all"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={otpLoading}
+                        onClick={() => handleSendOtp('signup')}
+                        className="w-full py-3 px-4 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-50 mt-2"
+                      >
+                        {otpLoading ? (
+                          <span>Sending Verification Code...</span>
+                        ) : (
+                          <>
+                            <span>Continue with Email OTP</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </>
+                        )}
+                      </button>
+
+                      <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 pt-1">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Zoho secure OTP verification</span>
+                      </div>
+                    </div>
+                  ) : (
+                    /* 6-DIGIT OTP ENTRY FOR SIGNUP */
+                    <div className="space-y-4 text-left">
+                      <div className="text-center">
+                        <span className="text-xs text-slate-600">Enter verification code sent to </span>
+                        <span className="text-xs font-semibold text-[#111827]">{email}</span>
+                      </div>
+
+                      <div className="flex justify-between gap-1.5 sm:gap-2">
+                        {otpCode.map((digit, i) => (
+                          <input
+                            key={i}
+                            ref={(el) => { otpInputRefs.current[i] = el; }}
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={1}
+                            value={digit}
+                            onChange={(e) => handleOtpChange(i, e.target.value)}
+                            onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                            className="w-11 h-12 sm:w-12 sm:h-13 text-center text-lg font-bold bg-[#F9FAFB] border border-[#E5E7EB] focus:border-[#1D4ED8] focus:bg-white rounded-xl outline-none"
+                          />
+                        ))}
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={otpLoading}
+                        onClick={() => submitOtpVerification()}
+                        className="w-full py-3 px-4 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
+                      >
+                        {otpLoading ? 'Verifying Code...' : 'Verify & Setup Studio Profile'}
+                      </button>
+
+                      <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setOtpSent(false)}
+                          className="text-slate-500 hover:text-slate-800 cursor-pointer"
+                        >
+                          ← Change details
+                        </button>
+                        <button
+                          type="button"
+                          disabled={otpTimer > 0 || otpLoading}
+                          onClick={() => handleSendOtp('signup')}
+                          className={`flex items-center gap-1 font-semibold ${
+                            otpTimer > 0 ? 'text-slate-400' : 'text-[#1D4ED8] hover:underline cursor-pointer'
+                          }`}
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>{otpTimer > 0 ? `Resend in ${otpTimer}s` : 'Resend code'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ────────────────────────────────────────────────
+                  TAB 2: SIGN IN (Password or OTP)
                  ──────────────────────────────────────────────── */}
               {activeTab === 'signin' && (
                 <div className="space-y-4">
                   <div className="text-left space-y-1">
                     <h2 className="text-xl font-editorial font-bold text-[#111827]">
-                      Welcome to your studio
+                      Welcome back
                     </h2>
                     <p className="text-xs text-slate-500">
-                      {signInMethod === 'otp' ? 'Sign in with a 6-digit email verification code' : 'Sign in using your password'}
+                      {signInMethod === 'password' ? 'Sign in using your password' : 'Sign in with a 6-digit email verification code'}
                     </p>
                   </div>
 
-                  {/* Mode Toggle: OTP vs Password */}
+                  {/* Mode Toggle: Password vs OTP */}
                   <div className="flex justify-end">
                     <button
                       type="button"
                       onClick={() => {
-                        setSignInMethod(prev => prev === 'otp' ? 'password' : 'otp');
+                        setSignInMethod(prev => prev === 'password' ? 'otp' : 'password');
                         setOtpSent(false);
                         setErrorMessage(null);
                       }}
                       className="text-xs font-semibold text-[#1D4ED8] hover:underline flex items-center gap-1 cursor-pointer"
                     >
-                      {signInMethod === 'otp' ? (
-                        <>
-                          <KeyRound className="w-3.5 h-3.5" />
-                          <span>Use password instead</span>
-                        </>
-                      ) : (
+                      {signInMethod === 'password' ? (
                         <>
                           <Mail className="w-3.5 h-3.5" />
                           <span>Use Email OTP instead</span>
+                        </>
+                      ) : (
+                        <>
+                          <KeyRound className="w-3.5 h-3.5" />
+                          <span>Use password instead</span>
                         </>
                       )}
                     </button>
                   </div>
 
-                  {signInMethod === 'otp' ? (
+                  {signInMethod === 'password' ? (
+                    /* PASSWORD FORM */
+                    <form onSubmit={handlePasswordSignIn} className="space-y-3.5 text-left">
+                      <div>
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                          Work Email
+                        </label>
+                        <div className="relative">
+                          <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="email"
+                            required
+                            placeholder="you@interiorstudio.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full pl-10 pr-3.5 py-2.5 bg-gray-50 focus:bg-white border border-[#E5E7EB] focus:border-[#1D4ED8] rounded-xl text-xs text-[#111827] outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                          Password
+                        </label>
+                        <div className="relative">
+                          <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            required
+                            placeholder="Enter password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full pl-10 pr-9 py-2.5 bg-gray-50 focus:bg-white border border-[#E5E7EB] focus:border-[#1D4ED8] rounded-xl text-xs text-[#111827] outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                          >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full py-3 px-4 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-50 mt-2"
+                      >
+                        {loading ? 'Signing In...' : 'Sign In'}
+                      </button>
+                    </form>
+                  ) : (
                     /* OTP FLOW */
                     <div className="space-y-4 text-left">
                       {!otpSent ? (
@@ -424,7 +575,7 @@ export const AuthScreen: React.FC = () => {
                               <input
                                 type="email"
                                 required
-                                placeholder="you@studio.com"
+                                placeholder="you@interiorstudio.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="w-full pl-10 pr-3.5 py-2.5 bg-gray-50 hover:bg-slate-100/60 focus:bg-white border border-[#E5E7EB] focus:border-[#1D4ED8] rounded-xl text-xs text-[#111827] outline-none transition-all"
@@ -504,260 +655,7 @@ export const AuthScreen: React.FC = () => {
                         </div>
                       )}
                     </div>
-                  ) : (
-                    /* PASSWORD FLOW */
-                    <form onSubmit={handlePasswordSignIn} className="space-y-3.5 text-left">
-                      <div>
-                        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-                          Work Email
-                        </label>
-                        <div className="relative">
-                          <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="email"
-                            required
-                            placeholder="you@studio.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full pl-10 pr-3.5 py-2.5 bg-gray-50 focus:bg-white border border-[#E5E7EB] focus:border-[#1D4ED8] rounded-xl text-xs text-[#111827] outline-none"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-                          Password
-                        </label>
-                        <div className="relative">
-                          <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                          <input
-                            type={showPassword ? 'text' : 'password'}
-                            required
-                            placeholder="Enter password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full pl-10 pr-9 py-2.5 bg-gray-50 focus:bg-white border border-[#E5E7EB] focus:border-[#1D4ED8] rounded-xl text-xs text-[#111827] outline-none"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                          >
-                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
-                        </div>
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full py-3 px-4 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-50 mt-2"
-                      >
-                        {loading ? 'Signing in...' : 'Sign In'}
-                      </button>
-                    </form>
                   )}
-                </div>
-              )}
-
-              {/* ────────────────────────────────────────────────
-                  TAB 2: SIGN UP (15-Day Free Trial)
-                 ──────────────────────────────────────────────── */}
-              {activeTab === 'signup' && (
-                <div className="space-y-4">
-                  <div className="text-left space-y-1">
-                    <h2 className="text-xl font-editorial font-bold text-[#111827]">
-                      Start 15-Day Studio Trial
-                    </h2>
-                    <p className="text-xs text-slate-500">
-                      Create your private studio workspace in under a minute.
-                    </p>
-                  </div>
-
-                  {!otpSent ? (
-                    <div className="space-y-3 text-left">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        <div>
-                          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-                            Your Name *
-                          </label>
-                          <div className="relative">
-                            <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                            <input
-                              type="text"
-                              required
-                              placeholder="Aarav Mehta"
-                              value={fullName}
-                              onChange={(e) => setFullName(e.target.value)}
-                              className="w-full pl-9 pr-3 py-2 bg-gray-50 focus:bg-white border border-[#E5E7EB] focus:border-[#1D4ED8] rounded-xl text-xs text-[#111827] outline-none"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-                            Studio Name *
-                          </label>
-                          <div className="relative">
-                            <Building2 className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                            <input
-                              type="text"
-                              required
-                              placeholder="Mehta Design Studio"
-                              value={studioName}
-                              onChange={(e) => setStudioName(e.target.value)}
-                              className="w-full pl-9 pr-3 py-2 bg-gray-50 focus:bg-white border border-[#E5E7EB] focus:border-[#1D4ED8] rounded-xl text-xs text-[#111827] outline-none"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        <div>
-                          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-                            Work Email *
-                          </label>
-                          <div className="relative">
-                            <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                            <input
-                              type="email"
-                              required
-                              placeholder="aarav@studio.com"
-                              value={email}
-                              onChange={(e) => setEmail(e.target.value)}
-                              className="w-full pl-9 pr-3 py-2 bg-gray-50 focus:bg-white border border-[#E5E7EB] focus:border-[#1D4ED8] rounded-xl text-xs text-[#111827] outline-none"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-                            Phone (Optional)
-                          </label>
-                          <div className="relative">
-                            <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                            <input
-                              type="tel"
-                              placeholder="+91 98201 00000"
-                              value={phone}
-                              onChange={(e) => setPhone(e.target.value)}
-                              className="w-full pl-9 pr-3 py-2 bg-gray-50 focus:bg-white border border-[#E5E7EB] focus:border-[#1D4ED8] rounded-xl text-xs text-[#111827] outline-none"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        disabled={otpLoading}
-                        onClick={() => handleSendOtp('signup')}
-                        className="w-full py-3 px-4 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-50 mt-2"
-                      >
-                        {otpLoading ? (
-                          <span>Sending Verification Code...</span>
-                        ) : (
-                          <>
-                            <span>Verify Email & Start 15-Day Trial</span>
-                            <ArrowRight className="w-4 h-4" />
-                          </>
-                        )}
-                      </button>
-
-                      <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 pt-1">
-                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>15-day full access • No credit card required</span>
-                      </div>
-                    </div>
-                  ) : (
-                    /* OTP ENTRY FOR SIGNUP */
-                    <div className="space-y-4 text-left">
-                      <div className="text-center">
-                        <span className="text-xs text-slate-600">Enter verification code sent to </span>
-                        <span className="text-xs font-semibold text-[#111827]">{email}</span>
-                      </div>
-
-                      <div className="flex justify-between gap-1.5 sm:gap-2">
-                        {otpCode.map((digit, i) => (
-                          <input
-                            key={i}
-                            ref={(el) => { otpInputRefs.current[i] = el; }}
-                            type="text"
-                            inputMode="numeric"
-                            maxLength={1}
-                            value={digit}
-                            onChange={(e) => handleOtpChange(i, e.target.value)}
-                            onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                            className="w-11 h-12 sm:w-12 sm:h-13 text-center text-lg font-bold bg-[#F9FAFB] border border-[#E5E7EB] focus:border-[#1D4ED8] focus:bg-white rounded-xl outline-none"
-                          />
-                        ))}
-                      </div>
-
-                      <button
-                        type="button"
-                        disabled={otpLoading}
-                        onClick={() => submitOtpVerification()}
-                        className="w-full py-3 px-4 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
-                      >
-                        {otpLoading ? 'Creating Workspace...' : 'Confirm & Launch Studio'}
-                      </button>
-
-                      <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => setOtpSent(false)}
-                          className="text-slate-500 hover:text-slate-800 cursor-pointer"
-                        >
-                          ← Change details
-                        </button>
-                        <button
-                          type="button"
-                          disabled={otpTimer > 0 || otpLoading}
-                          onClick={() => handleSendOtp('signup')}
-                          className={`flex items-center gap-1 font-semibold ${
-                            otpTimer > 0 ? 'text-slate-400' : 'text-[#1D4ED8] hover:underline cursor-pointer'
-                          }`}
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                          <span>{otpTimer > 0 ? `Resend in ${otpTimer}s` : 'Resend code'}</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* ────────────────────────────────────────────────
-                  TAB 3: DEMO LOGIN (One Click Sandbox)
-                 ──────────────────────────────────────────────── */}
-              {activeTab === 'demo' && (
-                <div className="space-y-4 text-left">
-                  <div className="space-y-1">
-                    <h2 className="text-xl font-editorial font-bold text-[#111827]">
-                      Explore Sample Studio
-                    </h2>
-                    <p className="text-xs text-slate-500">
-                      Instantly test room BOQs, leads pipeline, and contractor bills with pre-filled mock data.
-                    </p>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl bg-[#EFF6FF] border border-blue-200 space-y-2">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-[#1D4ED8]">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Instant Sandbox Access</span>
-                    </div>
-                    <div className="text-[11px] text-slate-600 leading-relaxed">
-                      Includes 3 sample residential and commercial interior projects with itemized BOQ schedules and client leads.
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsDemoMode(true)}
-                    className="w-full py-3 px-4 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs mt-2"
-                  >
-                    <span>Enter Demo Workspace</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
                 </div>
               )}
 
@@ -769,7 +667,7 @@ export const AuthScreen: React.FC = () => {
 
       {/* ── Minimal Footer ── */}
       <footer className="p-4 text-center text-xs text-slate-400 border-t border-gray-200 bg-white">
-        Apni Estate Interiors © {new Date().getFullYear()} • Bespoke Interior Design ERP & CRM
+        Apni Estate Interiors © {new Date().getFullYear()} • Bespoke Interior Design ERP &amp; CRM
       </footer>
     </div>
   );

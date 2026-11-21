@@ -82,7 +82,10 @@ export const taskService = {
     }
 
     const { data, error } = await query;
-    if (error) throw error;
+    if (error) {
+      console.warn('[taskService.getTasks]', error.message);
+      return [];
+    }
 
     return (data || []).map((item: any) => ({
       id: item.id,

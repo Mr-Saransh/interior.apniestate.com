@@ -21,7 +21,10 @@ export const teamService = {
     }
 
     const { data, error } = await query;
-    if (error) throw error;
+    if (error) {
+      console.warn('[teamService.getTeamMembers]', error.message);
+      return [];
+    }
 
     return (data || []).map((item: any) => ({
       id: item.id,

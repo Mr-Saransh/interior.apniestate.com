@@ -49,14 +49,21 @@ const BILL_SELECT = '*, projects(name), vendors(name), boq_items(item_name), con
 
 export const contractorBillService = {
   async getBills(organizationId: string): Promise<ContractorBill[]> {
-    if (!isSupabaseConfigured) throw new Error('Supabase is not configured.');
-    const { data, error } = await supabase
-      .from('contractor_bills')
-      .select(BILL_SELECT)
-      .eq('organization_id', organizationId)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    return (data || []).map(mapBill);
+    if (!isSupabaseConfigured) return [];
+    try {
+      const { data, error } = await supabase
+        .from('contractor_bills')
+        .select(BILL_SELECT)
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.warn('[contractorBillService.getBills]:', error.message);
+        return [];
+      }
+      return (data || []).map(mapBill);
+    } catch {
+      return [];
+    }
   },
 
   async createBill(input: CreateContractorBillInput): Promise<ContractorBill> {

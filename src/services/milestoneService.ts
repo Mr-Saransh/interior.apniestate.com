@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Milestone, MilestoneStatus } from '../types';
 
 export interface CreateMilestoneInput {
@@ -17,6 +17,8 @@ export const milestoneService = {
    * Fetch all milestones for a project in chronological / sort order
    */
   async getMilestones(projectId: string): Promise<Milestone[]> {
+    if (!isSupabaseConfigured) return [];
+
     const { data, error } = await supabase
       .from('milestones')
       .select('*')
@@ -26,8 +28,8 @@ export const milestoneService = {
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Failed to fetch milestones:', error);
-      throw new Error(`Failed to load milestones: ${error.message}`);
+      console.warn('Failed to fetch milestones:', error.message);
+      return [];
     }
 
     return (data || []).map((m: any) => ({

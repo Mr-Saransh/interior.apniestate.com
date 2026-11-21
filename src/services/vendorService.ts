@@ -32,7 +32,10 @@ export const vendorService = {
     }
 
     const { data, error } = await query;
-    if (error) throw error;
+    if (error) {
+      console.warn('[vendorService.getVendors]', error.message);
+      return [];
+    }
 
     return (data || []).map((v: any) => ({
       id: v.id,

@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { ProjectPhoto, PhotoCategory } from '../types';
 
 export interface UploadPhotoInput {
@@ -17,6 +17,8 @@ export const photoService = {
    * Fetch all photos for a project and generate dynamic signed URLs
    */
   async getProjectPhotos(projectId: string): Promise<ProjectPhoto[]> {
+    if (!isSupabaseConfigured) return [];
+
     const { data: dbPhotos, error: fetchErr } = await supabase
       .from('project_photos')
       .select('*')
@@ -24,8 +26,8 @@ export const photoService = {
       .order('created_at', { ascending: false });
 
     if (fetchErr) {
-      console.error('Failed to fetch photos:', fetchErr);
-      throw new Error(`Failed to load photos: ${fetchErr.message}`);
+      console.warn('Failed to fetch photos:', fetchErr.message);
+      return [];
     }
 
     if (!dbPhotos || dbPhotos.length === 0) {

@@ -63,15 +63,22 @@ function mapQuotation(row: any): Quotation {
 
 export const quotationService = {
   async getQuotations(organizationId: string): Promise<Quotation[]> {
-    if (!isSupabaseConfigured) throw new Error('Supabase is not configured.');
+    if (!isSupabaseConfigured) return [];
 
-    const { data, error } = await supabase
-      .from('quotations')
-      .select('*, quotation_events(*)')
-      .eq('organization_id', organizationId)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    return (data || []).map(mapQuotation);
+    try {
+      const { data, error } = await supabase
+        .from('quotations')
+        .select('*, quotation_events(*)')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.warn('[quotationService.getQuotations]:', error.message);
+        return [];
+      }
+      return (data || []).map(mapQuotation);
+    } catch {
+      return [];
+    }
   },
 
   async createQuotation(input: CreateQuotationInput): Promise<Quotation> {

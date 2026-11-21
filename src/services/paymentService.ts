@@ -56,7 +56,10 @@ export const paymentService = {
     }
 
     const { data, error } = await query;
-    if (error) throw error;
+    if (error) {
+      console.warn('[paymentService.getPayments]', error.message);
+      return [];
+    }
 
     const todayStr = new Date().toISOString().split('T')[0];
 

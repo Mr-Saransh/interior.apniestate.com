@@ -55,14 +55,21 @@ function mapRequest(row: any): ChangeRequest {
 
 export const changeRequestService = {
   async getChangeRequests(organizationId: string): Promise<ChangeRequest[]> {
-    if (!isSupabaseConfigured) throw new Error('Supabase is not configured.');
-    const { data, error } = await supabase
-      .from('change_requests')
-      .select('*, projects(name), change_request_events(*)')
-      .eq('organization_id', organizationId)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    return (data || []).map(mapRequest);
+    if (!isSupabaseConfigured) return [];
+    try {
+      const { data, error } = await supabase
+        .from('change_requests')
+        .select('*, projects(name), change_request_events(*)')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.warn('[changeRequestService.getChangeRequests]:', error.message);
+        return [];
+      }
+      return (data || []).map(mapRequest);
+    } catch {
+      return [];
+    }
   },
 
   async createChangeRequest(input: CreateChangeRequestInput): Promise<ChangeRequest> {

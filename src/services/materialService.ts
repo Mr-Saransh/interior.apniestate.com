@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Material, MaterialTransaction } from '../types';
 
 export interface CreateMaterialInput {
@@ -37,6 +37,8 @@ export const materialService = {
    * Fetch all materials for a given project
    */
   async getMaterials(projectId: string): Promise<Material[]> {
+    if (!isSupabaseConfigured) return [];
+
     const { data, error } = await supabase
       .from('materials')
       .select('*')
@@ -44,8 +46,8 @@ export const materialService = {
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Failed to fetch materials:', error);
-      throw new Error(`Failed to load materials: ${error.message}`);
+      console.warn('Failed to fetch materials:', error.message);
+      return [];
     }
 
     return (data || []).map((m: any) => ({
@@ -206,6 +208,8 @@ export const materialService = {
    * Fetch all material transactions for a given project
    */
   async getMaterialTransactions(projectId: string): Promise<MaterialTransaction[]> {
+    if (!isSupabaseConfigured) return [];
+
     const { data, error } = await supabase
       .from('material_transactions')
       .select('*')
@@ -214,8 +218,8 @@ export const materialService = {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Failed to fetch material transactions:', error);
-      throw new Error(`Failed to load transactions: ${error.message}`);
+      console.warn('Failed to fetch material transactions:', error.message);
+      return [];
     }
 
     return (data || []).map((t: any) => ({

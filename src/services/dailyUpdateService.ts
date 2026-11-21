@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { DailyUpdate } from '../types';
 
 export interface CreateDailyUpdateInput {
@@ -17,6 +17,8 @@ export const dailyUpdateService = {
    * Fetch all daily updates for a project (ordered newest first)
    */
   async getDailyUpdates(projectId: string): Promise<DailyUpdate[]> {
+    if (!isSupabaseConfigured) return [];
+
     const { data, error } = await supabase
       .from('daily_updates')
       .select('*')
@@ -25,8 +27,8 @@ export const dailyUpdateService = {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Failed to fetch daily updates:', error);
-      throw new Error(`Failed to load daily updates: ${error.message}`);
+      console.warn('Failed to fetch daily updates:', error.message);
+      return [];
     }
 
     return (data || []).map((u: any) => ({

@@ -47,6 +47,7 @@ import {
   INITIAL_PURCHASES
 } from '../data/mockData';
 import { useAuth } from './AuthContext';
+import { isSupabaseConfigured } from '../lib/supabase';
 import { clientService } from '../services/clientService';
 import { projectService } from '../services/projectService';
 import { roomService } from '../services/roomService';
@@ -502,120 +503,96 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isUploadPhotoModalOpen, setIsUploadPhotoModalOpenState] = useState(false);
   const [defaultPhotoDailyUpdateId, setDefaultPhotoDailyUpdateId] = useState<string | undefined>(undefined);
 
-  // Core Data States
+  // Core Data States (Local-first & Offline-resilient)
   const [clients, setClients] = useState<Client[]>(() => {
-    if (isDemoMode) {
-      const saved = localStorage.getItem('apni_estate_clients');
-      return saved ? JSON.parse(saved) : INITIAL_DEMO_CLIENTS;
-    }
-    return [];
+    const saved = localStorage.getItem('apni_estate_clients');
+    return saved ? JSON.parse(saved) : INITIAL_DEMO_CLIENTS;
   });
 
   const [leads, setLeads] = useState<Lead[]>(() => {
-    if (isDemoMode) {
-      const saved = localStorage.getItem('apni_estate_leads');
-      return saved ? JSON.parse(saved) : INITIAL_LEADS;
-    }
-    return [];
+    const saved = localStorage.getItem('apni_estate_leads');
+    return saved ? JSON.parse(saved) : INITIAL_LEADS;
   });
 
   const [tasks, setTasks] = useState<Task[]>(() => {
-    if (isDemoMode) {
-      const saved = localStorage.getItem('apni_estate_tasks');
-      return saved ? JSON.parse(saved) : INITIAL_TASKS;
-    }
-    return [];
+    const saved = localStorage.getItem('apni_estate_tasks');
+    return saved ? JSON.parse(saved) : INITIAL_TASKS;
   });
 
   const [teamMembers, setTeamMembers] = useState<StaffMember[]>(() => {
-    if (isDemoMode) {
-      const saved = localStorage.getItem('apni_estate_team');
-      return saved ? JSON.parse(saved) : INITIAL_STAFF_MEMBERS;
-    }
-    return [];
+    const saved = localStorage.getItem('apni_estate_team');
+    return saved ? JSON.parse(saved) : INITIAL_STAFF_MEMBERS;
   });
 
   const [vendors, setVendors] = useState<Vendor[]>(() => {
-    if (isDemoMode) {
-      const saved = localStorage.getItem('apni_estate_vendors');
-      return saved ? JSON.parse(saved) : INITIAL_VENDORS;
-    }
-    return [];
+    const saved = localStorage.getItem('apni_estate_vendors');
+    return saved ? JSON.parse(saved) : INITIAL_VENDORS;
   });
 
   const [clientPayments, setClientPayments] = useState<ClientPayment[]>(() => {
-    if (isDemoMode) {
-      const saved = localStorage.getItem('apni_estate_client_payments');
-      return saved ? JSON.parse(saved) : INITIAL_CLIENT_PAYMENTS;
-    }
-    return [];
+    const saved = localStorage.getItem('apni_estate_client_payments');
+    return saved ? JSON.parse(saved) : INITIAL_CLIENT_PAYMENTS;
   });
 
   const [purchases, setPurchases] = useState<Purchase[]>(() => {
-    if (isDemoMode) {
-      const saved = localStorage.getItem('apni_estate_purchases');
-      return saved ? JSON.parse(saved) : INITIAL_PURCHASES;
-    }
-    return [];
+    const saved = localStorage.getItem('apni_estate_purchases');
+    return saved ? JSON.parse(saved) : INITIAL_PURCHASES;
   });
 
   const [projects, setProjects] = useState<Project[]>(() => {
-    if (isDemoMode) {
-      const saved = localStorage.getItem('apni_estate_projects');
-      return saved ? JSON.parse(saved) : INITIAL_PROJECTS;
-    }
-    return [];
+    const saved = localStorage.getItem('apni_estate_projects');
+    return saved ? JSON.parse(saved) : INITIAL_PROJECTS;
   });
 
   const [expenses, setExpenses] = useState<Expense[]>(() => {
-    if (isDemoMode) {
-      const saved = localStorage.getItem('apni_estate_expenses');
-      return saved ? JSON.parse(saved) : INITIAL_EXPENSES;
-    }
-    return [];
+    const saved = localStorage.getItem('apni_estate_expenses');
+    return saved ? JSON.parse(saved) : INITIAL_EXPENSES;
   });
 
   const [boqItems, setBoqItems] = useState<BOQItem[]>(() => {
-    if (isDemoMode) {
-      const saved = localStorage.getItem('apni_estate_boq_items');
-      return saved ? JSON.parse(saved) : (INITIAL_BOQ_ITEMS as BOQItem[]);
-    }
-    return [];
+    const saved = localStorage.getItem('apni_estate_boq_items');
+    return saved ? JSON.parse(saved) : (INITIAL_BOQ_ITEMS as BOQItem[]);
   });
 
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [materialTransactions, setMaterialTransactions] = useState<MaterialTransaction[]>([]);
-  const [milestones, setMilestones] = useState<Milestone[]>([]);
-  const [dailyUpdates, setDailyUpdates] = useState<DailyUpdate[]>([]);
-  const [projectPhotos, setProjectPhotos] = useState<ProjectPhoto[]>([]);
+  const [materials, setMaterials] = useState<Material[]>(() => {
+    const saved = localStorage.getItem('apni_estate_materials');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [materialTransactions, setMaterialTransactions] = useState<MaterialTransaction[]>(() => {
+    const saved = localStorage.getItem('apni_estate_material_tx');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [milestones, setMilestones] = useState<Milestone[]>(() => {
+    const saved = localStorage.getItem('apni_estate_milestones');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [dailyUpdates, setDailyUpdates] = useState<DailyUpdate[]>(() => {
+    const saved = localStorage.getItem('apni_estate_daily_updates');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [projectPhotos, setProjectPhotos] = useState<ProjectPhoto[]>(() => {
+    const saved = localStorage.getItem('apni_estate_project_photos');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(() => {
-    if (isDemoMode) {
-      const saved = localStorage.getItem('apni_estate_calendar');
-      return saved ? JSON.parse(saved) : CALENDAR_EVENTS;
-    }
-    return [];
+    const saved = localStorage.getItem('apni_estate_calendar');
+    return saved ? JSON.parse(saved) : CALENDAR_EVENTS;
   });
 
   const [documents, setDocuments] = useState<DocumentItem[]>(() => {
-    if (isDemoMode) {
-      const saved = localStorage.getItem('apni_estate_documents');
-      return saved ? JSON.parse(saved) : INITIAL_DOCUMENTS;
-    }
-    return [];
+    const saved = localStorage.getItem('apni_estate_documents');
+    return saved ? JSON.parse(saved) : INITIAL_DOCUMENTS;
   });
 
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
-    if (isDemoMode) {
-      const saved = localStorage.getItem('apni_estate_notifications');
-      return saved ? JSON.parse(saved) : INITIAL_NOTIFICATIONS;
-    }
-    return [];
+    const saved = localStorage.getItem('apni_estate_notifications');
+    return saved ? JSON.parse(saved) : INITIAL_NOTIFICATIONS;
   });
 
-  // Load Remote Data from Supabase when in Authenticated Mode
+  // Load Remote Data from Supabase only when Supabase is explicitly configured & active
   const loadRemoteData = useCallback(async () => {
-    if (isDemoMode || !isAuthenticated || !organization?.id) {
+    if (!isSupabaseConfigured || !isAuthenticated || !organization?.id) {
       return;
     }
 
@@ -634,10 +611,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         remotePayments,
         remotePurchases
       ] = await Promise.all([
-        clientService.getClients(organization.id),
-        projectService.getProjects(organization.id),
-        expenseService.getExpenses(organization.id),
-        boqService.getBOQItems(organization.id),
+        clientService.getClients(organization.id).catch(() => []),
+        projectService.getProjects(organization.id).catch(() => []),
+        expenseService.getExpenses(organization.id).catch(() => []),
+        boqService.getBOQItems(organization.id).catch(() => []),
         leadService.getLeads(organization.id).catch(() => []),
         taskService.getTasks({ organizationId: organization.id }).catch(() => []),
         teamService.getTeamMembers(organization.id).catch(() => []),
@@ -647,190 +624,150 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         purchaseService.getPurchases(organization.id).catch(() => [])
       ]);
 
-      // Calculate authoritative spending for projects and rooms directly from expense ledger
-      const projectsWithAuthoritativeFinancials = remoteProjects.map(p => {
-        const spent = calculateProjectSpent(p.id, remoteExpenses);
-        
-        // Compute room-level spending
-        const updatedRooms = (p.rooms || []).map(r => {
-          const roomSpent = remoteExpenses
-            .filter(e => e.room_id === r.id)
-            .reduce((sum, e) => sum + e.amount, 0);
+      // Only override local cache if remote actually has records
+      if (remoteProjects && remoteProjects.length > 0) {
+        const projectsWithAuthoritativeFinancials = remoteProjects.map(p => {
+          const spent = calculateProjectSpent(p.id, remoteExpenses);
+          
+          const updatedRooms = (p.rooms || []).map(r => {
+            const roomSpent = remoteExpenses
+              .filter(e => e.room_id === r.id)
+              .reduce((sum, e) => sum + e.amount, 0);
+            return {
+              ...r,
+              spent: roomSpent
+            };
+          });
+
           return {
-            ...r,
-            spent: roomSpent
+            ...p,
+            spent,
+            rooms: updatedRooms,
+            boq_items: remoteBOQ.filter(b => b.project_id === p.id)
           };
         });
 
-        return {
-          ...p,
-          spent,
-          rooms: updatedRooms,
-          boq_items: remoteBOQ.filter(b => b.project_id === p.id)
-        };
-      });
+        setClients(remoteClients);
+        setProjects(projectsWithAuthoritativeFinancials);
+        setExpenses(remoteExpenses);
+        setBoqItems(remoteBOQ);
+        setLeads(remoteLeads);
+        setTasks(remoteTasks);
+        setTeamMembers(remoteTeam);
+        setDocuments(remoteDocs);
+        setVendors(remoteVendors);
+        setClientPayments(remotePayments);
+        setPurchases(remotePurchases);
 
-      setClients(remoteClients);
-      setProjects(projectsWithAuthoritativeFinancials);
-      setExpenses(remoteExpenses);
-      setBoqItems(remoteBOQ);
-      setLeads(remoteLeads);
-      setTasks(remoteTasks);
-      setTeamMembers(remoteTeam);
-      setDocuments(remoteDocs);
-      setVendors(remoteVendors);
-      setClientPayments(remotePayments);
-      setPurchases(remotePurchases);
+        const activeProjId = selectedProjectId || projectsWithAuthoritativeFinancials[0]?.id;
+        if (activeProjId) {
+          try {
+            const [remoteMats, remoteTx, remoteMilestones, remoteDpr, remotePhotos] = await Promise.all([
+              materialService.getMaterials(activeProjId).catch(() => []),
+              materialService.getMaterialTransactions(activeProjId).catch(() => []),
+              milestoneService.getMilestones(activeProjId).catch(() => []),
+              dailyUpdateService.getDailyUpdates(activeProjId).catch(() => []),
+              photoService.getProjectPhotos(activeProjId).catch(() => [])
+            ]);
+            setMaterials(remoteMats);
+            setMaterialTransactions(remoteTx);
+            setMilestones(remoteMilestones);
+            setDailyUpdates(remoteDpr);
+            setProjectPhotos(remotePhotos);
+          } catch (opErr) {
+            console.warn('[AppContext] Operational data load note:', opErr);
+          }
+        }
 
-      const activeProjId = selectedProjectId || (projectsWithAuthoritativeFinancials.length > 0 ? projectsWithAuthoritativeFinancials[0].id : null);
-      if (activeProjId) {
-        try {
-          const [remoteMats, remoteTx, remoteMilestones, remoteDpr, remotePhotos] = await Promise.all([
-            materialService.getMaterials(activeProjId),
-            materialService.getMaterialTransactions(activeProjId),
-            milestoneService.getMilestones(activeProjId),
-            dailyUpdateService.getDailyUpdates(activeProjId),
-            photoService.getProjectPhotos(activeProjId)
-          ]);
-          setMaterials(remoteMats);
-          setMaterialTransactions(remoteTx);
-          setMilestones(remoteMilestones);
-          setDailyUpdates(remoteDpr);
-          setProjectPhotos(remotePhotos);
-        } catch (opErr) {
-          console.warn('[AppContext] Operational data load note:', opErr);
+        if (!selectedProjectId || !projectsWithAuthoritativeFinancials.some(p => p.id === selectedProjectId)) {
+          setSelectedProjectId(projectsWithAuthoritativeFinancials[0].id);
         }
       }
-
-      if (projectsWithAuthoritativeFinancials.length > 0 && (!selectedProjectId || !projectsWithAuthoritativeFinancials.some(p => p.id === selectedProjectId))) {
-        setSelectedProjectId(projectsWithAuthoritativeFinancials[0].id);
-      } else if (projectsWithAuthoritativeFinancials.length === 0) {
-        setSelectedProjectId(null);
-      }
     } catch (err) {
-      console.error('[AppContext] Failed to load remote tenant data:', err);
+      console.warn('[AppContext] Supabase remote sync skipped (using local cache):', err);
     } finally {
       setLoadingData(false);
     }
-  }, [isDemoMode, isAuthenticated, organization?.id, selectedProjectId]);
+  }, [isAuthenticated, organization?.id, selectedProjectId]);
 
   useEffect(() => {
-    if (!isDemoMode && isAuthenticated && organization?.id) {
+    if (isSupabaseConfigured && isAuthenticated && organization?.id) {
       loadRemoteData();
-    } else if (isDemoMode) {
-      // Restore demo state
-      const savedClients = localStorage.getItem('apni_estate_clients');
-      setClients(savedClients ? JSON.parse(savedClients) : INITIAL_DEMO_CLIENTS);
-
-      const savedProjects = localStorage.getItem('apni_estate_projects');
-      const parsedProjects = savedProjects ? JSON.parse(savedProjects) : INITIAL_PROJECTS;
-      setProjects(parsedProjects);
-
-      const savedExpenses = localStorage.getItem('apni_estate_expenses');
-      setExpenses(savedExpenses ? JSON.parse(savedExpenses) : INITIAL_EXPENSES);
-
-      const savedBOQ = localStorage.getItem('apni_estate_boq_items');
-      setBoqItems(savedBOQ ? JSON.parse(savedBOQ) : (INITIAL_BOQ_ITEMS as BOQItem[]));
-
-      const savedVendors = localStorage.getItem('apni_estate_vendors');
-      setVendors(savedVendors ? JSON.parse(savedVendors) : INITIAL_VENDORS);
-
-      const savedPayments = localStorage.getItem('apni_estate_client_payments');
-      setClientPayments(savedPayments ? JSON.parse(savedPayments) : INITIAL_CLIENT_PAYMENTS);
-
-      const savedPurchases = localStorage.getItem('apni_estate_purchases');
-      setPurchases(savedPurchases ? JSON.parse(savedPurchases) : INITIAL_PURCHASES);
-
-      if (parsedProjects.length > 0 && !selectedProjectId) {
-        setSelectedProjectId(parsedProjects[0].id);
-      }
     }
-  }, [isDemoMode, isAuthenticated, organization?.id]);
+  }, [isAuthenticated, organization?.id, loadRemoteData]);
 
-  // Sync to local storage only when in Demo mode
+  // Continuously sync all application state to LocalStorage so data is never lost
   useEffect(() => {
-    if (isDemoMode) {
-      localStorage.setItem('apni_estate_clients', JSON.stringify(clients));
-    }
-  }, [clients, isDemoMode]);
+    localStorage.setItem('apni_estate_clients', JSON.stringify(clients));
+  }, [clients]);
 
   useEffect(() => {
-    if (isDemoMode) {
-      localStorage.setItem('apni_estate_projects', JSON.stringify(projects));
-    }
-  }, [projects, isDemoMode]);
+    localStorage.setItem('apni_estate_projects', JSON.stringify(projects));
+  }, [projects]);
 
   useEffect(() => {
-    if (isDemoMode) {
-      localStorage.setItem('apni_estate_expenses', JSON.stringify(expenses));
-    }
-  }, [expenses, isDemoMode]);
+    localStorage.setItem('apni_estate_expenses', JSON.stringify(expenses));
+  }, [expenses]);
 
   useEffect(() => {
-    if (isDemoMode) {
-      localStorage.setItem('apni_estate_boq_items', JSON.stringify(boqItems));
-    }
-  }, [boqItems, isDemoMode]);
+    localStorage.setItem('apni_estate_boq_items', JSON.stringify(boqItems));
+  }, [boqItems]);
 
   useEffect(() => {
-    if (isDemoMode) {
-      localStorage.setItem('apni_estate_calendar', JSON.stringify(calendarEvents));
-    }
-  }, [calendarEvents, isDemoMode]);
+    localStorage.setItem('apni_estate_calendar', JSON.stringify(calendarEvents));
+  }, [calendarEvents]);
 
   useEffect(() => {
-    if (isDemoMode) {
-      localStorage.setItem('apni_estate_documents', JSON.stringify(documents));
-    }
-  }, [documents, isDemoMode]);
+    localStorage.setItem('apni_estate_documents', JSON.stringify(documents));
+  }, [documents]);
 
   useEffect(() => {
-    if (isDemoMode) {
-      localStorage.setItem('apni_estate_leads', JSON.stringify(leads));
-    }
-  }, [leads, isDemoMode]);
+    localStorage.setItem('apni_estate_leads', JSON.stringify(leads));
+  }, [leads]);
 
   useEffect(() => {
-    if (isDemoMode) {
-      localStorage.setItem('apni_estate_tasks', JSON.stringify(tasks));
-    }
-  }, [tasks, isDemoMode]);
+    localStorage.setItem('apni_estate_tasks', JSON.stringify(tasks));
+  }, [tasks]);
 
   useEffect(() => {
-    if (isDemoMode) {
-      localStorage.setItem('apni_estate_team', JSON.stringify(teamMembers));
-    }
-  }, [teamMembers, isDemoMode]);
+    localStorage.setItem('apni_estate_team', JSON.stringify(teamMembers));
+  }, [teamMembers]);
 
   useEffect(() => {
-    if (isDemoMode) {
-      localStorage.setItem('apni_estate_vendors', JSON.stringify(vendors));
-    }
-  }, [vendors, isDemoMode]);
+    localStorage.setItem('apni_estate_vendors', JSON.stringify(vendors));
+  }, [vendors]);
 
   useEffect(() => {
-    if (isDemoMode) {
-      localStorage.setItem('apni_estate_client_payments', JSON.stringify(clientPayments));
-    }
-  }, [clientPayments, isDemoMode]);
+    localStorage.setItem('apni_estate_client_payments', JSON.stringify(clientPayments));
+  }, [clientPayments]);
 
   useEffect(() => {
-    if (isDemoMode) {
-      localStorage.setItem('apni_estate_purchases', JSON.stringify(purchases));
-    }
-  }, [purchases, isDemoMode]);
+    localStorage.setItem('apni_estate_purchases', JSON.stringify(purchases));
+  }, [purchases]);
 
   useEffect(() => {
-    if (isDemoMode) {
-      localStorage.setItem('apni_estate_team', JSON.stringify(teamMembers));
-    }
-  }, [teamMembers, isDemoMode]);
+    localStorage.setItem('apni_estate_notifications', JSON.stringify(notifications));
+  }, [notifications]);
 
   useEffect(() => {
-    if (isDemoMode) {
-      localStorage.setItem('apni_estate_notifications', JSON.stringify(notifications));
-    }
-  }, [notifications, isDemoMode]);
+    localStorage.setItem('apni_estate_materials', JSON.stringify(materials));
+  }, [materials]);
+
+  useEffect(() => {
+    localStorage.setItem('apni_estate_material_tx', JSON.stringify(materialTransactions));
+  }, [materialTransactions]);
+
+  useEffect(() => {
+    localStorage.setItem('apni_estate_milestones', JSON.stringify(milestones));
+  }, [milestones]);
+
+  useEffect(() => {
+    localStorage.setItem('apni_estate_daily_updates', JSON.stringify(dailyUpdates));
+  }, [dailyUpdates]);
+
+  useEffect(() => {
+    localStorage.setItem('apni_estate_project_photos', JSON.stringify(projectPhotos));
+  }, [projectPhotos]);
 
   // Open Project Detail Page
   const openProjectDetail = (
@@ -860,51 +797,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // CLIENT CRUD
   // ============================================================================
   const addClient = async (clientData: Omit<Client, 'id' | 'created_at' | 'updated_at'>): Promise<Client> => {
-    if (!isDemoMode && organization?.id) {
-      const created = await clientService.createClient({
-        organization_id: organization.id,
-        name: clientData.name,
-        phone: clientData.phone,
-        email: clientData.email,
-        address: clientData.address,
-        notes: clientData.notes
-      });
-      setClients(prev => [created, ...prev]);
-      return created;
-    } else {
-      const newClient: Client = {
-        ...clientData,
-        id: `client-${Date.now()}`,
-        organization_id: 'demo-org',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      setClients(prev => [newClient, ...prev]);
-      return newClient;
+    let created: Client | null = null;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        created = await clientService.createClient({
+          organization_id: organization.id,
+          name: clientData.name,
+          phone: clientData.phone,
+          email: clientData.email,
+          address: clientData.address,
+          notes: clientData.notes
+        });
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase client creation fallback:', e?.message);
+      }
     }
+
+    const finalClient: Client = created || {
+      ...clientData,
+      id: `client-${Date.now()}`,
+      organization_id: organization?.id || 'default-org',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    setClients(prev => [finalClient, ...prev]);
+    return finalClient;
   };
 
   const updateClient = async (id: string, updates: Partial<Client>): Promise<Client> => {
-    if (!isDemoMode && organization?.id) {
-      const updated = await clientService.updateClient(id, updates);
-      setClients(prev => prev.map(c => c.id === id ? { ...c, ...updated } : c));
-      return updated;
-    } else {
-      let updatedClient: Client | undefined;
-      setClients(prev => prev.map(c => {
-        if (c.id === id) {
-          updatedClient = { ...c, ...updates, updated_at: new Date().toISOString() };
-          return updatedClient;
-        }
-        return c;
-      }));
-      return updatedClient!;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await clientService.updateClient(id, updates);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase client update fallback:', e?.message);
+      }
     }
+
+    let updatedClient: Client | undefined;
+    setClients(prev => prev.map(c => {
+      if (c.id === id) {
+        updatedClient = { ...c, ...updates, updated_at: new Date().toISOString() };
+        return updatedClient;
+      }
+      return c;
+    }));
+    return updatedClient || ({ ...updates, id } as Client);
   };
 
   const deleteClient = async (id: string): Promise<void> => {
-    if (!isDemoMode && organization?.id) {
-      await clientService.deleteClient(id);
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await clientService.deleteClient(id);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase client delete fallback:', e?.message);
+      }
     }
     setClients(prev => prev.filter(c => c.id !== id));
   };
@@ -913,153 +860,174 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // LEAD CRUD & CONVERSION
   // ============================================================================
   const addLead = async (leadData: Omit<Lead, 'id' | 'created_at' | 'updated_at'>): Promise<Lead> => {
-    if (!isDemoMode && organization?.id) {
-      const created = await leadService.createLead({
-        organization_id: organization.id,
-        name: leadData.name,
-        phone: leadData.phone,
-        email: leadData.email,
-        source: leadData.source,
-        requirement: leadData.requirement,
-        estimated_budget: leadData.estimated_budget,
-        status: leadData.status,
-        notes: leadData.notes,
-        assigned_to: leadData.assigned_to
-      });
-      setLeads(prev => [created, ...prev]);
-      return created;
-    } else {
-      const newLead: Lead = {
-        ...leadData,
-        id: `lead-${Date.now()}`,
-        organization_id: 'demo-org',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      setLeads(prev => [newLead, ...prev]);
-      return newLead;
+    let created: Lead | null = null;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        created = await leadService.createLead({
+          organization_id: organization.id,
+          name: leadData.name,
+          phone: leadData.phone,
+          email: leadData.email,
+          source: leadData.source,
+          requirement: leadData.requirement,
+          estimated_budget: leadData.estimated_budget,
+          status: leadData.status,
+          notes: leadData.notes,
+          assigned_to: leadData.assigned_to
+        });
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase lead creation fallback:', e?.message);
+      }
     }
+
+    const finalLead: Lead = created || {
+      ...leadData,
+      id: `lead-${Date.now()}`,
+      organization_id: organization?.id || 'default-org',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    setLeads(prev => [finalLead, ...prev]);
+    return finalLead;
   };
 
   const updateLead = async (id: string, updates: Partial<Lead>): Promise<Lead> => {
-    if (!isDemoMode && organization?.id) {
-      const updated = await leadService.updateLead(id, updates);
-      setLeads(prev => prev.map(l => l.id === id ? { ...l, ...updated } : l));
-      return updated;
-    } else {
-      let updatedLead: Lead | undefined;
-      setLeads(prev => prev.map(l => {
-        if (l.id === id) {
-          updatedLead = { ...l, ...updates, updated_at: new Date().toISOString() };
-          return updatedLead;
-        }
-        return l;
-      }));
-      return updatedLead!;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await leadService.updateLead(id, updates);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase lead update fallback:', e?.message);
+      }
     }
+
+    let updatedLead: Lead | undefined;
+    setLeads(prev => prev.map(l => {
+      if (l.id === id) {
+        updatedLead = { ...l, ...updates, updated_at: new Date().toISOString() };
+        return updatedLead;
+      }
+      return l;
+    }));
+    return updatedLead || ({ ...updates, id } as Lead);
   };
 
   const deleteLead = async (id: string): Promise<void> => {
-    if (!isDemoMode && organization?.id) {
-      await leadService.deleteLead(id);
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await leadService.deleteLead(id);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase lead delete fallback:', e?.message);
+      }
     }
     setLeads(prev => prev.filter(l => l.id !== id));
   };
 
   const convertLeadToClient = async (leadId: string): Promise<{ client: Client; updatedLead: Lead }> => {
-    if (!isDemoMode && organization?.id) {
-      const result = await leadService.convertToClient(leadId, organization.id);
-      setClients(prev => [result.client, ...prev]);
-      setLeads(prev => prev.map(l => l.id === leadId ? result.updatedLead : l));
-      return result;
-    } else {
-      const targetLead = leads.find(l => l.id === leadId);
-      if (!targetLead) throw new Error('Lead not found.');
-      if (targetLead.converted_client_id) throw new Error('Lead already converted.');
+    const targetLead = leads.find(l => l.id === leadId);
+    if (!targetLead) throw new Error('Lead not found.');
+    if (targetLead.converted_client_id) throw new Error('Lead already converted.');
 
-      const newClient: Client = {
-        id: `client-${Date.now()}`,
-        organization_id: 'demo-org',
-        name: targetLead.name,
-        phone: targetLead.phone || '',
-        email: targetLead.email || '',
-        notes: `Converted from Lead (Requirement: ${targetLead.requirement || 'N/A'})${targetLead.notes ? `\n\nNotes: ${targetLead.notes}` : ''}`,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+    const newClient: Client = {
+      id: `client-${Date.now()}`,
+      organization_id: organization?.id || 'default-org',
+      name: targetLead.name,
+      phone: targetLead.phone || '',
+      email: targetLead.email || '',
+      notes: `Converted from Lead (Requirement: ${targetLead.requirement || 'N/A'})${targetLead.notes ? `\n\nNotes: ${targetLead.notes}` : ''}`,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
 
-      const updatedLead: Lead = {
-        ...targetLead,
-        status: 'Won',
-        converted_client_id: newClient.id,
-        updated_at: new Date().toISOString()
-      };
+    const updatedLead: Lead = {
+      ...targetLead,
+      status: 'Won',
+      converted_client_id: newClient.id,
+      updated_at: new Date().toISOString()
+    };
 
-      setClients(prev => [newClient, ...prev]);
-      setLeads(prev => prev.map(l => l.id === leadId ? updatedLead : l));
-      return { client: newClient, updatedLead };
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await leadService.convertToClient(leadId, organization.id);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase convertLeadToClient fallback:', e?.message);
+      }
     }
+
+    setClients(prev => [newClient, ...prev]);
+    setLeads(prev => prev.map(l => l.id === leadId ? updatedLead : l));
+    return { client: newClient, updatedLead };
   };
 
   // ============================================================================
   // TASK CRUD
   // ============================================================================
   const addTask = async (taskData: Omit<Task, 'id' | 'created_at' | 'updated_at'>): Promise<Task> => {
-    if (!isDemoMode && organization?.id) {
-      const created = await taskService.createTask({
-        organization_id: organization.id,
-        project_id: taskData.project_id || taskData.projectId,
-        title: taskData.title,
-        description: taskData.description,
-        assigned_to: taskData.assigned_to,
-        due_date: taskData.due_date || taskData.dueDate,
-        priority: taskData.priority,
-        status: taskData.status
-      });
-      setTasks(prev => [created, ...prev]);
-      return created;
-    } else {
-      const newTask: Task = {
-        ...taskData,
-        id: `task-${Date.now()}`,
-        organization_id: 'demo-org',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      setTasks(prev => [newTask, ...prev]);
-      return newTask;
+    let created: Task | null = null;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        created = await taskService.createTask({
+          organization_id: organization.id,
+          project_id: taskData.project_id || taskData.projectId,
+          title: taskData.title,
+          description: taskData.description,
+          assigned_to: taskData.assigned_to,
+          due_date: taskData.due_date || taskData.dueDate,
+          priority: taskData.priority,
+          status: taskData.status
+        });
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase task creation fallback:', e?.message);
+      }
     }
+
+    const newTask: Task = created || {
+      ...taskData,
+      id: `task-${Date.now()}`,
+      organization_id: organization?.id || 'default-org',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    setTasks(prev => [newTask, ...prev]);
+    return newTask;
   };
 
   const updateTask = async (id: string, updates: Partial<Task>): Promise<Task> => {
-    if (!isDemoMode && organization?.id) {
-      const updated = await taskService.updateTask(id, {
-        project_id: updates.project_id || updates.projectId,
-        title: updates.title,
-        description: updates.description,
-        assigned_to: updates.assigned_to,
-        due_date: updates.due_date || updates.dueDate,
-        priority: updates.priority,
-        status: updates.status
-      });
-      setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updated } : t));
-      return updated;
-    } else {
-      let updatedTask: Task | undefined;
-      setTasks(prev => prev.map(t => {
-        if (t.id === id) {
-          updatedTask = { ...t, ...updates, updated_at: new Date().toISOString() };
-          return updatedTask;
-        }
-        return t;
-      }));
-      return updatedTask!;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await taskService.updateTask(id, {
+          project_id: updates.project_id || updates.projectId,
+          title: updates.title,
+          description: updates.description,
+          assigned_to: updates.assigned_to,
+          due_date: updates.due_date || updates.dueDate,
+          priority: updates.priority,
+          status: updates.status
+        });
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase task update fallback:', e?.message);
+      }
     }
+
+    let updatedTask: Task | undefined;
+    setTasks(prev => prev.map(t => {
+      if (t.id === id) {
+        updatedTask = { ...t, ...updates, updated_at: new Date().toISOString() };
+        return updatedTask;
+      }
+      return t;
+    }));
+    return updatedTask || ({ ...updates, id } as Task);
   };
 
   const deleteTask = async (id: string): Promise<void> => {
-    if (!isDemoMode && organization?.id) {
-      await taskService.deleteTask(id);
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await taskService.deleteTask(id);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase task delete fallback:', e?.message);
+      }
     }
     setTasks(prev => prev.filter(t => t.id !== id));
   };
@@ -1076,42 +1044,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     file: File;
     userId?: string;
   }): Promise<DocumentItem> => {
-    if (!isDemoMode && organization?.id) {
-      const created = await documentService.uploadDocument({
-        organizationId: organization.id,
-        projectId: input.projectId,
-        title: input.title,
-        category: input.category,
-        file: input.file,
-        userId: input.userId
-      });
-      setDocuments(prev => [created, ...prev]);
-      return created;
-    } else {
-      const mockDoc: DocumentItem = {
-        id: `doc-${Date.now()}`,
-        organization_id: 'demo-org',
-        project_id: input.projectId,
-        projectId: input.projectId || '',
-        projectName: input.projectName || 'General Studio Vault',
-        title: input.title,
-        category: input.category,
-        type: input.category,
-        file_name: input.file.name,
-        file_size: input.file.size,
-        size: `${(input.file.size / (1024 * 1024)).toFixed(1)} MB`,
-        file_type: input.file.type,
-        updatedAt: new Date().toISOString().split('T')[0],
-        created_at: new Date().toISOString()
-      };
-      setDocuments(prev => [mockDoc, ...prev]);
-      return mockDoc;
+    let created: DocumentItem | null = null;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        created = await documentService.uploadDocument({
+          organizationId: organization.id,
+          projectId: input.projectId,
+          title: input.title,
+          category: input.category,
+          file: input.file,
+          userId: input.userId
+        });
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase document upload fallback:', e?.message);
+      }
     }
+
+    const mockDoc: DocumentItem = created || {
+      id: `doc-${Date.now()}`,
+      organization_id: organization?.id || 'demo-org',
+      project_id: input.projectId,
+      projectId: input.projectId || '',
+      projectName: input.projectName || 'General Studio Vault',
+      title: input.title,
+      category: input.category,
+      type: input.category,
+      file_name: input.file.name,
+      file_size: input.file.size,
+      size: `${(input.file.size / (1024 * 1024)).toFixed(1)} MB`,
+      file_type: input.file.type,
+      updatedAt: new Date().toISOString().split('T')[0],
+      created_at: new Date().toISOString()
+    };
+    setDocuments(prev => [mockDoc, ...prev]);
+    return mockDoc;
   };
 
   const deleteDocument = async (id: string, storagePath?: string): Promise<void> => {
-    if (!isDemoMode && organization?.id) {
-      await documentService.deleteDocument(id, storagePath);
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await documentService.deleteDocument(id, storagePath);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase deleteDocument fallback:', e?.message);
+      }
     }
     setDocuments(prev => prev.filter(d => d.id !== id));
   };
@@ -1120,8 +1095,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // TEAM ROLE ACTIONS
   // ============================================================================
   const updateMemberRole = async (profileId: string, newRole: UserRole): Promise<void> => {
-    if (!isDemoMode && organization?.id) {
-      await teamService.updateMemberRole(profileId, newRole);
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await teamService.updateMemberRole(profileId, newRole);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase updateMemberRole fallback:', e?.message);
+      }
     }
     setTeamMembers(prev => prev.map(m => m.id === profileId ? { ...m, role: newRole } : m));
   };
@@ -1130,52 +1109,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // VENDOR CRUD ACTIONS
   // ============================================================================
   const addVendor = async (vendorData: Partial<Vendor>): Promise<Vendor> => {
-    if (!isDemoMode && organization?.id) {
-      const created = await vendorService.createVendor(organization.id, vendorData as any);
-      setVendors(prev => [created, ...prev]);
-      return created;
-    } else {
-      const mockVendor: Vendor = {
-        id: `ven-${Date.now()}`,
-        organization_id: 'demo-org',
-        name: vendorData.name || 'New Supplier',
-        contact_person: vendorData.contact_person,
-        phone: vendorData.phone,
-        email: vendorData.email,
-        address: vendorData.address,
-        category: vendorData.category || 'Materials',
-        gst_number: vendorData.gst_number,
-        rating: vendorData.rating || 5,
-        notes: vendorData.notes,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      setVendors(prev => [mockVendor, ...prev]);
-      return mockVendor;
+    let created: Vendor | null = null;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        created = await vendorService.createVendor(organization.id, vendorData as any);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase addVendor fallback:', e?.message);
+      }
     }
+
+    const mockVendor: Vendor = created || {
+      id: `ven-${Date.now()}`,
+      organization_id: organization?.id || 'demo-org',
+      name: vendorData.name || 'New Supplier',
+      contact_person: vendorData.contact_person,
+      phone: vendorData.phone,
+      email: vendorData.email,
+      address: vendorData.address,
+      category: vendorData.category || 'Materials',
+      gst_number: vendorData.gst_number,
+      rating: vendorData.rating || 5,
+      notes: vendorData.notes,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    setVendors(prev => [mockVendor, ...prev]);
+    return mockVendor;
   };
 
   const updateVendor = async (id: string, updates: Partial<Vendor>): Promise<Vendor> => {
-    if (!isDemoMode && organization?.id) {
-      const updated = await vendorService.updateVendor(id, updates as any);
-      setVendors(prev => prev.map(v => v.id === id ? updated : v));
-      return updated;
-    } else {
-      let updatedVendor: Vendor | undefined;
-      setVendors(prev => prev.map(v => {
-        if (v.id === id) {
-          updatedVendor = { ...v, ...updates, updated_at: new Date().toISOString() };
-          return updatedVendor;
-        }
-        return v;
-      }));
-      return updatedVendor!;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await vendorService.updateVendor(id, updates as any);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase updateVendor fallback:', e?.message);
+      }
     }
+
+    let updatedVendor: Vendor | undefined;
+    setVendors(prev => prev.map(v => {
+      if (v.id === id) {
+        updatedVendor = { ...v, ...updates, updated_at: new Date().toISOString() };
+        return updatedVendor;
+      }
+      return v;
+    }));
+    return updatedVendor || ({ ...updates, id } as Vendor);
   };
 
   const deleteVendor = async (id: string): Promise<void> => {
-    if (!isDemoMode && organization?.id) {
-      await vendorService.deleteVendor(id);
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await vendorService.deleteVendor(id);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase deleteVendor fallback:', e?.message);
+      }
     }
     setVendors(prev => prev.filter(v => v.id !== id));
   };
@@ -1184,59 +1172,68 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // CLIENT PAYMENT CRUD ACTIONS
   // ============================================================================
   const addClientPayment = async (paymentData: Partial<ClientPayment>): Promise<ClientPayment> => {
-    if (!isDemoMode && organization?.id) {
-      const created = await paymentService.createPayment(organization.id, paymentData as any);
-      setClientPayments(prev => [created, ...prev]);
-      return created;
-    } else {
-      const foundProj = projects.find(p => p.id === paymentData.project_id);
-      const foundCli = clients.find(c => c.id === paymentData.client_id || c.id === foundProj?.client_id);
-      
-      const mockPayment: ClientPayment = {
-        id: `pay-${Date.now()}`,
-        organization_id: 'demo-org',
-        project_id: paymentData.project_id || '',
-        projectName: foundProj?.name || 'Interior Project',
-        client_id: paymentData.client_id || foundProj?.client_id,
-        clientName: foundCli?.name || foundProj?.client || 'Client',
-        title: paymentData.title || 'Milestone Payment',
-        amount: Number(paymentData.amount) || 0,
-        due_date: paymentData.due_date || new Date().toISOString().split('T')[0],
-        paid_amount: Number(paymentData.paid_amount) || 0,
-        paid_date: paymentData.paid_date,
-        status: paymentData.status || 'Pending',
-        payment_method: paymentData.payment_method || 'Bank Transfer / NEFT',
-        payment_reference: paymentData.payment_reference,
-        notes: paymentData.notes,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      setClientPayments(prev => [mockPayment, ...prev]);
-      return mockPayment;
+    let created: ClientPayment | null = null;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        created = await paymentService.createPayment(organization.id, paymentData as any);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase addClientPayment fallback:', e?.message);
+      }
     }
+
+    const foundProj = projects.find(p => p.id === paymentData.project_id);
+    const foundCli = clients.find(c => c.id === paymentData.client_id || c.id === foundProj?.client_id);
+    
+    const mockPayment: ClientPayment = created || {
+      id: `pay-${Date.now()}`,
+      organization_id: organization?.id || 'demo-org',
+      project_id: paymentData.project_id || '',
+      projectName: foundProj?.name || 'Interior Project',
+      client_id: paymentData.client_id || foundProj?.client_id,
+      clientName: foundCli?.name || foundProj?.client || 'Client',
+      title: paymentData.title || 'Milestone Payment',
+      amount: Number(paymentData.amount) || 0,
+      due_date: paymentData.due_date || new Date().toISOString().split('T')[0],
+      paid_amount: Number(paymentData.paid_amount) || 0,
+      paid_date: paymentData.paid_date,
+      status: paymentData.status || 'Pending',
+      payment_method: paymentData.payment_method || 'Bank Transfer / NEFT',
+      payment_reference: paymentData.payment_reference,
+      notes: paymentData.notes,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    setClientPayments(prev => [mockPayment, ...prev]);
+    return mockPayment;
   };
 
   const updateClientPayment = async (id: string, updates: Partial<ClientPayment>): Promise<ClientPayment> => {
-    if (!isDemoMode && organization?.id) {
-      const updated = await paymentService.updatePayment(id, updates as any);
-      setClientPayments(prev => prev.map(p => p.id === id ? updated : p));
-      return updated;
-    } else {
-      let updatedPayment: ClientPayment | undefined;
-      setClientPayments(prev => prev.map(p => {
-        if (p.id === id) {
-          updatedPayment = { ...p, ...updates, updated_at: new Date().toISOString() };
-          return updatedPayment;
-        }
-        return p;
-      }));
-      return updatedPayment!;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await paymentService.updatePayment(id, updates as any);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase updateClientPayment fallback:', e?.message);
+      }
     }
+
+    let updatedPayment: ClientPayment | undefined;
+    setClientPayments(prev => prev.map(p => {
+      if (p.id === id) {
+        updatedPayment = { ...p, ...updates, updated_at: new Date().toISOString() };
+        return updatedPayment;
+      }
+      return p;
+    }));
+    return updatedPayment || ({ ...updates, id } as ClientPayment);
   };
 
   const deleteClientPayment = async (id: string): Promise<void> => {
-    if (!isDemoMode && organization?.id) {
-      await paymentService.deletePayment(id);
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await paymentService.deletePayment(id);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase deleteClientPayment fallback:', e?.message);
+      }
     }
     setClientPayments(prev => prev.filter(p => p.id !== id));
   };
@@ -1245,93 +1242,102 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // PURCHASE CRUD ACTIONS
   // ============================================================================
   const addPurchase = async (purchaseData: any): Promise<Purchase> => {
-    if (!isDemoMode && organization?.id) {
-      const created = await purchaseService.savePurchaseOrder(organization.id, purchaseData);
-      setPurchases(prev => [created, ...prev]);
-      return created;
-    } else {
-      const foundProj = projects.find(p => p.id === purchaseData.project_id);
-      const foundVen = vendors.find(v => v.id === purchaseData.vendor_id);
-      
-      const items = (purchaseData.items || []).map((it: any, idx: number) => ({
-        id: `poi-${Date.now()}-${idx}`,
-        purchase_id: `po-${Date.now()}`,
-        organization_id: 'demo-org',
-        item_name: it.item_name,
-        description: it.description || '',
-        quantity: Number(it.quantity) || 1,
-        unit: it.unit || 'pcs',
-        rate: Number(it.rate) || 0,
-        total: (Number(it.quantity) || 1) * (Number(it.rate) || 0),
-        created_at: new Date().toISOString()
-      }));
-
-      const derivedTotal = items.reduce((sum: number, it: any) => sum + it.total, 0);
-
-      const mockPurchase: Purchase = {
-        id: `po-${Date.now()}`,
-        organization_id: 'demo-org',
-        project_id: purchaseData.project_id,
-        projectName: foundProj?.name || 'Project Site',
-        vendor_id: purchaseData.vendor_id,
-        vendorName: foundVen?.name || 'Supplier',
-        po_number: purchaseData.po_number || `PO-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-        order_date: purchaseData.order_date || new Date().toISOString().split('T')[0],
-        expected_delivery: purchaseData.expected_delivery,
-        status: purchaseData.status || 'Draft',
-        payment_status: purchaseData.payment_status || 'Pending',
-        notes: purchaseData.notes,
-        total_amount: derivedTotal,
-        items,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      setPurchases(prev => [mockPurchase, ...prev]);
-      return mockPurchase;
+    let created: Purchase | null = null;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        created = await purchaseService.savePurchaseOrder(organization.id, purchaseData);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase addPurchase fallback:', e?.message);
+      }
     }
+
+    const foundProj = projects.find(p => p.id === purchaseData.project_id);
+    const foundVen = vendors.find(v => v.id === purchaseData.vendor_id);
+    
+    const items = (purchaseData.items || []).map((it: any, idx: number) => ({
+      id: `poi-${Date.now()}-${idx}`,
+      purchase_id: `po-${Date.now()}`,
+      organization_id: organization?.id || 'demo-org',
+      item_name: it.item_name,
+      description: it.description || '',
+      quantity: Number(it.quantity) || 1,
+      unit: it.unit || 'pcs',
+      rate: Number(it.rate) || 0,
+      total: (Number(it.quantity) || 1) * (Number(it.rate) || 0),
+      created_at: new Date().toISOString()
+    }));
+
+    const derivedTotal = items.reduce((sum: number, it: any) => sum + it.total, 0);
+
+    const mockPurchase: Purchase = created || {
+      id: `po-${Date.now()}`,
+      organization_id: organization?.id || 'demo-org',
+      project_id: purchaseData.project_id,
+      projectName: foundProj?.name || 'Project Site',
+      vendor_id: purchaseData.vendor_id,
+      vendorName: foundVen?.name || 'Supplier',
+      po_number: purchaseData.po_number || `PO-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      order_date: purchaseData.order_date || new Date().toISOString().split('T')[0],
+      expected_delivery: purchaseData.expected_delivery,
+      status: purchaseData.status || 'Draft',
+      payment_status: purchaseData.payment_status || 'Pending',
+      notes: purchaseData.notes,
+      total_amount: derivedTotal,
+      items,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    setPurchases(prev => [mockPurchase, ...prev]);
+    return mockPurchase;
   };
 
   const updatePurchase = async (id: string, updates: any): Promise<Purchase> => {
-    if (!isDemoMode && organization?.id) {
-      const updated = await purchaseService.savePurchaseOrder(organization.id, { ...updates, id });
-      setPurchases(prev => prev.map(p => p.id === id ? updated : p));
-      return updated;
-    } else {
-      let resultPurchase: Purchase | null = null;
-      setPurchases(prev => prev.map(p => {
-        if (p.id === id) {
-          const items = updates.items ? updates.items.map((it: any, idx: number) => ({
-            id: it.id || `poi-${Date.now()}-${idx}`,
-            purchase_id: id,
-            item_name: it.item_name,
-            description: it.description || '',
-            quantity: Number(it.quantity) || 1,
-            unit: it.unit || 'pcs',
-            rate: Number(it.rate) || 0,
-            total: (Number(it.quantity) || 1) * (Number(it.rate) || 0)
-          })) : p.items;
-
-          const total = items ? items.reduce((sum: number, it: any) => sum + it.total, 0) : p.total_amount;
-
-          const updated: Purchase = {
-            ...p,
-            ...updates,
-            items,
-            total_amount: total,
-            updated_at: new Date().toISOString()
-          };
-          resultPurchase = updated;
-          return updated;
-        }
-        return p;
-      }));
-      return resultPurchase || { ...updates, id } as Purchase;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await purchaseService.savePurchaseOrder(organization.id, { ...updates, id });
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase updatePurchase fallback:', e?.message);
+      }
     }
+
+    let resultPurchase: Purchase | null = null;
+    setPurchases(prev => prev.map(p => {
+      if (p.id === id) {
+        const items = updates.items ? updates.items.map((it: any, idx: number) => ({
+          id: it.id || `poi-${Date.now()}-${idx}`,
+          purchase_id: id,
+          item_name: it.item_name,
+          description: it.description || '',
+          quantity: Number(it.quantity) || 1,
+          unit: it.unit || 'pcs',
+          rate: Number(it.rate) || 0,
+          total: (Number(it.quantity) || 1) * (Number(it.rate) || 0)
+        })) : p.items;
+
+        const total = items ? items.reduce((sum: number, it: any) => sum + it.total, 0) : p.total_amount;
+
+        const updated: Purchase = {
+          ...p,
+          ...updates,
+          items,
+          total_amount: total,
+          updated_at: new Date().toISOString()
+        };
+        resultPurchase = updated;
+        return updated;
+      }
+      return p;
+    }));
+    return resultPurchase || ({ ...updates, id } as Purchase);
   };
 
   const deletePurchase = async (id: string): Promise<void> => {
-    if (!isDemoMode && organization?.id) {
-      await purchaseService.deletePurchase(id);
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await purchaseService.deletePurchase(id);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase deletePurchase fallback:', e?.message);
+      }
     }
     setPurchases(prev => prev.filter(p => p.id !== id));
   };
@@ -1341,111 +1347,99 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // ============================================================================
   const addProject = async (newProjectData: Omit<Project, 'id' | 'spent' | 'progress'>): Promise<Project> => {
     const budget = Number(newProjectData.budget) || 0;
-    
-    if (!isDemoMode && organization?.id) {
-      const createdDbProject = await projectService.createProject({
-        organization_id: organization.id,
-        client_id: newProjectData.client_id,
-        name: newProjectData.name,
-        location: newProjectData.location,
-        project_type: newProjectData.type,
-        budget,
-        contract_value: newProjectData.contract_value,
-        start_date: newProjectData.startDate,
-        deadline: newProjectData.deadline,
-        description: newProjectData.description,
-        cover_image_url: newProjectData.coverImage
-      });
+    const todayIso = new Date().toISOString().split('T')[0];
+    const defaultDeadline = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const fallbackId = `proj-${Date.now()}`;
 
-      const newProject: Project = {
-        id: createdDbProject.id,
-        organization_id: organization.id,
-        client_id: createdDbProject.client_id,
-        name: createdDbProject.name,
-        client: createdDbProject.client?.name || newProjectData.client || 'Private Client',
-        clientPhone: createdDbProject.client?.phone || newProjectData.clientPhone || '',
-        location: createdDbProject.location || 'Site Location',
-        city: createdDbProject.location || 'Mumbai',
-        type: newProjectData.type || 'Residential',
-        budget,
-        spent: 0,
-        progress: 0,
-        status: 'On Track',
-        startDate: createdDbProject.start_date || newProjectData.startDate || new Date().toISOString().split('T')[0],
-        deadline: createdDbProject.deadline || newProjectData.deadline || new Date().toISOString().split('T')[0],
-        coverImage: createdDbProject.cover_image_url || newProjectData.coverImage || 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1200&q=80',
-        contract_value: createdDbProject.contract_value ? Number(createdDbProject.contract_value) : newProjectData.contract_value,
-        description: createdDbProject.description || newProjectData.description,
-        rooms: [],
-        boq_items: [],
-        notes: [],
-        photos: []
-      };
-
-      setProjects(prev => [newProject, ...prev]);
-      setSelectedProjectId(newProject.id);
-
+    let createdDbProject: any = null;
+    if (isSupabaseConfigured && organization?.id) {
       try {
-        confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
-      } catch (e) {}
-
-      return newProject;
-    } else {
-      const id = `proj-${Date.now()}`;
-      const todayIso = new Date().toISOString().split('T')[0];
-      const defaultDeadline = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      const project: Project = {
-        ...newProjectData,
-        id,
-        type: newProjectData.type || 'Residential',
-        city: newProjectData.city || newProjectData.location || 'Mumbai',
-        startDate: newProjectData.startDate || todayIso,
-        deadline: newProjectData.deadline || defaultDeadline,
-        coverImage: newProjectData.coverImage || 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1200&q=80',
-        spent: 0,
-        progress: 0,
-        status: 'On Track',
-        rooms: [],
-        boq_items: [],
-        notes: [],
-        photos: []
-      };
-
-      setProjects(prev => [project, ...prev]);
-      setSelectedProjectId(id);
-
-      try {
-        confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
-      } catch (e) {}
-
-      return project;
+        createdDbProject = await projectService.createProject({
+          organization_id: organization.id,
+          client_id: newProjectData.client_id,
+          name: newProjectData.name,
+          location: newProjectData.location,
+          project_type: newProjectData.type,
+          budget,
+          contract_value: newProjectData.contract_value,
+          start_date: newProjectData.startDate,
+          deadline: newProjectData.deadline,
+          description: newProjectData.description,
+          cover_image_url: newProjectData.coverImage
+        });
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase project creation fallback:', e?.message);
+      }
     }
+
+    const finalProject: Project = {
+      ...newProjectData,
+      id: createdDbProject?.id || fallbackId,
+      organization_id: organization?.id || 'default-org',
+      client_id: createdDbProject?.client_id || newProjectData.client_id,
+      name: createdDbProject?.name || newProjectData.name,
+      client: createdDbProject?.client?.name || newProjectData.client || 'Private Client',
+      clientPhone: createdDbProject?.client?.phone || newProjectData.clientPhone || '',
+      location: createdDbProject?.location || newProjectData.location || 'Site Location',
+      city: newProjectData.city || newProjectData.location || 'Mumbai',
+      type: newProjectData.type || 'Residential',
+      budget,
+      spent: 0,
+      progress: 0,
+      status: 'On Track',
+      startDate: createdDbProject?.start_date || newProjectData.startDate || todayIso,
+      deadline: createdDbProject?.deadline || newProjectData.deadline || defaultDeadline,
+      coverImage: createdDbProject?.cover_image_url || newProjectData.coverImage || 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1200&q=80',
+      contract_value: createdDbProject?.contract_value ? Number(createdDbProject.contract_value) : newProjectData.contract_value,
+      description: createdDbProject?.description || newProjectData.description || 'Custom interior design project with turnkey execution.',
+      rooms: newProjectData.rooms || [],
+      boq_items: newProjectData.boq_items || [],
+      notes: [],
+      photos: []
+    };
+
+    setProjects(prev => [finalProject, ...prev]);
+    setSelectedProjectId(finalProject.id);
+
+    try {
+      confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+    } catch (e) {}
+
+    return finalProject;
   };
 
   const updateProject = async (id: string, updates: Partial<Project>): Promise<void> => {
-    if (!isDemoMode && organization?.id) {
-      await projectService.updateProject(id, {
-        name: updates.name,
-        client_id: updates.client_id,
-        location: updates.location,
-        project_type: updates.type,
-        budget: updates.budget,
-        contract_value: updates.contract_value,
-        start_date: updates.startDate,
-        deadline: updates.deadline,
-        progress: updates.progress,
-        status: updates.status,
-        description: updates.description,
-        cover_image_url: updates.coverImage
-      });
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await projectService.updateProject(id, {
+          name: updates.name,
+          client_id: updates.client_id,
+          location: updates.location,
+          project_type: updates.type,
+          budget: updates.budget,
+          contract_value: updates.contract_value,
+          start_date: updates.startDate,
+          deadline: updates.deadline,
+          progress: updates.progress,
+          status: updates.status,
+          description: updates.description,
+          cover_image_url: updates.coverImage
+        });
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase project update fallback:', e?.message);
+      }
     }
 
     setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
   };
 
   const deleteProject = async (id: string): Promise<void> => {
-    if (!isDemoMode && organization?.id) {
-      await projectService.deleteProject(id);
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await projectService.deleteProject(id);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase project delete fallback:', e?.message);
+      }
     }
 
     setProjects(prev => prev.filter(p => p.id !== id));
@@ -1462,75 +1456,87 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // ROOM CRUD
   // ============================================================================
   const addRoom = async (roomData: Omit<Room, 'id' | 'created_at' | 'updated_at'>): Promise<Room> => {
-    let createdRoom: Room;
+    let createdRoom: Room | null = null;
 
-    if (!isDemoMode && organization?.id) {
-      createdRoom = await roomService.createRoom({
-        organization_id: organization.id,
-        project_id: roomData.project_id,
-        name: roomData.name,
-        room_type: roomData.room_type,
-        budget: roomData.budget,
-        progress: roomData.progress,
-        notes: roomData.notes
-      });
-    } else {
-      createdRoom = {
-        ...roomData,
-        id: `room-${Date.now()}`,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        createdRoom = await roomService.createRoom({
+          organization_id: organization.id,
+          project_id: roomData.project_id,
+          name: roomData.name,
+          room_type: roomData.room_type,
+          budget: roomData.budget,
+          progress: roomData.progress,
+          notes: roomData.notes
+        });
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase room creation fallback:', e?.message);
+      }
     }
+
+    const finalRoom: Room = createdRoom || {
+      ...roomData,
+      id: `room-${Date.now()}`,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
 
     setProjects(prev => prev.map(p => {
       if (p.id === roomData.project_id) {
         return {
           ...p,
-          rooms: [...(p.rooms || []), createdRoom]
+          rooms: [...(p.rooms || []), finalRoom]
         };
       }
       return p;
     }));
 
-    return createdRoom;
+    return finalRoom;
   };
 
   const updateRoom = async (id: string, updates: Partial<Room>): Promise<Room> => {
-    let updatedRoom: Room;
+    let updatedRoom: Room | null = null;
 
-    if (!isDemoMode && organization?.id) {
-      updatedRoom = await roomService.updateRoom(id, {
-        name: updates.name,
-        room_type: updates.room_type,
-        budget: updates.budget,
-        progress: updates.progress,
-        notes: updates.notes
-      });
-    } else {
-      updatedRoom = {
-        ...updates,
-        id,
-        updated_at: new Date().toISOString()
-      } as Room;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        updatedRoom = await roomService.updateRoom(id, {
+          name: updates.name,
+          room_type: updates.room_type,
+          budget: updates.budget,
+          progress: updates.progress,
+          notes: updates.notes
+        });
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase room update fallback:', e?.message);
+      }
     }
+
+    const finalRoom: Room = updatedRoom || ({
+      ...updates,
+      id,
+      updated_at: new Date().toISOString()
+    } as Room);
 
     setProjects(prev => prev.map(p => {
       if (p.rooms?.some(r => r.id === id)) {
         return {
           ...p,
-          rooms: p.rooms.map(r => r.id === id ? { ...r, ...updatedRoom } : r)
+          rooms: p.rooms.map(r => r.id === id ? { ...r, ...finalRoom } : r)
         };
       }
       return p;
     }));
 
-    return updatedRoom;
+    return finalRoom;
   };
 
   const deleteRoom = async (id: string): Promise<void> => {
-    if (!isDemoMode && organization?.id) {
-      await roomService.deleteRoom(id);
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await roomService.deleteRoom(id);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase room delete fallback:', e?.message);
+      }
     }
 
     setProjects(prev => prev.map(p => {
@@ -1566,95 +1572,111 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     selling_rate?: number;
     gst_percent?: number;
   }): Promise<BOQItem> => {
-    let createdItem: BOQItem;
+    let createdItem: BOQItem | null = null;
 
-    if (!isDemoMode && organization?.id) {
-      createdItem = await boqService.createBOQItem({
-        organization_id: organization.id,
-        project_id: itemData.project_id,
-        room_id: itemData.room_id,
-        item_name: itemData.item_name,
-        description: itemData.description,
-        category: itemData.category,
-        quantity: itemData.quantity,
-        unit: itemData.unit,
-        rate: itemData.rate,
-        estimated_cost: itemData.estimated_cost,
-        material_rate: itemData.material_rate,
-        labour_rate: itemData.labour_rate,
-        selling_rate: itemData.selling_rate,
-        gst_percent: itemData.gst_percent
-      });
-    } else {
-      const qty = Number(itemData.quantity) || 0;
-      const rate = Number(itemData.rate) || 0;
-      createdItem = {
-        id: `boq-${Date.now()}`,
-        organization_id: 'demo-org',
-        project_id: itemData.project_id,
-        room_id: itemData.room_id,
-        item_name: itemData.item_name,
-        description: itemData.description,
-        category: itemData.category || 'Civil Work',
-        quantity: qty,
-        unit: itemData.unit || 'Nos',
-        rate: rate,
-        estimated_cost: itemData.estimated_cost !== undefined ? itemData.estimated_cost : qty * rate,
-        material_rate: itemData.material_rate,
-        labour_rate: itemData.labour_rate,
-        selling_rate: itemData.selling_rate,
-        gst_percent: itemData.gst_percent ?? 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        createdItem = await boqService.createBOQItem({
+          organization_id: organization.id,
+          project_id: itemData.project_id,
+          room_id: itemData.room_id,
+          item_name: itemData.item_name,
+          description: itemData.description,
+          category: itemData.category,
+          quantity: itemData.quantity,
+          unit: itemData.unit,
+          rate: itemData.rate,
+          estimated_cost: itemData.estimated_cost,
+          material_rate: itemData.material_rate,
+          labour_rate: itemData.labour_rate,
+          selling_rate: itemData.selling_rate,
+          gst_percent: itemData.gst_percent
+        });
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase BOQ creation fallback:', e?.message);
+      }
     }
 
-    setBoqItems(prev => [...prev, createdItem]);
-    return createdItem;
+    const qty = Number(itemData.quantity) || 0;
+    const rate = Number(itemData.rate) || 0;
+    const finalItem: BOQItem = createdItem || {
+      id: `boq-${Date.now()}`,
+      organization_id: organization?.id || 'demo-org',
+      project_id: itemData.project_id,
+      room_id: itemData.room_id,
+      item_name: itemData.item_name,
+      description: itemData.description,
+      category: itemData.category || 'Civil Work',
+      quantity: qty,
+      unit: itemData.unit || 'Nos',
+      rate: rate,
+      estimated_cost: itemData.estimated_cost !== undefined ? itemData.estimated_cost : qty * rate,
+      material_rate: itemData.material_rate,
+      labour_rate: itemData.labour_rate,
+      selling_rate: itemData.selling_rate,
+      gst_percent: itemData.gst_percent ?? 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    setBoqItems(prev => [...prev, finalItem]);
+    return finalItem;
   };
 
   const updateBOQItem = async (id: string, updates: Partial<BOQItem>): Promise<BOQItem> => {
-    let updatedItem: BOQItem;
+    let updatedItem: BOQItem | null = null;
 
-    if (!isDemoMode && organization?.id) {
-      updatedItem = await boqService.updateBOQItem(id, updates);
-    } else {
-      const existing = boqItems.find(b => b.id === id);
-      const qty = updates.quantity !== undefined ? Number(updates.quantity) : (existing?.quantity || 0);
-      const rate = updates.rate !== undefined ? Number(updates.rate) : (existing?.rate || 0);
-      updatedItem = {
-        ...(existing || {}),
-        ...updates,
-        id,
-        quantity: qty,
-        rate: rate,
-        estimated_cost: updates.estimated_cost !== undefined ? updates.estimated_cost : qty * rate,
-        approved_at: undefined,
-        approved_by: undefined,
-        updated_at: new Date().toISOString()
-      } as BOQItem;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        updatedItem = await boqService.updateBOQItem(id, updates);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase BOQ update fallback:', e?.message);
+      }
     }
 
-    setBoqItems(prev => prev.map(b => b.id === id ? updatedItem : b));
-    return updatedItem;
+    const existing = boqItems.find(b => b.id === id);
+    const qty = updates.quantity !== undefined ? Number(updates.quantity) : (existing?.quantity || 0);
+    const rate = updates.rate !== undefined ? Number(updates.rate) : (existing?.rate || 0);
+    const finalItem: BOQItem = updatedItem || ({
+      ...(existing || {}),
+      ...updates,
+      id,
+      quantity: qty,
+      rate: rate,
+      estimated_cost: updates.estimated_cost !== undefined ? updates.estimated_cost : qty * rate,
+      approved_at: undefined,
+      approved_by: undefined,
+      updated_at: new Date().toISOString()
+    } as BOQItem);
+
+    setBoqItems(prev => prev.map(b => b.id === id ? finalItem : b));
+    return finalItem;
   };
 
   const deleteBOQItem = async (id: string): Promise<void> => {
-    if (!isDemoMode && organization?.id) {
-      await boqService.deleteBOQItem(id);
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await boqService.deleteBOQItem(id);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase BOQ delete fallback:', e?.message);
+      }
     }
     setBoqItems(prev => prev.filter(b => b.id !== id));
   };
 
   const approveProjectBOQ = async (projectId: string): Promise<void> => {
-    if (!isDemoMode && organization?.id) {
-      const approvedItems = await boqService.approveProjectBOQ(projectId);
-      setBoqItems(prev => prev.map(item =>
-        item.project_id === projectId
-          ? approvedItems.find(approved => approved.id === item.id) || item
-          : item
-      ));
-      return;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        const approvedItems = await boqService.approveProjectBOQ(projectId);
+        setBoqItems(prev => prev.map(item =>
+          item.project_id === projectId
+            ? approvedItems.find(approved => approved.id === item.id) || item
+            : item
+        ));
+        return;
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase BOQ approval fallback:', e?.message);
+      }
     }
     const approvedAt = new Date().toISOString();
     setBoqItems(prev => prev.map(item => item.project_id === projectId
@@ -1667,44 +1689,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // EXPENSE CRUD (REAL FINANCIAL LEDGER)
   // ============================================================================
   const addExpense = async (newExpenseData: Omit<Expense, 'id'>): Promise<Expense> => {
-    let createdExpense: Expense;
+    let createdExpense: Expense | null = null;
 
     const targetProj = projects.find(p => p.id === newExpenseData.projectId);
     const projectName = targetProj ? targetProj.name : newExpenseData.projectName || 'Project';
 
-    if (!isDemoMode && organization?.id) {
-      createdExpense = await expenseService.createExpense({
-        organization_id: organization.id,
-        project_id: newExpenseData.projectId,
-        room_id: newExpenseData.room_id,
-        title: newExpenseData.title,
-        category: newExpenseData.category,
-        amount: Number(newExpenseData.amount),
-        vendor: newExpenseData.vendor,
-        expense_date: newExpenseData.date,
-        payment_status: newExpenseData.paymentStatus,
-        notes: newExpenseData.notes,
-        receipt_url: newExpenseData.receiptUrl
-      });
-      createdExpense.projectName = projectName;
-    } else {
-      createdExpense = {
-        ...newExpenseData,
-        id: `exp-${Date.now()}`,
-        projectName,
-        amount: Number(newExpenseData.amount) || 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        createdExpense = await expenseService.createExpense({
+          organization_id: organization.id,
+          project_id: newExpenseData.projectId,
+          room_id: newExpenseData.room_id,
+          title: newExpenseData.title,
+          category: newExpenseData.category,
+          amount: Number(newExpenseData.amount),
+          vendor: newExpenseData.vendor,
+          expense_date: newExpenseData.date,
+          payment_status: newExpenseData.paymentStatus,
+          notes: newExpenseData.notes,
+          receipt_url: newExpenseData.receiptUrl
+        });
+        createdExpense.projectName = projectName;
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase expense creation fallback:', e?.message);
+      }
     }
+
+    const finalExpense: Expense = createdExpense || {
+      ...newExpenseData,
+      id: `exp-${Date.now()}`,
+      projectName,
+      amount: Number(newExpenseData.amount) || 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
 
     // Update expense ledger in state
     setExpenses(prev => {
-      const nextExpenses = [createdExpense, ...prev];
+      const nextExpenses = [finalExpense, ...prev];
 
       // Update project and room totals immediately
       setProjects(prevProjects => prevProjects.map(p => {
-        if (p.id === createdExpense.projectId) {
+        if (p.id === finalExpense.projectId) {
           const newSpent = calculateProjectSpent(p.id, nextExpenses);
           return {
             ...p,
@@ -1720,53 +1746,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications(prev => [
       {
         id: `notif-${Date.now()}`,
-        title: `Expense Added: ${createdExpense.title}`,
-        description: `₹${createdExpense.amount.toLocaleString('en-IN')} added under ${createdExpense.category} for ${projectName}.`,
+        title: `Expense Added: ${finalExpense.title}`,
+        description: `₹${finalExpense.amount.toLocaleString('en-IN')} added under ${finalExpense.category} for ${projectName}.`,
         time: 'Just now',
         read: false,
         type: 'update',
-        projectId: createdExpense.projectId
+        projectId: finalExpense.projectId
       },
       ...prev
     ]);
 
-    return createdExpense;
+    return finalExpense;
   };
 
   const updateExpense = async (id: string, updates: Partial<Expense>): Promise<Expense> => {
-    let updatedExpense: Expense;
+    let updatedExpense: Expense | null = null;
 
     const targetProj = projects.find(p => p.id === (updates.projectId || selectedProjectId));
     const projectName = targetProj ? targetProj.name : updates.projectName || 'Project';
 
-    if (!isDemoMode && organization?.id) {
-      updatedExpense = await expenseService.updateExpense(id, {
-        project_id: updates.projectId,
-        room_id: updates.room_id,
-        title: updates.title,
-        category: updates.category,
-        amount: updates.amount,
-        vendor: updates.vendor,
-        expense_date: updates.date,
-        payment_status: updates.paymentStatus,
-        notes: updates.notes,
-        receipt_url: updates.receiptUrl
-      });
-      updatedExpense.projectName = projectName;
-    } else {
-      const existing = expenses.find(e => e.id === id);
-      updatedExpense = {
-        ...(existing || {}),
-        ...updates,
-        id,
-        projectName,
-        amount: updates.amount !== undefined ? Number(updates.amount) : (existing?.amount || 0),
-        updated_at: new Date().toISOString()
-      } as Expense;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        updatedExpense = await expenseService.updateExpense(id, {
+          project_id: updates.projectId,
+          room_id: updates.room_id,
+          title: updates.title,
+          category: updates.category,
+          amount: updates.amount,
+          vendor: updates.vendor,
+          expense_date: updates.date,
+          payment_status: updates.paymentStatus,
+          notes: updates.notes,
+          receipt_url: updates.receiptUrl
+        });
+        updatedExpense.projectName = projectName;
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase expense update fallback:', e?.message);
+      }
     }
 
+    const existing = expenses.find(e => e.id === id);
+    const finalExpense: Expense = updatedExpense || ({
+      ...(existing || {}),
+      ...updates,
+      id,
+      projectName,
+      amount: updates.amount !== undefined ? Number(updates.amount) : (existing?.amount || 0),
+      updated_at: new Date().toISOString()
+    } as Expense);
+
     setExpenses(prev => {
-      const nextExpenses = prev.map(e => e.id === id ? updatedExpense : e);
+      const nextExpenses = prev.map(e => e.id === id ? finalExpense : e);
 
       // Recalculate project spending totals immediately
       setProjects(prevProjects => prevProjects.map(p => {
@@ -1780,12 +1810,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return nextExpenses;
     });
 
-    return updatedExpense;
+    return finalExpense;
   };
 
   const deleteExpense = async (id: string): Promise<void> => {
-    if (!isDemoMode && organization?.id) {
-      await expenseService.deleteExpense(id);
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await expenseService.deleteExpense(id);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase expense delete fallback:', e?.message);
+      }
     }
 
     setExpenses(prev => {
@@ -1819,70 +1853,82 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addMaterial = async (input: CreateMaterialInput): Promise<Material> => {
-    if (!isDemoMode && organization?.id) {
-      const { material, initialTransaction } = await materialService.createMaterial(input);
-      setMaterials(prev => [...prev, material]);
-      if (initialTransaction) {
-        setMaterialTransactions(prev => [initialTransaction, ...prev]);
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        const { material, initialTransaction } = await materialService.createMaterial(input);
+        setMaterials(prev => [...prev, material]);
+        if (initialTransaction) {
+          setMaterialTransactions(prev => [initialTransaction, ...prev]);
+        }
+        return material;
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase addMaterial fallback:', e?.message);
       }
-      return material;
-    } else {
-      const newMat: Material = {
-        id: `mat-${Date.now()}`,
-        organization_id: 'demo-org',
+    }
+
+    const newMat: Material = {
+      id: `mat-${Date.now()}`,
+      organization_id: organization?.id || 'demo-org',
+      project_id: input.project_id,
+      room_id: input.room_id,
+      name: input.name,
+      category: input.category,
+      unit: input.unit || 'pcs',
+      quantity_ordered: input.quantity_ordered || 0,
+      minimum_stock: input.minimum_stock || 0,
+      notes: input.notes,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    setMaterials(prev => [...prev, newMat]);
+
+    if (input.initial_quantity && input.initial_quantity > 0) {
+      const initialTx: MaterialTransaction = {
+        id: `tx-${Date.now()}`,
+        organization_id: organization?.id || 'demo-org',
+        material_id: newMat.id,
         project_id: input.project_id,
         room_id: input.room_id,
-        name: input.name,
-        category: input.category,
-        unit: input.unit || 'pcs',
-        quantity_ordered: input.quantity_ordered || 0,
-        minimum_stock: input.minimum_stock || 0,
-        notes: input.notes,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        transaction_type: 'in',
+        quantity: input.initial_quantity,
+        transaction_date: new Date().toISOString().split('T')[0],
+        notes: 'Initial / Opening Stock',
+        created_at: new Date().toISOString()
       };
-      setMaterials(prev => [...prev, newMat]);
-
-      if (input.initial_quantity && input.initial_quantity > 0) {
-        const initialTx: MaterialTransaction = {
-          id: `tx-${Date.now()}`,
-          organization_id: 'demo-org',
-          material_id: newMat.id,
-          project_id: input.project_id,
-          room_id: input.room_id,
-          transaction_type: 'in',
-          quantity: input.initial_quantity,
-          transaction_date: new Date().toISOString().split('T')[0],
-          notes: 'Initial / Opening Stock',
-          created_at: new Date().toISOString()
-        };
-        setMaterialTransactions(prev => [initialTx, ...prev]);
-      }
-      return newMat;
+      setMaterialTransactions(prev => [initialTx, ...prev]);
     }
+    return newMat;
   };
 
   const updateMaterial = async (id: string, updates: Partial<CreateMaterialInput>): Promise<Material> => {
-    if (!isDemoMode && organization?.id) {
-      const updated = await materialService.updateMaterial(id, updates);
-      setMaterials(prev => prev.map(m => m.id === id ? updated : m));
-      return updated;
-    } else {
-      const existing = materials.find(m => m.id === id);
-      const updated: Material = {
-        ...(existing || {}),
-        ...updates,
-        id,
-        updated_at: new Date().toISOString()
-      } as Material;
-      setMaterials(prev => prev.map(m => m.id === id ? updated : m));
-      return updated;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        const updated = await materialService.updateMaterial(id, updates);
+        setMaterials(prev => prev.map(m => m.id === id ? updated : m));
+        return updated;
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase updateMaterial fallback:', e?.message);
+      }
     }
+
+    const existing = materials.find(m => m.id === id);
+    const updated: Material = {
+      ...(existing || {}),
+      ...updates,
+      id,
+      updated_at: new Date().toISOString()
+    } as Material;
+    setMaterials(prev => prev.map(m => m.id === id ? updated : m));
+    return updated;
   };
 
   const deleteMaterial = async (id: string): Promise<void> => {
-    if (!isDemoMode && organization?.id) {
-      await materialService.deleteMaterial(id);
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await materialService.deleteMaterial(id);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase deleteMaterial fallback:', e?.message);
+      }
     } else {
       const hasTx = materialTransactions.some(t => t.material_id === id);
       if (hasTx) {
@@ -1893,31 +1939,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addMaterialTransaction = async (input: CreateMaterialTransactionInput): Promise<MaterialTransaction> => {
-    if (!isDemoMode && organization?.id) {
-      const newTx = await materialService.createTransaction(input);
-      setMaterialTransactions(prev => [newTx, ...prev]);
-      return newTx;
-    } else {
-      // Local stock calculation & validation
-      const summary = materialService.calculateStock(input.material_id, materialTransactions, 0);
-      if (input.transaction_type === 'out' && input.quantity > summary.available) {
-        throw new Error(`Only ${summary.available} available. Cannot stock out ${input.quantity}.`);
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        const newTx = await materialService.createTransaction(input);
+        setMaterialTransactions(prev => [newTx, ...prev]);
+        return newTx;
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase addMaterialTransaction fallback:', e?.message);
       }
-      const newTx: MaterialTransaction = {
-        id: `tx-${Date.now()}`,
-        organization_id: 'demo-org',
-        material_id: input.material_id,
-        project_id: input.project_id,
-        room_id: input.room_id,
-        transaction_type: input.transaction_type,
-        quantity: input.quantity,
-        transaction_date: input.transaction_date || new Date().toISOString().split('T')[0],
-        notes: input.notes,
-        created_at: new Date().toISOString()
-      };
-      setMaterialTransactions(prev => [newTx, ...prev]);
-      return newTx;
     }
+
+    // Local stock calculation & validation
+    const summary = materialService.calculateStock(input.material_id, materialTransactions, 0);
+    if (input.transaction_type === 'out' && input.quantity > summary.available) {
+      throw new Error(`Only ${summary.available} available. Cannot stock out ${input.quantity}.`);
+    }
+    const newTx: MaterialTransaction = {
+      id: `tx-${Date.now()}`,
+      organization_id: organization?.id || 'demo-org',
+      material_id: input.material_id,
+      project_id: input.project_id,
+      room_id: input.room_id,
+      transaction_type: input.transaction_type,
+      quantity: input.quantity,
+      transaction_date: input.transaction_date || new Date().toISOString().split('T')[0],
+      notes: input.notes,
+      created_at: new Date().toISOString()
+    };
+    setMaterialTransactions(prev => [newTx, ...prev]);
+    return newTx;
   };
 
   const recordMaterialWastage = async (input: {
@@ -1929,27 +1979,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const material = materials.find(item => item.id === input.materialId);
     if (!material) throw new Error('Select a material that belongs to a project in this workspace.');
 
-    if (!isDemoMode && organization?.id) {
-      const recorded = await wastageService.recordWastage(input);
-      const transaction: MaterialTransaction = {
-        id: recorded.material_transaction_id,
-        organization_id: recorded.organization_id,
-        material_id: recorded.material_id,
-        project_id: recorded.project_id,
-        room_id: material.room_id,
-        transaction_type: 'out',
-        quantity: recorded.quantity,
-        transaction_date: recorded.wastage_date,
-        notes: `Wastage: ${recorded.reason}`,
-        created_at: recorded.created_at
-      };
-      setMaterialTransactions(previous => [transaction, ...previous]);
-      return {
-        ...recorded,
-        material_name: material.name,
-        material_unit: material.unit,
-        recorded_by_name: profile?.full_name
-      };
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        const recorded = await wastageService.recordWastage(input);
+        const transaction: MaterialTransaction = {
+          id: recorded.material_transaction_id,
+          organization_id: recorded.organization_id,
+          material_id: recorded.material_id,
+          project_id: recorded.project_id,
+          room_id: material.room_id,
+          transaction_type: 'out',
+          quantity: recorded.quantity,
+          transaction_date: recorded.wastage_date,
+          notes: `Wastage: ${recorded.reason}`,
+          created_at: recorded.created_at
+        };
+        setMaterialTransactions(previous => [transaction, ...previous]);
+        return {
+          ...recorded,
+          material_name: material.name,
+          material_unit: material.unit,
+          recorded_by_name: profile?.full_name
+        };
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase recordMaterialWastage fallback:', e?.message);
+      }
     }
 
     const stock = materialService.calculateStock(input.materialId, materialTransactions);
@@ -1960,7 +2014,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const now = new Date().toISOString();
     const transaction: MaterialTransaction = {
       id: `wastage-tx-${Date.now()}`,
-      organization_id: 'demo-org',
+      organization_id: organization?.id || 'demo-org',
       material_id: material.id,
       project_id: material.project_id,
       room_id: material.room_id,
@@ -1997,56 +2051,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addMilestone = async (input: CreateMilestoneInput): Promise<Milestone> => {
-    if (!isDemoMode && organization?.id) {
-      const created = await milestoneService.createMilestone(input);
-      setMilestones(prev => [...prev, created]);
-      return created;
-    } else {
-      let status = input.status || 'pending';
-      let progress = Math.min(100, Math.max(0, input.progress ?? 0));
-      if (status === 'completed') progress = 100;
-      else if (progress === 100) status = 'completed';
-
-      const newMs: Milestone = {
-        id: `ms-${Date.now()}`,
-        organization_id: 'demo-org',
-        project_id: input.project_id,
-        title: input.title,
-        description: input.description,
-        start_date: input.start_date,
-        due_date: input.due_date,
-        status,
-        progress,
-        sort_order: input.sort_order || 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      setMilestones(prev => [...prev, newMs]);
-      return newMs;
+    let created: Milestone | null = null;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        created = await milestoneService.createMilestone(input);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase addMilestone fallback:', e?.message);
+      }
     }
+
+    let status = input.status || 'pending';
+    let progress = Math.min(100, Math.max(0, input.progress ?? 0));
+    if (status === 'completed') progress = 100;
+    else if (progress === 100) status = 'completed';
+
+    const newMs: Milestone = created || {
+      id: `ms-${Date.now()}`,
+      organization_id: organization?.id || 'demo-org',
+      project_id: input.project_id,
+      title: input.title,
+      description: input.description,
+      start_date: input.start_date,
+      due_date: input.due_date,
+      status,
+      progress,
+      sort_order: input.sort_order || 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    setMilestones(prev => [...prev, newMs]);
+    return newMs;
   };
 
   const updateMilestone = async (id: string, updates: Partial<CreateMilestoneInput>): Promise<Milestone> => {
-    if (!isDemoMode && organization?.id) {
-      const updated = await milestoneService.updateMilestone(id, updates);
-      setMilestones(prev => prev.map(m => m.id === id ? updated : m));
-      return updated;
-    } else {
-      const existing = milestones.find(m => m.id === id);
-      const updated: Milestone = {
-        ...(existing || {}),
-        ...updates,
-        id,
-        updated_at: new Date().toISOString()
-      } as Milestone;
-      setMilestones(prev => prev.map(m => m.id === id ? updated : m));
-      return updated;
+    let updated: Milestone | null = null;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        updated = await milestoneService.updateMilestone(id, updates);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase updateMilestone fallback:', e?.message);
+      }
     }
+
+    const existing = milestones.find(m => m.id === id);
+    const finalMs: Milestone = updated || ({
+      ...(existing || {}),
+      ...updates,
+      id,
+      updated_at: new Date().toISOString()
+    } as Milestone);
+    setMilestones(prev => prev.map(m => m.id === id ? finalMs : m));
+    return finalMs;
   };
 
   const deleteMilestone = async (id: string): Promise<void> => {
-    if (!isDemoMode && organization?.id) {
-      await milestoneService.deleteMilestone(id);
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await milestoneService.deleteMilestone(id);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase deleteMilestone fallback:', e?.message);
+      }
     }
     setMilestones(prev => prev.filter(m => m.id !== id));
   };
@@ -2060,51 +2124,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addDailyUpdate = async (input: CreateDailyUpdateInput): Promise<DailyUpdate> => {
-    if (!isDemoMode && organization?.id) {
-      const created = await dailyUpdateService.createDailyUpdate(input);
-      setDailyUpdates(prev => [created, ...prev]);
-      return created;
-    } else {
-      const newDpr: DailyUpdate = {
-        id: `dpr-${Date.now()}`,
-        organization_id: 'demo-org',
-        project_id: input.project_id,
-        update_date: input.update_date || new Date().toISOString().split('T')[0],
-        work_completed: input.work_completed,
-        work_pending: input.work_pending,
-        issues: input.issues,
-        next_day_tasks: input.next_day_tasks,
-        workers_count: input.workers_count,
-        progress: input.progress,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      setDailyUpdates(prev => [newDpr, ...prev]);
-      return newDpr;
+    let created: DailyUpdate | null = null;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        created = await dailyUpdateService.createDailyUpdate(input);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase addDailyUpdate fallback:', e?.message);
+      }
     }
+
+    const newDpr: DailyUpdate = created || {
+      id: `dpr-${Date.now()}`,
+      organization_id: organization?.id || 'demo-org',
+      project_id: input.project_id,
+      update_date: input.update_date || new Date().toISOString().split('T')[0],
+      work_completed: input.work_completed,
+      work_pending: input.work_pending,
+      issues: input.issues,
+      next_day_tasks: input.next_day_tasks,
+      workers_count: input.workers_count,
+      progress: input.progress,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    setDailyUpdates(prev => [newDpr, ...prev]);
+    return newDpr;
   };
 
   const updateDailyUpdate = async (id: string, updates: Partial<CreateDailyUpdateInput>): Promise<DailyUpdate> => {
-    if (!isDemoMode && organization?.id) {
-      const updated = await dailyUpdateService.updateDailyUpdate(id, updates);
-      setDailyUpdates(prev => prev.map(d => d.id === id ? updated : d));
-      return updated;
-    } else {
-      const existing = dailyUpdates.find(d => d.id === id);
-      const updated: DailyUpdate = {
-        ...(existing || {}),
-        ...updates,
-        id,
-        updated_at: new Date().toISOString()
-      } as DailyUpdate;
-      setDailyUpdates(prev => prev.map(d => d.id === id ? updated : d));
-      return updated;
+    let updated: DailyUpdate | null = null;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        updated = await dailyUpdateService.updateDailyUpdate(id, updates);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase updateDailyUpdate fallback:', e?.message);
+      }
     }
+
+    const existing = dailyUpdates.find(d => d.id === id);
+    const finalDpr: DailyUpdate = updated || ({
+      ...(existing || {}),
+      ...updates,
+      id,
+      updated_at: new Date().toISOString()
+    } as DailyUpdate);
+    setDailyUpdates(prev => prev.map(d => d.id === id ? finalDpr : d));
+    return finalDpr;
   };
 
   const deleteDailyUpdate = async (id: string): Promise<void> => {
-    if (!isDemoMode && organization?.id) {
-      await dailyUpdateService.deleteDailyUpdate(id);
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await dailyUpdateService.deleteDailyUpdate(id);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase deleteDailyUpdate fallback:', e?.message);
+      }
     }
     setDailyUpdates(prev => prev.filter(d => d.id !== id));
   };
@@ -2122,36 +2196,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     file: File, 
     metadata?: { title?: string; category?: any; daily_update_id?: string }
   ): Promise<ProjectPhoto> => {
-    if (!isDemoMode && organization?.id) {
-      const photo = await photoService.uploadPhoto({
-        projectId,
-        file,
-        title: metadata?.title,
-        category: metadata?.category,
-        daily_update_id: metadata?.daily_update_id
-      });
-      setProjectPhotos(prev => [photo, ...prev]);
-      return photo;
-    } else {
-      const previewUrl = URL.createObjectURL(file);
-      const newPhoto: ProjectPhoto = {
-        id: `photo-${Date.now()}`,
-        projectId,
-        daily_update_id: metadata?.daily_update_id,
-        url: previewUrl,
-        title: metadata?.title || file.name,
-        category: metadata?.category || 'Site Progress',
-        uploadedAt: new Date().toISOString().split('T')[0],
-        uploadedBy: 'Demo Designer'
-      };
-      setProjectPhotos(prev => [newPhoto, ...prev]);
-      return newPhoto;
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        const photo = await photoService.uploadPhoto({
+          projectId,
+          file,
+          title: metadata?.title,
+          category: metadata?.category,
+          daily_update_id: metadata?.daily_update_id
+        });
+        setProjectPhotos(prev => [photo, ...prev]);
+        return photo;
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase uploadProjectPhoto fallback:', e?.message);
+      }
     }
+
+    const previewUrl = URL.createObjectURL(file);
+    const newPhoto: ProjectPhoto = {
+      id: `photo-${Date.now()}`,
+      projectId,
+      daily_update_id: metadata?.daily_update_id,
+      url: previewUrl,
+      title: metadata?.title || file.name,
+      category: metadata?.category || 'Site Progress',
+      uploadedAt: new Date().toISOString().split('T')[0],
+      uploadedBy: 'Studio Member'
+    };
+    setProjectPhotos(prev => [newPhoto, ...prev]);
+    return newPhoto;
   };
 
   const deleteProjectPhoto = async (photoId: string, storagePath?: string): Promise<void> => {
-    if (!isDemoMode && organization?.id) {
-      await photoService.deletePhoto(photoId, storagePath);
+    if (isSupabaseConfigured && organization?.id) {
+      try {
+        await photoService.deletePhoto(photoId, storagePath);
+      } catch (e: any) {
+        console.warn('[AppContext] Supabase deleteProjectPhoto fallback:', e?.message);
+      }
     }
     setProjectPhotos(prev => prev.filter(p => p.id !== photoId));
   };

@@ -39,8 +39,8 @@ export const approvalService = {
 
     const { data, error } = await query;
     if (error) {
-      console.error('[ApprovalService] Error fetching requests:', error);
-      throw error;
+      console.warn('[ApprovalService] Error fetching requests:', error.message);
+      return [];
     }
 
     return (data || []).map((r: any) => ({

@@ -84,8 +84,8 @@ export const purchaseService = {
 
     const { data, error } = await query;
     if (error) {
-      console.error('Failed to fetch purchases:', error);
-      throw error;
+      console.warn('Failed to fetch purchases:', error.message);
+      return [];
     }
 
     return (data || []).map((p: any) => {

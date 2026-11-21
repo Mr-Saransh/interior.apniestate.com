@@ -5,21 +5,21 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
-import { Room, BOQItem, Expense, Material, Milestone, DailyUpdate, ProjectPhoto } from '../types';
-import { 
-  ArrowLeft, 
-  Plus, 
-  Calendar, 
-  MapPin, 
-  Phone, 
-  IndianRupee, 
-  Layers, 
-  Clock, 
-  Image as ImageIcon, 
-  FileText, 
-  CheckCircle2, 
-  AlertCircle, 
-  Trash2, 
+import { Project, Room, BOQItem, Expense, Material, Milestone, DailyUpdate, ProjectPhoto } from '../types';
+import {
+  ArrowLeft,
+  Plus,
+  Calendar,
+  MapPin,
+  Phone,
+  IndianRupee,
+  Layers,
+  Clock,
+  Image as ImageIcon,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
+  Trash2,
   ExternalLink,
   Edit3,
   Share2,
@@ -71,11 +71,11 @@ import { TaskModal } from '../components/modals/TaskModal';
 import { UploadDocumentModal } from '../components/modals/UploadDocumentModal';
 import { ClientPaymentModal } from '../components/modals/ClientPaymentModal';
 import { PurchaseModal } from '../components/modals/PurchaseModal';
-import { 
-  calculateProjectSpent, 
-  calculateRoomSpent, 
-  calculateProjectBOQ, 
-  calculateRoomBOQ, 
+import {
+  calculateProjectSpent,
+  calculateRoomSpent,
+  calculateProjectBOQ,
+  calculateRoomBOQ,
   calculateBudgetMetrics,
   calculateCategoryBreakdown,
   getBudgetHealth
@@ -143,12 +143,13 @@ const projectTabLabels: Record<ProjectTab, string> = {
 };
 
 export const ProjectDetailPage: React.FC = () => {
-  const { 
-    projects, 
-    selectedProjectId, 
-    setCurrentPage, 
+  const {
+    projects,
+    selectedProjectId,
+    setCurrentPage,
+    setIsNewProjectModalOpen,
     initialProjectDetailTab,
-    expenses, 
+    expenses,
     boqItems,
     materials,
     materialTransactions,
@@ -167,7 +168,7 @@ export const ProjectDetailPage: React.FC = () => {
     deleteDocument,
     deleteClientPayment,
     deletePurchase,
-    setIsAddExpenseModalOpen, 
+    setIsAddExpenseModalOpen,
     setIsBOQModalOpen,
     setIsSpecificQuoteModalOpen,
     approveProjectBOQ,
@@ -203,7 +204,7 @@ export const ProjectDetailPage: React.FC = () => {
   const { isDemoMode, profile, organization } = useAuth();
 
   const [activeTab, setActiveTab] = useState<ProjectTab>('Overview');
-  
+
   // Modals state
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
@@ -225,7 +226,7 @@ export const ProjectDetailPage: React.FC = () => {
   const [projectPurchaseToEdit, setProjectPurchaseToEdit] = useState<Purchase | null>(null);
   const [purchaseToDelete, setPurchaseToDelete] = useState<Purchase | null>(null);
   const [isDeletingPurchase, setIsDeletingPurchase] = useState(false);
-  
+
   // Room modal state
   const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
   const [roomToEdit, setRoomToEdit] = useState<Room | null>(null);
@@ -283,7 +284,24 @@ export const ProjectDetailPage: React.FC = () => {
     }
   }, [initialProjectDetailTab]);
 
-  const project = projects.find(p => p.id === selectedProjectId) || projects[0];
+  const activeProject = projects.find(p => p.id === selectedProjectId) || (projects.length > 0 ? projects[0] : null);
+  const project: Project = activeProject || ({
+    id: '',
+    name: 'No Project Selected',
+    client: 'N/A',
+    location: '',
+    type: 'Residential',
+    budget: 0,
+    spent: 0,
+    progress: 0,
+    status: 'On Track',
+    startDate: '',
+    deadline: '',
+    rooms: [],
+    boq_items: [],
+    notes: [],
+    photos: []
+  } as Project);
   const activeTabGroup = projectTabGroups.find(group => group.tabs.includes(activeTab)) || projectTabGroups[0];
 
   // Client Portal Requirements State & Sync
@@ -303,7 +321,7 @@ export const ProjectDetailPage: React.FC = () => {
       const raw = localStorage.getItem(storageKey);
       if (raw) {
         setClientRequests(JSON.parse(raw));
-      } else {
+      } else if (isDemoMode && project.id.startsWith('proj-')) {
         const initial: ClientRequirement[] = [
           {
             id: `req-${project.id}-1`,
@@ -326,11 +344,13 @@ export const ProjectDetailPage: React.FC = () => {
         ];
         localStorage.setItem(storageKey, JSON.stringify(initial));
         setClientRequests(initial);
+      } else {
+        setClientRequests([]);
       }
     } catch {
-      // ignore
+      setClientRequests([]);
     }
-  }, [project?.id]);
+  }, [project?.id, isDemoMode]);
 
   useEffect(() => {
     loadClientRequests();
@@ -350,8 +370,8 @@ export const ProjectDetailPage: React.FC = () => {
   const handleApproveAndAddToBOQ = async (req: ClientRequirement) => {
     try {
       const roomsList = project.rooms || [];
-      const matchingRoom = roomsList.find(r => 
-        r.name.toLowerCase().includes(req.space.toLowerCase()) || 
+      const matchingRoom = roomsList.find(r =>
+        r.name.toLowerCase().includes(req.space.toLowerCase()) ||
         req.space.toLowerCase().includes(r.name.toLowerCase())
       ) || roomsList[0];
 
@@ -468,11 +488,11 @@ export const ProjectDetailPage: React.FC = () => {
   const projectBOQItems = boqItems.filter(b => b.project_id === project.id);
   const approvedBOQCount = projectBOQItems.filter(item => Boolean(item.approved_at)).length;
   const canApproveBOQ = isDemoMode || profile?.role === 'owner' || profile?.role === 'admin';
-  
+
   const projectSpent = calculateProjectSpent(project.id, expenses);
   const projectBOQ = calculateProjectBOQ(project.id, boqItems);
   const projectMetrics = calculateBudgetMetrics(project.budget, projectSpent);
-  
+
   const daysInfo = calculateDaysRemaining(project.deadline);
   const rooms = project.rooms || [];
 
@@ -498,8 +518,8 @@ export const ProjectDetailPage: React.FC = () => {
     if (materialSearch.trim()) {
       const q = materialSearch.toLowerCase();
       const match = m.name.toLowerCase().includes(q) ||
-                    (m.category && m.category.toLowerCase().includes(q)) ||
-                    (m.notes && m.notes.toLowerCase().includes(q));
+        (m.category && m.category.toLowerCase().includes(q)) ||
+        (m.notes && m.notes.toLowerCase().includes(q));
       if (!match) return false;
     }
     return true;
@@ -515,23 +535,23 @@ export const ProjectDetailPage: React.FC = () => {
     if (boqSearch.trim()) {
       const q = boqSearch.toLowerCase();
       const match = b.item_name.toLowerCase().includes(q) ||
-                    (b.description && b.description.toLowerCase().includes(q)) ||
-                    (b.category && b.category.toLowerCase().includes(q));
+        (b.description && b.description.toLowerCase().includes(q)) ||
+        (b.category && b.category.toLowerCase().includes(q));
       if (!match) return false;
     }
     return true;
   });
 
   // Filtered Photos & Notes
-  const filteredPhotos = photoFilter === 'All' 
-    ? allPhotos 
+  const filteredPhotos = photoFilter === 'All'
+    ? allPhotos
     : allPhotos.filter(p => p.category === photoFilter);
   const notes = project.notes || [];
 
   // Project Tasks & Documents
   const projectTasks = tasks.filter(t => (t.project_id || t.projectId) === project.id);
   const projectDocuments = documents.filter(d => (d.project_id || d.projectId) === project.id);
-  
+
   // Project Payments & Purchases
   const projectPayments = clientPayments.filter(p => (p.project_id || p.projectId) === project.id);
   const projectPurchases = purchases.filter(p => (p.project_id || p.projectId) === project.id);
@@ -741,6 +761,37 @@ export const ProjectDetailPage: React.FC = () => {
     }
   };
 
+  if (!activeProject) {
+    return (
+      <div className="space-y-6 pb-12 animate-fadeIn">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setCurrentPage('projects')}
+            className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 shadow-xs transition-all cursor-pointer"
+            title="Back to Projects"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-editorial font-bold text-slate-900 tracking-tight">
+              Project Overview
+            </h1>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              Select or create a project to manage specifications, BOQs, and site progress.
+            </p>
+          </div>
+        </div>
+        <EmptyState
+          icon={Package}
+          title="No Project Selected"
+          description="You don't have any projects in your studio yet. Create your first project to start managing rooms, BOQs, site expenses, milestones, and daily updates."
+          actionLabel="+ Add New Project"
+          onAction={() => setIsNewProjectModalOpen(true)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 pb-12 animate-fadeIn">
       {/* Top Header Bar */}
@@ -822,11 +873,10 @@ export const ProjectDetailPage: React.FC = () => {
                 key={group.label}
                 aria-pressed={isActive}
                 onClick={() => setActiveTab(group.tabs[0])}
-                className={`min-h-11 rounded-lg px-3 text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 ${
-                  isActive
-                    ? 'bg-brand-50 text-brand-800 ring-1 ring-brand-200'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                }`}
+                className={`min-h-11 rounded-lg px-3 text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 ${isActive
+                  ? 'bg-brand-50 text-brand-800 ring-1 ring-brand-200'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
               >
                 <span>{group.label}</span>
                 {hasPendingPortal && (
@@ -846,17 +896,15 @@ export const ProjectDetailPage: React.FC = () => {
                 key={tab}
                 aria-current={activeTab === tab ? 'page' : undefined}
                 onClick={() => setActiveTab(tab)}
-                className={`min-h-10 rounded-lg px-3 text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                  activeTab === tab
-                    ? 'bg-brand-600 text-white'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                }`}
+                className={`min-h-10 rounded-lg px-3 text-sm font-medium transition-colors flex items-center gap-1.5 ${activeTab === tab
+                  ? 'bg-brand-600 text-white'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  }`}
               >
                 <span>{projectTabLabels[tab]}</span>
                 {tab === 'Client Requests' && pendingRequests.length > 0 && (
-                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-                    activeTab === tab ? 'bg-amber-400 text-amber-950' : 'bg-amber-400 text-amber-950 shadow-xs'
-                  }`}>
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${activeTab === tab ? 'bg-amber-400 text-amber-950' : 'bg-amber-400 text-amber-950 shadow-xs'
+                    }`}>
                     {pendingRequests.length}
                   </span>
                 )}
@@ -893,26 +941,26 @@ export const ProjectDetailPage: React.FC = () => {
 
         const donutData = sortedCategories.length > 0
           ? sortedCategories.slice(0, 4).map(([name, value], idx) => ({
-              name,
-              value,
-              color: CHART_PALETTE[idx % CHART_PALETTE.length],
-            })).concat(
-              sortedCategories.length > 4
-                ? [{
-                    name: 'Other',
-                    value: sortedCategories.slice(4).reduce((s, [, v]) => s + v, 0),
-                    color: '#94A3B8',
-                  }]
-                : []
-            )
+            name,
+            value,
+            color: CHART_PALETTE[idx % CHART_PALETTE.length],
+          })).concat(
+            sortedCategories.length > 4
+              ? [{
+                name: 'Other',
+                value: sortedCategories.slice(4).reduce((s, [, v]) => s + v, 0),
+                color: '#94A3B8',
+              }]
+              : []
+          )
           : [
-              ...(projectSpent > 0 ? [{ name: 'Actual Spend', value: projectSpent, color: '#D97706' }] : []),
-              {
-                name: 'Remaining Budget',
-                value: Math.max(Number(project.budget || 0) - projectSpent, projectSpent > 0 ? 0 : 1),
-                color: '#1D4ED8',
-              },
-            ].filter((d) => d.value > 0);
+            ...(projectSpent > 0 ? [{ name: 'Actual Spend', value: projectSpent, color: '#D97706' }] : []),
+            {
+              name: 'Remaining Budget',
+              value: Math.max(Number(project.budget || 0) - projectSpent, projectSpent > 0 ? 0 : 1),
+              color: '#1D4ED8',
+            },
+          ].filter((d) => d.value > 0);
 
         return (
           <div className="space-y-5">
@@ -986,15 +1034,13 @@ export const ProjectDetailPage: React.FC = () => {
               <div className="bg-white rounded-2xl border border-[#E5E7EB] p-3.5 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-semibold text-slate-500">Remaining</span>
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded tabular-nums ${
-                    projectMetrics.isOverBudget ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'
-                  }`}>
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded tabular-nums ${projectMetrics.isOverBudget ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'
+                    }`}>
                     {profitability.grossMarginPercentage.toFixed(0)}% margin
                   </span>
                 </div>
-                <div className={`text-xl font-bold font-display tabular-nums mt-1 ${
-                  projectMetrics.isOverBudget ? 'text-rose-600' : 'text-emerald-600'
-                }`}>
+                <div className={`text-xl font-bold font-display tabular-nums mt-1 ${projectMetrics.isOverBudget ? 'text-rose-600' : 'text-emerald-600'
+                  }`}>
                   {formatINR(projectMetrics.remaining)}
                 </div>
                 {projectMetrics.isOverBudget && (
@@ -1121,14 +1167,12 @@ export const ProjectDetailPage: React.FC = () => {
               <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E7EB] p-4 sm:p-5 flex flex-col justify-between gap-4">
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-900">Spend Mix &amp; Health</h3>
-                  <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold shrink-0 ${
-                    projectHealth === 'Red' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                  <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold shrink-0 ${projectHealth === 'Red' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
                     projectHealth === 'Amber' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                    'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                  }`}>
-                    <span className={`h-1.5 w-1.5 rounded-full ${
-                      projectHealth === 'Red' ? 'bg-rose-600' : projectHealth === 'Amber' ? 'bg-amber-500' : 'bg-emerald-600'
-                    }`} />
+                      'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    }`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${projectHealth === 'Red' ? 'bg-rose-600' : projectHealth === 'Amber' ? 'bg-amber-500' : 'bg-emerald-600'
+                      }`} />
                     {projectHealth}
                   </div>
                 </div>
@@ -1836,11 +1880,10 @@ export const ProjectDetailPage: React.FC = () => {
                     key={f}
                     type="button"
                     onClick={() => setClientReqFilter(f)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
-                      clientReqFilter === f
-                        ? 'bg-slate-900 text-white shadow-xs'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${clientReqFilter === f
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
                   >
                     <span>{f}</span>
                     <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${clientReqFilter === f ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'}`}>
@@ -1876,13 +1919,12 @@ export const ProjectDetailPage: React.FC = () => {
                     return (
                       <div
                         key={req.id}
-                        className={`rounded-2xl border p-4.5 transition-all flex flex-col justify-between ${
-                          isPending
-                            ? 'bg-amber-50/40 border-amber-300 shadow-xs ring-1 ring-amber-300/50'
-                            : isApproved
-                              ? 'bg-emerald-50/30 border-emerald-200'
-                              : 'bg-slate-50/50 border-slate-200 opacity-75'
-                        }`}
+                        className={`rounded-2xl border p-4.5 transition-all flex flex-col justify-between ${isPending
+                          ? 'bg-amber-50/40 border-amber-300 shadow-xs ring-1 ring-amber-300/50'
+                          : isApproved
+                            ? 'bg-emerald-50/30 border-emerald-200'
+                            : 'bg-slate-50/50 border-slate-200 opacity-75'
+                          }`}
                       >
                         <div className="space-y-3">
                           {/* Card Meta Row */}
@@ -1891,20 +1933,18 @@ export const ProjectDetailPage: React.FC = () => {
                               <span className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-800 shadow-2xs">
                                 🏠 {req.space}
                               </span>
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                req.priority === 'High' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'
-                              }`}>
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${req.priority === 'High' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'
+                                }`}>
                                 {req.priority} Priority
                               </span>
                             </div>
 
-                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border flex items-center gap-1.5 ${
-                              isPending
-                                ? 'bg-amber-100 text-amber-900 border-amber-300'
-                                : isApproved
-                                  ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
-                                  : 'bg-slate-200 text-slate-700 border-slate-300'
-                            }`}>
+                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border flex items-center gap-1.5 ${isPending
+                              ? 'bg-amber-100 text-amber-900 border-amber-300'
+                              : isApproved
+                                ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                                : 'bg-slate-200 text-slate-700 border-slate-300'
+                              }`}>
                               {isPending && <Clock className="w-3 h-3 text-amber-700" />}
                               {isApproved && <CheckCircle2 className="w-3 h-3 text-emerald-700" />}
                               {isDeclined && <X className="w-3 h-3 text-slate-500" />}
@@ -2277,13 +2317,12 @@ export const ProjectDetailPage: React.FC = () => {
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="font-extrabold text-sm text-slate-900 truncate">{mat.name}</h4>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                            stockSummary.is_out_of_stock
-                              ? 'bg-rose-50 text-rose-700 border-rose-200'
-                              : stockSummary.is_low_stock
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${stockSummary.is_out_of_stock
+                            ? 'bg-rose-50 text-rose-700 border-rose-200'
+                            : stockSummary.is_low_stock
                               ? 'bg-amber-50 text-amber-700 border-amber-200'
                               : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          }`}>
+                            }`}>
                             {stockSummary.is_out_of_stock ? 'Out of Stock' : stockSummary.is_low_stock ? 'Low Stock' : 'Available'}
                           </span>
                         </div>
@@ -2433,13 +2472,12 @@ export const ProjectDetailPage: React.FC = () => {
                   return (
                     <div
                       key={ms.id}
-                      className={`p-4 rounded-2xl border transition-all ${
-                        isCompleted
-                          ? 'bg-emerald-50/40 border-emerald-200/80'
-                          : isDelayed
+                      className={`p-4 rounded-2xl border transition-all ${isCompleted
+                        ? 'bg-emerald-50/40 border-emerald-200/80'
+                        : isDelayed
                           ? 'bg-rose-50/40 border-rose-200/80'
                           : 'bg-white border-slate-200 hover:bg-slate-50/60'
-                      }`}
+                        }`}
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
                         <div className="flex items-center gap-3">
@@ -2649,11 +2687,10 @@ export const ProjectDetailPage: React.FC = () => {
                 <button
                   key={cat}
                   onClick={() => setPhotoFilter(cat)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                    photoFilter === cat
-                      ? 'bg-slate-900 text-white shadow-xs'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${photoFilter === cat
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
                 >
                   {cat}
                 </button>
@@ -2808,9 +2845,8 @@ export const ProjectDetailPage: React.FC = () => {
                 return (
                   <div
                     key={t.id}
-                    className={`bg-white p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                      isDone ? 'border-slate-200 bg-slate-50/40 opacity-75' : 'border-slate-200/90 shadow-xs hover:border-brand-300'
-                    }`}
+                    className={`bg-white p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${isDone ? 'border-slate-200 bg-slate-50/40 opacity-75' : 'border-slate-200/90 shadow-xs hover:border-brand-300'
+                      }`}
                   >
                     <div className="flex items-start gap-3 min-w-0 flex-1">
                       <button
@@ -2818,11 +2854,10 @@ export const ProjectDetailPage: React.FC = () => {
                           const next: TaskStatus = t.status === 'Completed' ? 'To Do' : 'Completed';
                           await updateTask(t.id, { status: next });
                         }}
-                        className={`mt-0.5 w-5 h-5 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
-                          isDone 
-                            ? 'bg-emerald-500 border-emerald-500 text-white' 
-                            : 'border-slate-300 hover:border-brand-500 bg-white'
-                        }`}
+                        className={`mt-0.5 w-5 h-5 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${isDone
+                          ? 'bg-emerald-500 border-emerald-500 text-white'
+                          : 'border-slate-300 hover:border-brand-500 bg-white'
+                          }`}
                       >
                         {isDone && <CheckCircle2 className="w-3.5 h-3.5" />}
                       </button>
@@ -3001,7 +3036,7 @@ export const ProjectDetailPage: React.FC = () => {
                 {formatINR(profitability.revenueReceived)}
               </div>
               <p className="text-xs text-slate-400 mt-1">
-                {profitability.contractValue > 0 
+                {profitability.contractValue > 0
                   ? `${((profitability.revenueReceived / profitability.contractValue) * 100).toFixed(1)}% collected`
                   : 'Actual paid receipts'}
               </p>
@@ -3067,15 +3102,14 @@ export const ProjectDetailPage: React.FC = () => {
                             )}
                           </td>
                           <td className="py-3.5 px-4">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                              p.status === 'paid'
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : p.status === 'partial'
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${p.status === 'paid'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : p.status === 'partial'
                                 ? 'bg-amber-100 text-amber-800'
                                 : isOverdue
-                                ? 'bg-rose-100 text-rose-800'
-                                : 'bg-slate-100 text-slate-700'
-                            }`}>
+                                  ? 'bg-rose-100 text-rose-800'
+                                  : 'bg-slate-100 text-slate-700'
+                              }`}>
                               {p.status}
                             </span>
                           </td>
@@ -3206,24 +3240,22 @@ export const ProjectDetailPage: React.FC = () => {
                             <span className="font-extrabold text-sm text-slate-900 font-mono">
                               {po.po_number || 'PO-DRAFT'}
                             </span>
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                              po.status === 'received' || po.status === 'delivered'
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : po.status === 'ordered'
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${po.status === 'received' || po.status === 'delivered'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : po.status === 'ordered'
                                 ? 'bg-blue-100 text-blue-800'
                                 : po.status === 'cancelled'
-                                ? 'bg-rose-100 text-rose-800'
-                                : 'bg-slate-100 text-slate-700'
-                            }`}>
+                                  ? 'bg-rose-100 text-rose-800'
+                                  : 'bg-slate-100 text-slate-700'
+                              }`}>
                               {po.status}
                             </span>
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                              po.payment_status === 'paid'
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : po.payment_status === 'partial'
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${po.payment_status === 'paid'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : po.payment_status === 'partial'
                                 ? 'bg-amber-50 text-amber-700 border border-amber-200'
                                 : 'bg-slate-50 text-slate-600 border border-slate-200'
-                            }`}>
+                              }`}>
                               Pay: {po.payment_status || 'unpaid'}
                             </span>
                           </div>
@@ -3410,11 +3442,10 @@ export const ProjectDetailPage: React.FC = () => {
                   .map(tx => (
                     <div key={tx.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between text-xs">
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg font-black text-xs ${
-                          tx.transaction_type === 'in'
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-amber-100 text-amber-700'
-                        }`}>
+                        <div className={`p-2 rounded-lg font-black text-xs ${tx.transaction_type === 'in'
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-amber-100 text-amber-700'
+                          }`}>
                           {tx.transaction_type === 'in' ? '+ IN' : '- OUT'}
                         </div>
                         <div>
@@ -3865,22 +3896,20 @@ export const ProjectDetailPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setNewReqPriority('Standard')}
-                    className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                      newReqPriority === 'Standard'
-                        ? 'bg-slate-900 text-white border-slate-900'
-                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                    }`}
+                    className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${newReqPriority === 'Standard'
+                      ? 'bg-slate-900 text-white border-slate-900'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                      }`}
                   >
                     Standard
                   </button>
                   <button
                     type="button"
                     onClick={() => setNewReqPriority('High')}
-                    className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                      newReqPriority === 'High'
-                        ? 'bg-rose-600 text-white border-rose-600'
-                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                    }`}
+                    className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${newReqPriority === 'High'
+                      ? 'bg-rose-600 text-white border-rose-600'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                      }`}
                   >
                     High Priority
                   </button>

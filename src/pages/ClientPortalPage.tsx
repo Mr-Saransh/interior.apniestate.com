@@ -52,7 +52,7 @@ function displayDate(date?: string): string {
 export const ClientPortalPage: React.FC = () => {
   const { projects } = useApp();
   const { isDemoMode, organization, profile } = useAuth();
-  const [projectId, setProjectId] = useState(projects[0]?.id || 'proj-1');
+  const [projectId, setProjectId] = useState(projects[0]?.id || (isDemoMode ? 'proj-1' : ''));
   const [expiresInDays, setExpiresInDays] = useState('30');
   const [link, setLink] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
@@ -65,7 +65,7 @@ export const ClientPortalPage: React.FC = () => {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
-  const selectedProject = projects.find(project => project.id === projectId) || INITIAL_PROJECTS.find(p => p.id === projectId) || projects[0] || INITIAL_PROJECTS[0];
+  const selectedProject = projects.find(project => project.id === projectId) || (projects.length > 0 ? projects[0] : (isDemoMode ? INITIAL_PROJECTS[0] : null));
 
   useEffect(() => {
     if (!projectId && projects[0]) {
@@ -81,6 +81,10 @@ export const ClientPortalPage: React.FC = () => {
       const expiry = new Date(Date.now() + Number(expiresInDays) * 24 * 60 * 60 * 1000).toISOString();
       setExpiresAt(expiry);
       setLinkActive(true);
+    } else {
+      setLink('');
+      setExpiresAt('');
+      setLinkActive(false);
     }
   }, [selectedProject?.id, expiresInDays]);
 
@@ -196,17 +200,23 @@ export const ClientPortalPage: React.FC = () => {
             <label className="block text-xs font-bold text-slate-700 mb-1">
               Select Client Project
             </label>
-            <select
-              value={projectId}
-              onChange={(e) => setProjectId(e.target.value)}
-              className="w-full bg-[#F4F6FA] text-xs font-semibold text-slate-900 px-3 py-2.5 rounded-xl border border-slate-200 focus:bg-white focus:border-[#1D4ED8] focus:outline-none"
-            >
-              {(projects.length > 0 ? projects : INITIAL_PROJECTS).map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} — {p.client} ({p.city || p.location || 'Mumbai'})
-                </option>
-              ))}
-            </select>
+            {projects.length === 0 && !isDemoMode ? (
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500">
+                No active projects found. Create your first project in your studio to generate a client portal link.
+              </div>
+            ) : (
+              <select
+                value={projectId}
+                onChange={(e) => setProjectId(e.target.value)}
+                className="w-full bg-[#F4F6FA] text-xs font-semibold text-slate-900 px-3 py-2.5 rounded-xl border border-slate-200 focus:bg-white focus:border-[#1D4ED8] focus:outline-none"
+              >
+                {(projects.length > 0 ? projects : (isDemoMode ? INITIAL_PROJECTS : [])).map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} — {p.client} ({p.city || p.location || 'Mumbai'})
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -357,10 +367,38 @@ export const SharedClientPortalPage: React.FC<{ token: string }> = ({ token }) =
   useEffect(() => {
     // 1. Resolve project from token
     const decodedToken = decodeURIComponent(token);
-    
-    // Check if token matches a project ID or prefix
-    const cleanId = decodedToken.replace('proj-', '');
-    const found = INITIAL_PROJECTS.find(p => p.id === decodedToken || p.id === cleanId || p.id === `proj-${cleanId}`) || INITIAL_PROJECTS[0];
+    let found: Project | null = null;
+
+    // Search in localStorage across tenant keys or demo keys
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('apni_estate_tenant_') || key.startsWith('apni_estate_')) && key.endsWith('_projects')) {
+          const raw = localStorage.getItem(key);
+          if (raw) {
+            const list: Project[] = JSON.parse(raw);
+            const match = list.find(p => p.id === decodedToken || p.id === decodedToken.replace('proj-', ''));
+            if (match) {
+              found = match;
+              break;
+            }
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    // Fallback to INITIAL_PROJECTS only if in demo mode or matching demo ID
+    if (!found) {
+      const cleanId = decodedToken.replace('proj-', '');
+      found = INITIAL_PROJECTS.find(p => p.id === decodedToken || p.id === cleanId || p.id === `proj-${cleanId}`) || null;
+    }
+
+    if (!found) {
+      setLoading(false);
+      return;
+    }
 
     // Load custom client requirements from localStorage
     const storageKey = `apni_estate_client_reqs_${found.id}`;
@@ -369,8 +407,8 @@ export const SharedClientPortalPage: React.FC<{ token: string }> = ({ token }) =
       const data = localStorage.getItem(storageKey);
       if (data) {
         savedReqs = JSON.parse(data);
-      } else {
-        // Seed initial sample requirements so portal looks vibrant
+      } else if (found.id.startsWith('proj-')) {
+        // Seed initial sample requirements ONLY for demo projects so demo looks vibrant
         savedReqs = [
           {
             id: 'req-1',
@@ -430,7 +468,7 @@ export const SharedClientPortalPage: React.FC<{ token: string }> = ({ token }) =
     setTimeout(() => setSubmitSuccess(false), 4000);
   };
 
-  if (loading || !project) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-[#F4F6FA] flex flex-col items-center justify-center p-6 text-slate-800">
         <div className="w-12 h-12 rounded-2xl bg-[#1D4ED8] flex items-center justify-center text-white shadow-lg shadow-blue-500/20 mb-3 animate-pulse">
@@ -441,7 +479,28 @@ export const SharedClientPortalPage: React.FC<{ token: string }> = ({ token }) =
     );
   }
 
-  const roomsList: Room[] = project.rooms || [
+  if (!project) {
+    return (
+      <div className="min-h-screen bg-[#F4F6FA] flex flex-col items-center justify-center p-6 text-center text-slate-800">
+        <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-4 border border-amber-200">
+          <LockKeyhole className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900 mb-2">Project Portal Not Found</h2>
+        <p className="text-xs text-slate-500 max-w-sm mb-6">
+          The requested client portal link is invalid, expired, or the project does not exist. Please contact your interior designer or builder for an updated link.
+        </p>
+        <a
+          href="/"
+          className="px-4 py-2 bg-[#1D4ED8] hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer"
+        >
+          Return to Apni Estate
+        </a>
+      </div>
+    );
+  }
+
+  const isDemo = project.id.startsWith('proj-');
+  const roomsList: Room[] = (project.rooms && project.rooms.length > 0) ? project.rooms : (isDemo ? [
     {
       id: 'r-1',
       organization_id: 'demo',
@@ -494,12 +553,12 @@ export const SharedClientPortalPage: React.FC<{ token: string }> = ({ token }) =
       status: 'In Progress',
       notes: 'Crockery unit, entry shoe console & pendant lighting.'
     }
-  ];
+  ] : []);
 
-  const totalContract = project.budget || 1800000;
-  const totalPaid = project.spent || 1240000;
+  const totalContract = typeof project.budget === 'number' ? project.budget : 0;
+  const totalPaid = typeof project.spent === 'number' ? project.spent : 0;
   const balanceDue = Math.max(0, totalContract - totalPaid);
-  const paidPercent = Math.min(100, Math.round((totalPaid / totalContract) * 100));
+  const paidPercent = totalContract > 0 ? Math.min(100, Math.round((totalPaid / totalContract) * 100)) : 0;
 
   return (
     <div className="min-h-screen bg-[#F4F6FA] text-slate-800 antialiased pb-16">

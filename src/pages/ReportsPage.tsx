@@ -103,6 +103,10 @@ export const ReportsPage: React.FC = () => {
     return isDemoMode ? INITIAL_BRANCHES : [];
   }, [isDemoMode]);
 
+  const approvalsList = useMemo(() => {
+    return isDemoMode ? INITIAL_APPROVAL_REQUESTS : [];
+  }, [isDemoMode]);
+
   // Filtered dataset based on project selection and branch selection
   const filteredProjects = useMemo(() => {
     return projects.filter(p => {
@@ -865,24 +869,24 @@ export const ReportsPage: React.FC = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Total</span>
-                <span className="text-xl font-extrabold text-slate-900">{INITIAL_APPROVAL_REQUESTS.length}</span>
+                <span className="text-xl font-extrabold text-slate-900">{approvalsList.length}</span>
               </div>
               <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100">
                 <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block mb-1">Pending</span>
                 <span className="text-xl font-extrabold text-amber-700">
-                  {INITIAL_APPROVAL_REQUESTS.filter(r => r.status === 'pending').length}
+                  {approvalsList.filter(r => r.status === 'pending').length}
                 </span>
               </div>
               <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
                 <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">Approved</span>
                 <span className="text-xl font-extrabold text-emerald-700">
-                  {formatINRCompact(INITIAL_APPROVAL_REQUESTS.filter(r => r.status === 'approved').reduce((s, r) => s + (r.amount || 0), 0))}
+                  {formatINRCompact(approvalsList.filter(r => r.status === 'approved').reduce((s, r) => s + (r.amount || 0), 0))}
                 </span>
               </div>
               <div className="bg-rose-50 p-4 rounded-2xl border border-rose-100">
                 <span className="text-[10px] font-bold text-rose-800 uppercase tracking-wider block mb-1">Rejected</span>
                 <span className="text-xl font-extrabold text-rose-700">
-                  {INITIAL_APPROVAL_REQUESTS.filter(r => r.status === 'rejected').length}
+                  {approvalsList.filter(r => r.status === 'rejected').length}
                 </span>
               </div>
             </div>
@@ -900,26 +904,34 @@ export const ReportsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {INITIAL_APPROVAL_REQUESTS.map(req => (
-                    <tr key={req.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-3 px-3 font-bold text-slate-900">{req.title}</td>
-                      <td className="py-3 px-3 text-slate-600">{req.requesterName}</td>
-                      <td className="py-3 px-3 text-slate-500">{formatDate(req.requested_at)}</td>
-                      <td className="py-3 px-3 text-slate-600">{req.reviewerName || 'Pending'}</td>
-                      <td className="py-3 px-3 text-right font-extrabold text-slate-900">
-                        {req.amount !== undefined ? formatINR(req.amount) : '—'}
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
-                          req.status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
-                          req.status === 'pending' ? 'bg-amber-100 text-amber-800' :
-                          'bg-rose-100 text-rose-800'
-                        }`}>
-                          {req.status}
-                        </span>
+                  {approvalsList.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-xs text-slate-400">
+                        No approval workflows logged yet.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    approvalsList.map(req => (
+                      <tr key={req.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-3 font-bold text-slate-900">{req.title}</td>
+                        <td className="py-3 px-3 text-slate-600">{req.requesterName}</td>
+                        <td className="py-3 px-3 text-slate-500">{formatDate(req.requested_at)}</td>
+                        <td className="py-3 px-3 text-slate-600">{req.reviewerName || 'Pending'}</td>
+                        <td className="py-3 px-3 text-right font-extrabold text-slate-900">
+                          {req.amount !== undefined ? formatINR(req.amount) : '—'}
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
+                            req.status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
+                            req.status === 'pending' ? 'bg-amber-100 text-amber-800' :
+                            'bg-rose-100 text-rose-800'
+                          }`}>
+                            {req.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

@@ -368,8 +368,45 @@ const INITIAL_DEMO_CLIENTS: Client[] = [
   }
 ];
 
+const DEMO_PROJECT_IDS = new Set(INITIAL_PROJECTS.map(p => p.id));
+const DEMO_CLIENT_NAMES = new Set(INITIAL_DEMO_CLIENTS.map(c => c.name.toLowerCase()));
+const DEMO_EXPENSE_TITLES = new Set(INITIAL_EXPENSES.map(e => e.title.toLowerCase()));
+
+export const isDemoProjectItem = (p: any): boolean => {
+  if (!p || typeof p !== 'object') return false;
+  return (
+    DEMO_PROJECT_IDS.has(p.id) ||
+    p.organization_id === 'org-demo-1' ||
+    p.organization_id === 'demo-org' ||
+    p.name === 'Mehta Residence' ||
+    p.name === 'Godrej Woodsville 3BHK' ||
+    p.name === 'Kapoor Apartment' ||
+    p.name === 'Arora Villa' ||
+    p.name === 'Birla House' ||
+    p.name === 'Singhania Villa' ||
+    p.name === 'Oberoi Sky City' ||
+    p.name === 'Lodha Park 4BHK'
+  );
+};
+
+export const getTenantStorageKey = (
+  entity: string,
+  isDemo: boolean,
+  tenantId?: string | null
+): string => {
+  if (isDemo || !tenantId || tenantId === 'demo') {
+    return `apni_estate_demo_${entity}`;
+  }
+  return `apni_estate_tenant_${tenantId}_${entity}`;
+};
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { organization, profile, isAuthenticated, isDemoMode } = useAuth();
+  const { organization, profile, currentUser, user, isAuthenticated, isDemoMode } = useAuth();
+
+  const activeTenantId = isDemoMode 
+    ? 'demo' 
+    : (organization?.id || currentUser?.id || profile?.organization_id || user?.id || null);
+  const isRealTenant = !isDemoMode && Boolean(activeTenantId && activeTenantId !== 'demo');
 
   const [workspaceMode, setWorkspaceModeState] = useState<WorkspaceMode>(() => {
     try {
@@ -503,92 +540,411 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isUploadPhotoModalOpen, setIsUploadPhotoModalOpenState] = useState(false);
   const [defaultPhotoDailyUpdateId, setDefaultPhotoDailyUpdateId] = useState<string | undefined>(undefined);
 
-  // Core Data States (Local-first & Offline-resilient)
+  // Core Data States (Tenant-Isolated & Offline-Resilient)
   const [clients, setClients] = useState<Client[]>(() => {
-    const saved = localStorage.getItem('apni_estate_clients');
-    return saved ? JSON.parse(saved) : INITIAL_DEMO_CLIENTS;
+    if (!isRealTenant) {
+      const saved = localStorage.getItem('apni_estate_demo_clients');
+      return saved ? JSON.parse(saved) : INITIAL_DEMO_CLIENTS;
+    }
+    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_clients`);
+    if (!saved) return [];
+    try {
+      const demoCliIds = new Set(INITIAL_DEMO_CLIENTS.map(c => c.id));
+      return (JSON.parse(saved) || []).filter((c: any) => !demoCliIds.has(c.id));
+    } catch {
+      return [];
+    }
   });
 
   const [leads, setLeads] = useState<Lead[]>(() => {
-    const saved = localStorage.getItem('apni_estate_leads');
-    return saved ? JSON.parse(saved) : INITIAL_LEADS;
+    if (!isRealTenant) {
+      const saved = localStorage.getItem('apni_estate_demo_leads');
+      return saved ? JSON.parse(saved) : INITIAL_LEADS;
+    }
+    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_leads`);
+    if (!saved) return [];
+    try {
+      const demoLeadIds = new Set(INITIAL_LEADS.map(l => l.id));
+      return (JSON.parse(saved) || []).filter((l: any) => !demoLeadIds.has(l.id));
+    } catch {
+      return [];
+    }
   });
 
   const [tasks, setTasks] = useState<Task[]>(() => {
-    const saved = localStorage.getItem('apni_estate_tasks');
-    return saved ? JSON.parse(saved) : INITIAL_TASKS;
+    if (!isRealTenant) {
+      const saved = localStorage.getItem('apni_estate_demo_tasks');
+      return saved ? JSON.parse(saved) : INITIAL_TASKS;
+    }
+    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_tasks`);
+    if (!saved) return [];
+    try {
+      const demoTaskIds = new Set(INITIAL_TASKS.map(t => t.id));
+      return (JSON.parse(saved) || []).filter((t: any) => !demoTaskIds.has(t.id));
+    } catch {
+      return [];
+    }
   });
 
   const [teamMembers, setTeamMembers] = useState<StaffMember[]>(() => {
-    const saved = localStorage.getItem('apni_estate_team');
-    return saved ? JSON.parse(saved) : INITIAL_STAFF_MEMBERS;
+    if (!isRealTenant) {
+      const saved = localStorage.getItem('apni_estate_demo_team');
+      return saved ? JSON.parse(saved) : INITIAL_STAFF_MEMBERS;
+    }
+    const defaultOwner: StaffMember = {
+      id: profile?.id || currentUser?.id || 'owner-1',
+      organization_id: activeTenantId || '',
+      full_name: profile?.full_name || currentUser?.fullName || 'Studio Owner',
+      role: 'owner',
+      status: 'Active',
+      created_at: new Date().toISOString()
+    };
+    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_team`);
+    if (!saved) return [defaultOwner];
+    try {
+      const demoTeamIds = new Set(INITIAL_STAFF_MEMBERS.map(m => m.id));
+      const parsed = (JSON.parse(saved) || []).filter((m: any) => !demoTeamIds.has(m.id));
+      return parsed.length > 0 ? parsed : [defaultOwner];
+    } catch {
+      return [defaultOwner];
+    }
   });
 
   const [vendors, setVendors] = useState<Vendor[]>(() => {
-    const saved = localStorage.getItem('apni_estate_vendors');
-    return saved ? JSON.parse(saved) : INITIAL_VENDORS;
+    if (!isRealTenant) {
+      const saved = localStorage.getItem('apni_estate_demo_vendors');
+      return saved ? JSON.parse(saved) : INITIAL_VENDORS;
+    }
+    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_vendors`);
+    if (!saved) return [];
+    try {
+      const demoVenIds = new Set(INITIAL_VENDORS.map(v => v.id));
+      return (JSON.parse(saved) || []).filter((v: any) => !demoVenIds.has(v.id));
+    } catch {
+      return [];
+    }
   });
 
   const [clientPayments, setClientPayments] = useState<ClientPayment[]>(() => {
-    const saved = localStorage.getItem('apni_estate_client_payments');
-    return saved ? JSON.parse(saved) : INITIAL_CLIENT_PAYMENTS;
+    if (!isRealTenant) {
+      const saved = localStorage.getItem('apni_estate_demo_client_payments');
+      return saved ? JSON.parse(saved) : INITIAL_CLIENT_PAYMENTS;
+    }
+    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_client_payments`);
+    if (!saved) return [];
+    try {
+      const demoPayIds = new Set(INITIAL_CLIENT_PAYMENTS.map(p => p.id));
+      return (JSON.parse(saved) || []).filter((p: any) => !demoPayIds.has(p.id));
+    } catch {
+      return [];
+    }
   });
 
   const [purchases, setPurchases] = useState<Purchase[]>(() => {
-    const saved = localStorage.getItem('apni_estate_purchases');
-    return saved ? JSON.parse(saved) : INITIAL_PURCHASES;
+    if (!isRealTenant) {
+      const saved = localStorage.getItem('apni_estate_demo_purchases');
+      return saved ? JSON.parse(saved) : INITIAL_PURCHASES;
+    }
+    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_purchases`);
+    if (!saved) return [];
+    try {
+      const demoPoIds = new Set(INITIAL_PURCHASES.map(p => p.id));
+      return (JSON.parse(saved) || []).filter((p: any) => !demoPoIds.has(p.id));
+    } catch {
+      return [];
+    }
   });
 
   const [projects, setProjects] = useState<Project[]>(() => {
-    const saved = localStorage.getItem('apni_estate_projects');
-    return saved ? JSON.parse(saved) : INITIAL_PROJECTS;
+    if (!isRealTenant) {
+      const saved = localStorage.getItem('apni_estate_demo_projects');
+      return saved ? JSON.parse(saved) : INITIAL_PROJECTS;
+    }
+    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_projects`);
+    if (!saved) return [];
+    try {
+      return (JSON.parse(saved) || []).filter((p: any) => !isDemoProjectItem(p));
+    } catch {
+      return [];
+    }
   });
 
   const [expenses, setExpenses] = useState<Expense[]>(() => {
-    const saved = localStorage.getItem('apni_estate_expenses');
-    return saved ? JSON.parse(saved) : INITIAL_EXPENSES;
+    if (!isRealTenant) {
+      const saved = localStorage.getItem('apni_estate_demo_expenses');
+      return saved ? JSON.parse(saved) : INITIAL_EXPENSES;
+    }
+    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_expenses`);
+    if (!saved) return [];
+    try {
+      const demoExpIds = new Set(INITIAL_EXPENSES.map(e => e.id));
+      return (JSON.parse(saved) || []).filter((e: any) => !demoExpIds.has(e.id));
+    } catch {
+      return [];
+    }
   });
 
   const [boqItems, setBoqItems] = useState<BOQItem[]>(() => {
-    const saved = localStorage.getItem('apni_estate_boq_items');
-    return saved ? JSON.parse(saved) : (INITIAL_BOQ_ITEMS as BOQItem[]);
+    if (!isRealTenant) {
+      const saved = localStorage.getItem('apni_estate_demo_boq_items');
+      return saved ? JSON.parse(saved) : (INITIAL_BOQ_ITEMS as BOQItem[]);
+    }
+    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_boq_items`);
+    if (!saved) return [];
+    try {
+      const demoBoqIds = new Set(INITIAL_BOQ_ITEMS.map((b: any) => b.id));
+      return (JSON.parse(saved) || []).filter((b: any) => !demoBoqIds.has(b.id));
+    } catch {
+      return [];
+    }
   });
 
   const [materials, setMaterials] = useState<Material[]>(() => {
-    const saved = localStorage.getItem('apni_estate_materials');
+    const key = isRealTenant ? `apni_estate_tenant_${activeTenantId}_materials` : 'apni_estate_demo_materials';
+    const saved = localStorage.getItem(key);
     return saved ? JSON.parse(saved) : [];
   });
   const [materialTransactions, setMaterialTransactions] = useState<MaterialTransaction[]>(() => {
-    const saved = localStorage.getItem('apni_estate_material_tx');
+    const key = isRealTenant ? `apni_estate_tenant_${activeTenantId}_material_tx` : 'apni_estate_demo_material_tx';
+    const saved = localStorage.getItem(key);
     return saved ? JSON.parse(saved) : [];
   });
   const [milestones, setMilestones] = useState<Milestone[]>(() => {
-    const saved = localStorage.getItem('apni_estate_milestones');
+    const key = isRealTenant ? `apni_estate_tenant_${activeTenantId}_milestones` : 'apni_estate_demo_milestones';
+    const saved = localStorage.getItem(key);
     return saved ? JSON.parse(saved) : [];
   });
   const [dailyUpdates, setDailyUpdates] = useState<DailyUpdate[]>(() => {
-    const saved = localStorage.getItem('apni_estate_daily_updates');
+    const key = isRealTenant ? `apni_estate_tenant_${activeTenantId}_daily_updates` : 'apni_estate_demo_daily_updates';
+    const saved = localStorage.getItem(key);
     return saved ? JSON.parse(saved) : [];
   });
   const [projectPhotos, setProjectPhotos] = useState<ProjectPhoto[]>(() => {
-    const saved = localStorage.getItem('apni_estate_project_photos');
+    const key = isRealTenant ? `apni_estate_tenant_${activeTenantId}_project_photos` : 'apni_estate_demo_project_photos';
+    const saved = localStorage.getItem(key);
     return saved ? JSON.parse(saved) : [];
   });
 
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(() => {
-    const saved = localStorage.getItem('apni_estate_calendar');
-    return saved ? JSON.parse(saved) : CALENDAR_EVENTS;
+    if (!isRealTenant) {
+      const saved = localStorage.getItem('apni_estate_demo_calendar');
+      return saved ? JSON.parse(saved) : CALENDAR_EVENTS;
+    }
+    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_calendar`);
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [documents, setDocuments] = useState<DocumentItem[]>(() => {
-    const saved = localStorage.getItem('apni_estate_documents');
-    return saved ? JSON.parse(saved) : INITIAL_DOCUMENTS;
+    if (!isRealTenant) {
+      const saved = localStorage.getItem('apni_estate_demo_documents');
+      return saved ? JSON.parse(saved) : INITIAL_DOCUMENTS;
+    }
+    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_documents`);
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
-    const saved = localStorage.getItem('apni_estate_notifications');
-    return saved ? JSON.parse(saved) : INITIAL_NOTIFICATIONS;
+    if (!isRealTenant) {
+      const saved = localStorage.getItem('apni_estate_demo_notifications');
+      return saved ? JSON.parse(saved) : INITIAL_NOTIFICATIONS;
+    }
+    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_notifications`);
+    return saved ? JSON.parse(saved) : [
+      {
+        id: `welcome-${activeTenantId}`,
+        title: 'Welcome to Apni Estate',
+        description: 'Your private workspace is ready. Click "+ New Project" to create your first site.',
+        time: 'Just now',
+        read: false,
+        type: 'update'
+      }
+    ];
   });
+
+  // Dynamically switch and sanitize workspace data whenever active tenant / auth state changes
+  useEffect(() => {
+    if (isRealTenant && activeTenantId) {
+      const prefix = `apni_estate_tenant_${activeTenantId}_`;
+
+      // Projects
+      const rawProjects = localStorage.getItem(`${prefix}projects`);
+      let loadedProjects: Project[] = [];
+      if (rawProjects) {
+        try {
+          loadedProjects = (JSON.parse(rawProjects) || []).filter((p: any) => !isDemoProjectItem(p));
+        } catch {}
+      }
+      setProjects(loadedProjects);
+      setSelectedProjectId(loadedProjects.length > 0 ? loadedProjects[0].id : null);
+
+      // Expenses
+      const rawExpenses = localStorage.getItem(`${prefix}expenses`);
+      let loadedExpenses: Expense[] = [];
+      if (rawExpenses) {
+        try {
+          const demoExpIds = new Set(INITIAL_EXPENSES.map(e => e.id));
+          loadedExpenses = (JSON.parse(rawExpenses) || []).filter((e: any) => !demoExpIds.has(e.id));
+        } catch {}
+      }
+      setExpenses(loadedExpenses);
+
+      // Clients
+      const rawClients = localStorage.getItem(`${prefix}clients`);
+      let loadedClients: Client[] = [];
+      if (rawClients) {
+        try {
+          const demoCliIds = new Set(INITIAL_DEMO_CLIENTS.map(c => c.id));
+          loadedClients = (JSON.parse(rawClients) || []).filter((c: any) => !demoCliIds.has(c.id));
+        } catch {}
+      }
+      setClients(loadedClients);
+
+      // BOQ
+      const rawBoq = localStorage.getItem(`${prefix}boq_items`);
+      let loadedBoq: BOQItem[] = [];
+      if (rawBoq) {
+        try {
+          const demoBoqIds = new Set(INITIAL_BOQ_ITEMS.map((b: any) => b.id));
+          loadedBoq = (JSON.parse(rawBoq) || []).filter((b: any) => !demoBoqIds.has(b.id));
+        } catch {}
+      }
+      setBoqItems(loadedBoq);
+
+      // Leads
+      const rawLeads = localStorage.getItem(`${prefix}leads`);
+      let loadedLeads: Lead[] = [];
+      if (rawLeads) {
+        try {
+          const demoLeadIds = new Set(INITIAL_LEADS.map(l => l.id));
+          loadedLeads = (JSON.parse(rawLeads) || []).filter((l: any) => !demoLeadIds.has(l.id));
+        } catch {}
+      }
+      setLeads(loadedLeads);
+
+      // Tasks
+      const rawTasks = localStorage.getItem(`${prefix}tasks`);
+      let loadedTasks: Task[] = [];
+      if (rawTasks) {
+        try {
+          const demoTaskIds = new Set(INITIAL_TASKS.map(t => t.id));
+          loadedTasks = (JSON.parse(rawTasks) || []).filter((t: any) => !demoTaskIds.has(t.id));
+        } catch {}
+      }
+      setTasks(loadedTasks);
+
+      // Team
+      const defaultOwner: StaffMember = {
+        id: profile?.id || currentUser?.id || 'owner-1',
+        organization_id: activeTenantId,
+        full_name: profile?.full_name || currentUser?.fullName || 'Studio Owner',
+        role: 'owner',
+        status: 'Active',
+        created_at: new Date().toISOString()
+      };
+      const rawTeam = localStorage.getItem(`${prefix}team`);
+      let loadedTeam: StaffMember[] = [defaultOwner];
+      if (rawTeam) {
+        try {
+          const demoTeamIds = new Set(INITIAL_STAFF_MEMBERS.map(m => m.id));
+          const parsed = (JSON.parse(rawTeam) || []).filter((m: any) => !demoTeamIds.has(m.id));
+          if (parsed.length > 0) loadedTeam = parsed;
+        } catch {}
+      }
+      setTeamMembers(loadedTeam);
+
+      // Vendors
+      const rawVen = localStorage.getItem(`${prefix}vendors`);
+      let loadedVen: Vendor[] = [];
+      if (rawVen) {
+        try {
+          const demoVenIds = new Set(INITIAL_VENDORS.map(v => v.id));
+          loadedVen = (JSON.parse(rawVen) || []).filter((v: any) => !demoVenIds.has(v.id));
+        } catch {}
+      }
+      setVendors(loadedVen);
+
+      // Payments
+      const rawPay = localStorage.getItem(`${prefix}client_payments`);
+      let loadedPay: ClientPayment[] = [];
+      if (rawPay) {
+        try {
+          const demoPayIds = new Set(INITIAL_CLIENT_PAYMENTS.map(p => p.id));
+          loadedPay = (JSON.parse(rawPay) || []).filter((p: any) => !demoPayIds.has(p.id));
+        } catch {}
+      }
+      setClientPayments(loadedPay);
+
+      // Purchases
+      const rawPo = localStorage.getItem(`${prefix}purchases`);
+      let loadedPo: Purchase[] = [];
+      if (rawPo) {
+        try {
+          const demoPoIds = new Set(INITIAL_PURCHASES.map(p => p.id));
+          loadedPo = (JSON.parse(rawPo) || []).filter((p: any) => !demoPoIds.has(p.id));
+        } catch {}
+      }
+      setPurchases(loadedPo);
+
+      // Materials, tx, milestones, dpr, photos, docs, calendar, notifs
+      const getSafeList = (subKey: string) => {
+        const raw = localStorage.getItem(`${prefix}${subKey}`);
+        if (!raw) return [];
+        try { return JSON.parse(raw) || []; } catch { return []; }
+      };
+      setMaterials(getSafeList('materials'));
+      setMaterialTransactions(getSafeList('material_tx'));
+      setMilestones(getSafeList('milestones'));
+      setDailyUpdates(getSafeList('daily_updates'));
+      setProjectPhotos(getSafeList('project_photos'));
+      setDocuments(getSafeList('documents'));
+      setCalendarEvents(getSafeList('calendar'));
+
+      const rawNotifs = localStorage.getItem(`${prefix}notifications`);
+      if (rawNotifs) {
+        try { setNotifications(JSON.parse(rawNotifs)); } catch { setNotifications([]); }
+      } else {
+        setNotifications([
+          {
+            id: `welcome-${activeTenantId}`,
+            title: 'Welcome to Apni Estate',
+            description: 'Your private workspace is ready. Click "+ New Project" to create your first site.',
+            time: 'Just now',
+            read: false,
+            type: 'update'
+          }
+        ]);
+      }
+    } else if (isDemoMode) {
+      // Demo mode
+      const rawProjects = localStorage.getItem('apni_estate_demo_projects');
+      setProjects(rawProjects ? JSON.parse(rawProjects) : INITIAL_PROJECTS);
+      const rawExpenses = localStorage.getItem('apni_estate_demo_expenses');
+      setExpenses(rawExpenses ? JSON.parse(rawExpenses) : INITIAL_EXPENSES);
+      const rawClients = localStorage.getItem('apni_estate_demo_clients');
+      setClients(rawClients ? JSON.parse(rawClients) : INITIAL_DEMO_CLIENTS);
+      const rawBoq = localStorage.getItem('apni_estate_demo_boq_items');
+      setBoqItems(rawBoq ? JSON.parse(rawBoq) : (INITIAL_BOQ_ITEMS as BOQItem[]));
+      const rawLeads = localStorage.getItem('apni_estate_demo_leads');
+      setLeads(rawLeads ? JSON.parse(rawLeads) : INITIAL_LEADS);
+      const rawTasks = localStorage.getItem('apni_estate_demo_tasks');
+      setTasks(rawTasks ? JSON.parse(rawTasks) : INITIAL_TASKS);
+      const rawTeam = localStorage.getItem('apni_estate_demo_team');
+      setTeamMembers(rawTeam ? JSON.parse(rawTeam) : INITIAL_STAFF_MEMBERS);
+      const rawVendors = localStorage.getItem('apni_estate_demo_vendors');
+      setVendors(rawVendors ? JSON.parse(rawVendors) : INITIAL_VENDORS);
+      const rawPayments = localStorage.getItem('apni_estate_demo_client_payments');
+      setClientPayments(rawPayments ? JSON.parse(rawPayments) : INITIAL_CLIENT_PAYMENTS);
+      const rawPurchases = localStorage.getItem('apni_estate_demo_purchases');
+      setPurchases(rawPurchases ? JSON.parse(rawPurchases) : INITIAL_PURCHASES);
+      const rawDocs = localStorage.getItem('apni_estate_demo_documents');
+      setDocuments(rawDocs ? JSON.parse(rawDocs) : INITIAL_DOCUMENTS);
+      const rawCalendar = localStorage.getItem('apni_estate_demo_calendar');
+      setCalendarEvents(rawCalendar ? JSON.parse(rawCalendar) : CALENDAR_EVENTS);
+      const rawNotifs = localStorage.getItem('apni_estate_demo_notifications');
+      setNotifications(rawNotifs ? JSON.parse(rawNotifs) : INITIAL_NOTIFICATIONS);
+      setSelectedProjectId('proj-1');
+    }
+  }, [isRealTenant, activeTenantId, isDemoMode, profile?.id, profile?.full_name, currentUser?.id, currentUser?.fullName]);
 
   // Load Remote Data from Supabase only when Supabase is explicitly configured & active
   const loadRemoteData = useCallback(async () => {
@@ -696,78 +1052,96 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [isAuthenticated, organization?.id, loadRemoteData]);
 
-  // Continuously sync all application state to LocalStorage so data is never lost
+  // Continuously sync all application state to tenant-scoped LocalStorage so data is never lost
   useEffect(() => {
-    localStorage.setItem('apni_estate_clients', JSON.stringify(clients));
-  }, [clients]);
+    const key = getTenantStorageKey('clients', isDemoMode, activeTenantId);
+    localStorage.setItem(key, JSON.stringify(clients));
+  }, [clients, isDemoMode, activeTenantId]);
 
   useEffect(() => {
-    localStorage.setItem('apni_estate_projects', JSON.stringify(projects));
-  }, [projects]);
+    const key = getTenantStorageKey('projects', isDemoMode, activeTenantId);
+    localStorage.setItem(key, JSON.stringify(projects));
+  }, [projects, isDemoMode, activeTenantId]);
 
   useEffect(() => {
-    localStorage.setItem('apni_estate_expenses', JSON.stringify(expenses));
-  }, [expenses]);
+    const key = getTenantStorageKey('expenses', isDemoMode, activeTenantId);
+    localStorage.setItem(key, JSON.stringify(expenses));
+  }, [expenses, isDemoMode, activeTenantId]);
 
   useEffect(() => {
-    localStorage.setItem('apni_estate_boq_items', JSON.stringify(boqItems));
-  }, [boqItems]);
+    const key = getTenantStorageKey('boq_items', isDemoMode, activeTenantId);
+    localStorage.setItem(key, JSON.stringify(boqItems));
+  }, [boqItems, isDemoMode, activeTenantId]);
 
   useEffect(() => {
-    localStorage.setItem('apni_estate_calendar', JSON.stringify(calendarEvents));
-  }, [calendarEvents]);
+    const key = getTenantStorageKey('calendar', isDemoMode, activeTenantId);
+    localStorage.setItem(key, JSON.stringify(calendarEvents));
+  }, [calendarEvents, isDemoMode, activeTenantId]);
 
   useEffect(() => {
-    localStorage.setItem('apni_estate_documents', JSON.stringify(documents));
-  }, [documents]);
+    const key = getTenantStorageKey('documents', isDemoMode, activeTenantId);
+    localStorage.setItem(key, JSON.stringify(documents));
+  }, [documents, isDemoMode, activeTenantId]);
 
   useEffect(() => {
-    localStorage.setItem('apni_estate_leads', JSON.stringify(leads));
-  }, [leads]);
+    const key = getTenantStorageKey('leads', isDemoMode, activeTenantId);
+    localStorage.setItem(key, JSON.stringify(leads));
+  }, [leads, isDemoMode, activeTenantId]);
 
   useEffect(() => {
-    localStorage.setItem('apni_estate_tasks', JSON.stringify(tasks));
-  }, [tasks]);
+    const key = getTenantStorageKey('tasks', isDemoMode, activeTenantId);
+    localStorage.setItem(key, JSON.stringify(tasks));
+  }, [tasks, isDemoMode, activeTenantId]);
 
   useEffect(() => {
-    localStorage.setItem('apni_estate_team', JSON.stringify(teamMembers));
-  }, [teamMembers]);
+    const key = getTenantStorageKey('team', isDemoMode, activeTenantId);
+    localStorage.setItem(key, JSON.stringify(teamMembers));
+  }, [teamMembers, isDemoMode, activeTenantId]);
 
   useEffect(() => {
-    localStorage.setItem('apni_estate_vendors', JSON.stringify(vendors));
-  }, [vendors]);
+    const key = getTenantStorageKey('vendors', isDemoMode, activeTenantId);
+    localStorage.setItem(key, JSON.stringify(vendors));
+  }, [vendors, isDemoMode, activeTenantId]);
 
   useEffect(() => {
-    localStorage.setItem('apni_estate_client_payments', JSON.stringify(clientPayments));
-  }, [clientPayments]);
+    const key = getTenantStorageKey('client_payments', isDemoMode, activeTenantId);
+    localStorage.setItem(key, JSON.stringify(clientPayments));
+  }, [clientPayments, isDemoMode, activeTenantId]);
 
   useEffect(() => {
-    localStorage.setItem('apni_estate_purchases', JSON.stringify(purchases));
-  }, [purchases]);
+    const key = getTenantStorageKey('purchases', isDemoMode, activeTenantId);
+    localStorage.setItem(key, JSON.stringify(purchases));
+  }, [purchases, isDemoMode, activeTenantId]);
 
   useEffect(() => {
-    localStorage.setItem('apni_estate_notifications', JSON.stringify(notifications));
-  }, [notifications]);
+    const key = getTenantStorageKey('notifications', isDemoMode, activeTenantId);
+    localStorage.setItem(key, JSON.stringify(notifications));
+  }, [notifications, isDemoMode, activeTenantId]);
 
   useEffect(() => {
-    localStorage.setItem('apni_estate_materials', JSON.stringify(materials));
-  }, [materials]);
+    const key = getTenantStorageKey('materials', isDemoMode, activeTenantId);
+    localStorage.setItem(key, JSON.stringify(materials));
+  }, [materials, isDemoMode, activeTenantId]);
 
   useEffect(() => {
-    localStorage.setItem('apni_estate_material_tx', JSON.stringify(materialTransactions));
-  }, [materialTransactions]);
+    const key = getTenantStorageKey('material_tx', isDemoMode, activeTenantId);
+    localStorage.setItem(key, JSON.stringify(materialTransactions));
+  }, [materialTransactions, isDemoMode, activeTenantId]);
 
   useEffect(() => {
-    localStorage.setItem('apni_estate_milestones', JSON.stringify(milestones));
-  }, [milestones]);
+    const key = getTenantStorageKey('milestones', isDemoMode, activeTenantId);
+    localStorage.setItem(key, JSON.stringify(milestones));
+  }, [milestones, isDemoMode, activeTenantId]);
 
   useEffect(() => {
-    localStorage.setItem('apni_estate_daily_updates', JSON.stringify(dailyUpdates));
-  }, [dailyUpdates]);
+    const key = getTenantStorageKey('daily_updates', isDemoMode, activeTenantId);
+    localStorage.setItem(key, JSON.stringify(dailyUpdates));
+  }, [dailyUpdates, isDemoMode, activeTenantId]);
 
   useEffect(() => {
-    localStorage.setItem('apni_estate_project_photos', JSON.stringify(projectPhotos));
-  }, [projectPhotos]);
+    const key = getTenantStorageKey('project_photos', isDemoMode, activeTenantId);
+    localStorage.setItem(key, JSON.stringify(projectPhotos));
+  }, [projectPhotos, isDemoMode, activeTenantId]);
 
   // Open Project Detail Page
   const openProjectDetail = (
@@ -2302,6 +2676,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resetToDemoData = () => {
+    localStorage.removeItem('apni_estate_demo_clients');
+    localStorage.removeItem('apni_estate_demo_projects');
+    localStorage.removeItem('apni_estate_demo_expenses');
+    localStorage.removeItem('apni_estate_demo_boq_items');
+    localStorage.removeItem('apni_estate_demo_calendar');
+    localStorage.removeItem('apni_estate_demo_documents');
+    localStorage.removeItem('apni_estate_demo_notifications');
+    localStorage.removeItem('apni_estate_demo_leads');
+    localStorage.removeItem('apni_estate_demo_tasks');
+    localStorage.removeItem('apni_estate_demo_team');
+    localStorage.removeItem('apni_estate_demo_vendors');
+    localStorage.removeItem('apni_estate_demo_client_payments');
+    localStorage.removeItem('apni_estate_demo_purchases');
+    localStorage.removeItem('apni_estate_demo_materials');
+    localStorage.removeItem('apni_estate_demo_material_tx');
+    localStorage.removeItem('apni_estate_demo_milestones');
+    localStorage.removeItem('apni_estate_demo_daily_updates');
+    localStorage.removeItem('apni_estate_demo_project_photos');
+
+    // Legacy un-scoped keys
     localStorage.removeItem('apni_estate_clients');
     localStorage.removeItem('apni_estate_projects');
     localStorage.removeItem('apni_estate_expenses');
@@ -2312,17 +2706,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem('apni_estate_leads');
     localStorage.removeItem('apni_estate_tasks');
     localStorage.removeItem('apni_estate_team');
-    setClients(INITIAL_DEMO_CLIENTS);
-    setProjects(INITIAL_PROJECTS);
-    setExpenses(INITIAL_EXPENSES);
-    setBoqItems(INITIAL_BOQ_ITEMS as BOQItem[]);
-    setCalendarEvents(CALENDAR_EVENTS);
-    setDocuments(INITIAL_DOCUMENTS);
-    setNotifications(INITIAL_NOTIFICATIONS);
-    setLeads(INITIAL_LEADS);
-    setTasks(INITIAL_TASKS);
-    setTeamMembers(INITIAL_STAFF_MEMBERS);
-    setSelectedProjectId('proj-1');
+
+    if (isDemoMode) {
+      setClients(INITIAL_DEMO_CLIENTS);
+      setProjects(INITIAL_PROJECTS);
+      setExpenses(INITIAL_EXPENSES);
+      setBoqItems(INITIAL_BOQ_ITEMS as BOQItem[]);
+      setCalendarEvents(CALENDAR_EVENTS);
+      setDocuments(INITIAL_DOCUMENTS);
+      setNotifications(INITIAL_NOTIFICATIONS);
+      setLeads(INITIAL_LEADS);
+      setTasks(INITIAL_TASKS);
+      setTeamMembers(INITIAL_STAFF_MEMBERS);
+      setVendors(INITIAL_VENDORS);
+      setClientPayments(INITIAL_CLIENT_PAYMENTS);
+      setPurchases(INITIAL_PURCHASES);
+      setMaterials([]);
+      setMaterialTransactions([]);
+      setMilestones([]);
+      setDailyUpdates([]);
+      setProjectPhotos([]);
+      setSelectedProjectId('proj-1');
+    }
   };
 
   // Dynamic Attention Items derived deterministically from real project & financial data
@@ -2373,17 +2778,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return {
       activeProjectsCount,
       needAttentionCount,
-      totalProjectValue: isDemoMode && totalProjectValue === 0 ? 18400000 : totalProjectValue,
-      totalBudget: isDemoMode && totalBudget === 0 ? 12900000 : totalBudget,
+      totalProjectValue,
+      totalBudget,
       totalBOQEstimate,
-      totalSpent: isDemoMode && totalSpent === 0 ? 8360000 : totalSpent,
-      totalRemaining: isDemoMode && totalRemaining === 0 ? 4540000 : totalRemaining,
-      spentPercentage: isDemoMode && spentPercentage === 0 ? 64.8 : spentPercentage,
+      totalSpent,
+      totalRemaining,
+      spentPercentage,
       categorySpending,
       recentExpenses,
       selectedProject
     };
-  }, [projects, expenses, boqItems, attentionItems, selectedProjectId, isDemoMode]);
+  }, [projects, expenses, boqItems, attentionItems, selectedProjectId]);
 
   return (
     <AppContext.Provider

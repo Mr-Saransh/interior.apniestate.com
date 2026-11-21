@@ -70,6 +70,8 @@ import { UploadPhotoModal } from '../components/modals/UploadPhotoModal';
 import { TaskModal } from '../components/modals/TaskModal';
 import { UploadDocumentModal } from '../components/modals/UploadDocumentModal';
 import { ClientPaymentModal } from '../components/modals/ClientPaymentModal';
+import { RecordPaymentModal } from '../components/modals/RecordPaymentModal';
+import { MaterialImportModal } from '../components/modals/MaterialImportModal';
 import { PurchaseModal } from '../components/modals/PurchaseModal';
 import {
   calculateProjectSpent,
@@ -86,6 +88,10 @@ import { milestoneService } from '../services/milestoneService';
 import { documentService } from '../services/documentService';
 import { quotationService } from '../services/quotationService';
 import { GanttChart } from '../components/project/GanttChart';
+import { ProjectFinanceSection } from '../components/project/ProjectFinanceSection';
+import { ProjectMaterialsSection } from '../components/project/ProjectMaterialsSection';
+import { ProjectMilestonesSection } from '../components/project/ProjectMilestonesSection';
+import { ProjectPlansSection } from '../components/project/ProjectPlansSection';
 import {
   ResponsiveContainer,
   BarChart,
@@ -111,36 +117,15 @@ interface ClientRequirement {
   estimated_cost?: number;
 }
 
-type ProjectTab =
-  | 'Overview' | 'Rooms' | 'BOQ' | 'Client Requests' | 'Expenses' | 'Budget' | 'Materials'
-  | 'Milestones' | 'Daily Updates' | 'Photos' | 'Notes' | 'Tasks'
-  | 'Documents' | 'Payments' | 'Purchases';
+export type PrimaryProjectTab = 'Overview' | 'Finance' | 'Materials' | 'Milestones' | 'Plans';
 
-const projectTabGroups: { label: string; tabs: ProjectTab[] }[] = [
-  { label: 'Overview', tabs: ['Overview'] },
-  { label: 'Plan', tabs: ['Rooms', 'BOQ', 'Client Requests'] },
-  { label: 'Site', tabs: ['Tasks', 'Milestones', 'Daily Updates', 'Photos', 'Materials'] },
-  { label: 'Money', tabs: ['Expenses', 'Budget', 'Payments', 'Purchases'] },
-  { label: 'Files', tabs: ['Documents', 'Notes'] }
+export const PRIMARY_PROJECT_TABS: { id: PrimaryProjectTab; label: string; icon: any }[] = [
+  { id: 'Overview', label: 'Overview', icon: LayoutGrid },
+  { id: 'Finance', label: 'Finance', icon: IndianRupee },
+  { id: 'Materials', label: 'Materials', icon: Package },
+  { id: 'Milestones', label: 'Milestones & Site', icon: Flag },
+  { id: 'Plans', label: 'Plans & Blueprints', icon: Layers }
 ];
-
-const projectTabLabels: Record<ProjectTab, string> = {
-  Overview: 'Overview',
-  Rooms: 'Rooms',
-  BOQ: 'Cost estimate',
-  'Client Requests': 'Client Requests',
-  Expenses: 'Expenses',
-  Budget: 'Budget',
-  Materials: 'Materials',
-  Milestones: 'Schedule',
-  'Daily Updates': 'Updates',
-  Photos: 'Photos',
-  Notes: 'Notes',
-  Tasks: 'Tasks',
-  Documents: 'Documents',
-  Payments: 'Payments',
-  Purchases: 'Purchases'
-};
 
 export const ProjectDetailPage: React.FC = () => {
   const {
@@ -160,6 +145,7 @@ export const ProjectDetailPage: React.FC = () => {
     documents,
     teamMembers,
     clientPayments,
+    paymentTransactions,
     purchases,
     vendors,
     clients,
@@ -168,6 +154,8 @@ export const ProjectDetailPage: React.FC = () => {
     deleteDocument,
     deleteClientPayment,
     deletePurchase,
+    addPaymentTransaction,
+    deletePaymentTransaction,
     setIsAddExpenseModalOpen,
     setIsBOQModalOpen,
     setIsSpecificQuoteModalOpen,
@@ -203,7 +191,16 @@ export const ProjectDetailPage: React.FC = () => {
 
   const { isDemoMode, profile, organization } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<ProjectTab>('Overview');
+  const [activeTab, setActiveTab] = useState<PrimaryProjectTab>('Overview');
+  const [financeSubTab, setFinanceSubTab] = useState<'obligations' | 'transactions' | 'expenses' | 'budget'>('obligations');
+  const [milestoneSubTab, setMilestoneSubTab] = useState<'timeline' | 'dpr' | 'tasks'>('timeline');
+  const [plansSubTab, setPlansSubTab] = useState<'blueprints' | 'rooms' | 'client_requests'>('blueprints');
+
+  // Partial Payment and Document Import Modals
+  const [isRecordPaymentModalOpen, setIsRecordPaymentModalOpen] = useState(false);
+  const [recordPaymentDefaultObligationId, setRecordPaymentDefaultObligationId] = useState<string | undefined>(undefined);
+  const [isMaterialImportModalOpen, setIsMaterialImportModalOpen] = useState(false);
+  const [blueprintCategoryFilter, setBlueprintCategoryFilter] = useState<string>('All');
 
   // Modals state
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
@@ -280,7 +277,26 @@ export const ProjectDetailPage: React.FC = () => {
 
   useEffect(() => {
     if (initialProjectDetailTab) {
-      setActiveTab(initialProjectDetailTab);
+      if (['Expenses', 'Budget', 'Payments', 'Purchases'].includes(initialProjectDetailTab as any)) {
+        setActiveTab('Finance');
+        if (initialProjectDetailTab === 'Expenses') setFinanceSubTab('expenses');
+        else if (initialProjectDetailTab === 'Budget') setFinanceSubTab('budget');
+        else setFinanceSubTab('obligations');
+      } else if (initialProjectDetailTab === 'Materials') {
+        setActiveTab('Materials');
+      } else if (['Milestones', 'Daily Updates', 'Tasks'].includes(initialProjectDetailTab as any)) {
+        setActiveTab('Milestones');
+        if (initialProjectDetailTab === 'Daily Updates') setMilestoneSubTab('dpr');
+        else if (initialProjectDetailTab === 'Tasks') setMilestoneSubTab('tasks');
+        else setMilestoneSubTab('timeline');
+      } else if (['Rooms', 'BOQ', 'Documents', 'Notes', 'Client Requests'].includes(initialProjectDetailTab as any)) {
+        setActiveTab('Plans');
+        if ((initialProjectDetailTab as string) === 'Rooms' || (initialProjectDetailTab as string) === 'BOQ') setPlansSubTab('rooms');
+        else if ((initialProjectDetailTab as string) === 'Client Requests') setPlansSubTab('client_requests');
+        else setPlansSubTab('blueprints');
+      } else {
+        setActiveTab('Overview');
+      }
     }
   }, [initialProjectDetailTab]);
 
@@ -304,7 +320,6 @@ export const ProjectDetailPage: React.FC = () => {
     notes: [],
     photos: []
   };
-  const activeTabGroup = projectTabGroups.find(group => group.tabs.includes(activeTab)) || projectTabGroups[0];
 
   // Client Portal Requirements State & Sync
   const [clientRequests, setClientRequests] = useState<ClientRequirement[]>([]);
@@ -403,6 +418,11 @@ export const ProjectDetailPage: React.FC = () => {
     } catch (err) {
       console.error('Failed to add client request to BOQ:', err);
     }
+  };
+
+  const handleApproveClientRequest = (reqId: string) => {
+    const req = clientRequests.find(r => r.id === reqId);
+    if (req) handleApproveAndAddToBOQ(req);
   };
 
   const handleUpdateReqStatus = (reqId: string, newStatus: ClientRequirement['status']) => {
@@ -556,6 +576,7 @@ export const ProjectDetailPage: React.FC = () => {
 
   // Project Payments & Purchases
   const projectPayments = clientPayments.filter(p => (p.project_id || p.projectId) === project.id);
+  const projectPaymentTransactions = paymentTransactions.filter(t => (t.project_id || (t as any).projectId) === project.id);
   const projectPurchases = purchases.filter(p => (p.project_id || p.projectId) === project.id);
 
   // Authoritative Project Profitability
@@ -864,56 +885,42 @@ export const ProjectDetailPage: React.FC = () => {
         </div>
       </div>
 
-      <nav aria-label="Project sections" className="rounded-xl border border-slate-200 bg-white p-3">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-          {projectTabGroups.map(group => {
-            const isActive = activeTabGroup.label === group.label;
-            const hasPendingPortal = group.label === 'Plan' && pendingRequests.length > 0;
+      {/* 5-SECTION PRIMARY NAVIGATION */}
+      <nav aria-label="Project sections" className="rounded-2xl border border-slate-200/90 bg-white p-2 shadow-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 sm:gap-2">
+          {PRIMARY_PROJECT_TABS.map(tab => {
+            const isActive = activeTab === tab.id;
+            const hasPendingPortal = tab.id === 'Plans' && pendingRequests.length > 0;
+            const hasDuePayments = tab.id === 'Finance' && overduePayments.length > 0;
+            const Icon = tab.icon;
+
             return (
               <button
                 type="button"
-                key={group.label}
+                key={tab.id}
                 aria-pressed={isActive}
-                onClick={() => setActiveTab(group.tabs[0])}
-                className={`min-h-11 rounded-lg px-3 text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 ${isActive
-                  ? 'bg-brand-50 text-brand-800 ring-1 ring-brand-200'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
+                onClick={() => setActiveTab(tab.id)}
+                className={`min-h-12 rounded-xl px-3 py-2 text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${isActive
+                  ? 'bg-brand-600 text-white shadow-sm ring-2 ring-brand-500/30'
+                  : 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-900'
+                }`}
               >
-                <span>{group.label}</span>
+                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                <span>{tab.label}</span>
                 {hasPendingPortal && (
                   <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-amber-400 text-amber-950 shadow-2xs">
                     {pendingRequests.length}
+                  </span>
+                )}
+                {hasDuePayments && (
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${isActive ? 'bg-amber-300 text-amber-950' : 'bg-rose-100 text-rose-700'}`}>
+                    {overduePayments.length} due
                   </span>
                 )}
               </button>
             );
           })}
         </div>
-        {activeTabGroup.tabs.length > 1 && (
-          <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3" aria-label={`${activeTabGroup.label} pages`}>
-            {activeTabGroup.tabs.map(tab => (
-              <button
-                type="button"
-                key={tab}
-                aria-current={activeTab === tab ? 'page' : undefined}
-                onClick={() => setActiveTab(tab)}
-                className={`min-h-10 rounded-lg px-3 text-sm font-medium transition-colors flex items-center gap-1.5 ${activeTab === tab
-                  ? 'bg-brand-600 text-white'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                  }`}
-              >
-                <span>{projectTabLabels[tab]}</span>
-                {tab === 'Client Requests' && pendingRequests.length > 0 && (
-                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${activeTab === tab ? 'bg-amber-400 text-amber-950' : 'bg-amber-400 text-amber-950 shadow-xs'
-                    }`}>
-                    {pendingRequests.length}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
       </nav>
 
       {/* TAB 1: OVERVIEW */}
@@ -990,7 +997,7 @@ export const ProjectDetailPage: React.FC = () => {
                 <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
                   <button
                     type="button"
-                    onClick={() => setActiveTab('Client Requests')}
+                    onClick={() => { setActiveTab('Plans'); setPlansSubTab('client_requests'); }}
                     className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
                   >
                     <span>Review &amp; Approve ({pendingRequests.length})</span>
@@ -999,6 +1006,48 @@ export const ProjectDetailPage: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* QUICK ACTIONS BAR */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-brand-950 to-slate-900 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <span className="text-[10px] uppercase tracking-wider font-extrabold text-brand-400 block">Fast Site Actions</span>
+                <h4 className="text-sm font-bold text-white">Record site progress, staged payments, and material deliveries</h4>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsRecordPaymentModalOpen(true)}
+                  className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <IndianRupee className="w-3.5 h-3.5" />
+                  <span>+ Record Payment</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsMaterialImportModalOpen(true)}
+                  className="px-3.5 py-2 rounded-xl bg-brand-500 hover:bg-brand-400 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <UploadCloud className="w-3.5 h-3.5" />
+                  <span>+ Import Materials (PDF/Excel)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsDailyUpdateModalOpen(true)}
+                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-all border border-slate-700 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Clock className="w-3.5 h-3.5 text-amber-400" />
+                  <span>+ Post DPR Update</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsMilestoneModalOpen(true)}
+                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-all border border-slate-700 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Flag className="w-3.5 h-3.5 text-blue-400" />
+                  <span>+ Add Milestone</span>
+                </button>
+              </div>
+            </div>
 
             {/* ROW 1: 4 UNIFORM ARCHITECTURAL KPI CARDS */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -1257,17 +1306,17 @@ export const ProjectDetailPage: React.FC = () => {
                         </button>
                       )}
                       {delayedPurchases.length > 0 && (
-                        <button onClick={() => setActiveTab('Purchases')} className="rounded-lg bg-white border border-[#E5E7EB] px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50">
+                        <button onClick={() => setActiveTab('Materials')} className="rounded-lg bg-white border border-[#E5E7EB] px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50">
                           Follow Up POs
                         </button>
                       )}
                       {overduePayments.length > 0 && (
-                        <button onClick={() => setActiveTab('Payments')} className="rounded-lg bg-white border border-[#E5E7EB] px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50">
+                        <button onClick={() => { setActiveTab('Finance'); setFinanceSubTab('obligations'); }} className="rounded-lg bg-white border border-[#E5E7EB] px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50">
                           Review Dues
                         </button>
                       )}
                       {projectBOQItems.length > approvedBOQCount && (
-                        <button onClick={() => setActiveTab('BOQ')} className="rounded-lg bg-white border border-[#E5E7EB] px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50">
+                        <button onClick={() => { setActiveTab('Plans'); setPlansSubTab('rooms'); }} className="rounded-lg bg-white border border-[#E5E7EB] px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50">
                           Approve BOQ
                         </button>
                       )}
@@ -1291,16 +1340,16 @@ export const ProjectDetailPage: React.FC = () => {
                     <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-900">Schedule &amp; Cash</h3>
                     <div className="flex items-center gap-1.5">
                       <button
-                        onClick={() => setActiveTab('Payments')}
+                        onClick={() => { setActiveTab('Finance'); setFinanceSubTab('obligations'); }}
                         className="px-2.5 py-1.5 rounded-lg bg-[#EFF6FF] hover:bg-blue-100 text-[#1D4ED8] text-xs font-semibold transition-colors"
                       >
                         Payments ({projectPayments.length})
                       </button>
                       <button
-                        onClick={() => setActiveTab('Purchases')}
+                        onClick={() => setActiveTab('Materials')}
                         className="px-2.5 py-1.5 rounded-lg bg-[#F4F6FA] hover:bg-slate-200 text-slate-700 border border-[#E5E7EB] text-xs font-semibold transition-colors"
                       >
-                        POs ({projectPurchases.length})
+                        Materials ({projectMaterials.length})
                       </button>
                     </div>
                   </div>
@@ -1464,1864 +1513,112 @@ export const ProjectDetailPage: React.FC = () => {
         );
       })()}
 
-      {/* TAB 2: ROOMS */}
-      {activeTab === 'Rooms' && (
-        <div className="space-y-5">
-          <div className="premium-card p-5 sm:p-6 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <h3 className="text-base font-bold font-display text-slate-900">Project Rooms</h3>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-[#1D4ED8] border border-blue-100">
-                  {rooms.length} spaces
-                </span>
-                {rooms.some(r => r.area_sqft) && (
-                  <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700">
-                    {rooms.reduce((sum, r) => sum + (r.area_sqft || 0), 0)} sq.ft total
-                  </span>
-                )}
-              </div>
-
-              {rooms.length > 0 && (
-                <button
-                  onClick={handleAddRoom}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#1D4ED8] text-xs font-bold text-white transition-colors hover:bg-[#1E40AF] cursor-pointer shadow-xs shrink-0"
-                >
-                  <Plus className="w-4 h-4" aria-hidden="true" />
-                  <span>Add Room</span>
-                </button>
-              )}
-            </div>
-
-            {rooms.length === 0 ? (
-              <EmptyState
-                icon={LayoutGrid}
-                title="No rooms created"
-                description="Add rooms with area and rates, or pick from pre-filled cost templates."
-                actionLabel="Add Room"
-                onAction={handleAddRoom}
-              />
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
-                {rooms.map((room) => {
-                  const roomSpent = calculateRoomSpent(room.id, expenses);
-                  const roomBOQ = calculateRoomBOQ(room.id, boqItems);
-                  const roomMetrics = calculateBudgetMetrics(room.budget, roomSpent);
-                  const roomItems = projectBOQItems.filter(b => b.room_id === room.id);
-
-                  return (
-                    <div key={room.id} className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-extrabold text-sm text-slate-900 truncate pr-2">{room.name}</h4>
-                          <Badge status={room.status || 'In Progress'} size="sm" />
-                        </div>
-
-                        {room.area_sqft ? (
-                          <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-3">
-                            <span className="font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 text-[11px]">
-                              {room.area_sqft} sqft
-                            </span>
-                            <span className="text-slate-400">@</span>
-                            <span className="font-bold text-[#1D4ED8] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100 text-[11px]">
-                              ₹{room.rate_per_sqft || 250}/sqft
-                            </span>
-                          </div>
-                        ) : room.room_type ? (
-                          <div className="text-[11px] font-semibold text-slate-500 mb-3">
-                            {room.room_type}
-                          </div>
-                        ) : null}
-
-                        {/* Progress bar */}
-                        <div className="mb-3 space-y-1">
-                          <div className="flex justify-between text-[11px] font-semibold text-slate-500">
-                            <span>Progress</span>
-                            <span className="font-bold text-[#1D4ED8]">{room.progress || 0}%</span>
-                          </div>
-                          <ProgressBar value={room.progress || 0} height="sm" />
-                        </div>
-
-                        <div className="space-y-1.5 mb-4 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs">
-                          <div className="flex justify-between">
-                            <span className="text-slate-500">Allocated Budget:</span>
-                            <span className="font-bold text-slate-800">{formatINR(room.budget)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-500">BOQ Estimate:</span>
-                            <span className="font-bold text-slate-700">{formatINR(roomBOQ)} ({roomItems.length} items)</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-500">Actual Spent:</span>
-                            <span className="font-bold text-[#1D4ED8]">{formatINR(roomSpent)}</span>
-                          </div>
-                          <div className="flex justify-between pt-1 border-t border-slate-200">
-                            <span className="text-slate-500">Remaining:</span>
-                            <span className={`font-extrabold ${roomMetrics.isOverBudget ? 'text-rose-600' : 'text-emerald-600'}`}>
-                              {formatINR(roomMetrics.remaining)}
-                            </span>
-                          </div>
-                        </div>
-
-                        {room.notes && (
-                          <div className="p-2.5 bg-slate-50 rounded-xl text-xs text-slate-600 mb-4 border border-slate-100">
-                            <span className="font-semibold text-slate-700 block mb-0.5">Notes:</span>
-                            {room.notes}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                        <button
-                          onClick={() => setIsBOQModalOpen(true, project.id, room.id)}
-                          className="text-xs font-bold text-[#1D4ED8] hover:text-[#1E40AF] flex items-center gap-1 cursor-pointer"
-                        >
-                          <Plus className="w-3 h-3" />
-                          <span>Add Item</span>
-                        </button>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleEditRoom(room)}
-                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg cursor-pointer"
-                            title="Edit Room"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setRoomToDelete(room)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
-                            title="Delete Room"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
+      {/* ── TAB 2: FINANCE MANAGEMENT ── */}
+      {activeTab === 'Finance' && (
+        <ProjectFinanceSection
+          project={project}
+          profitability={profitability}
+          projectPayments={projectPayments}
+          projectPaymentTransactions={projectPaymentTransactions}
+          projectExpenses={projectExpenses}
+          rooms={rooms}
+          activeSubTab={financeSubTab}
+          onSubTabChange={setFinanceSubTab}
+          onOpenRecordPayment={(obligationId) => {
+            setRecordPaymentDefaultObligationId(obligationId);
+            setIsRecordPaymentModalOpen(true);
+          }}
+          onOpenAddMilestone={() => {
+            setProjectPaymentToEdit(null);
+            setIsProjectPaymentModalOpen(true);
+          }}
+          onEditPayment={(payment) => {
+            setProjectPaymentToEdit(payment);
+            setIsProjectPaymentModalOpen(true);
+          }}
+          onDeletePayment={(payment) => {
+            setPaymentToDelete(payment);
+          }}
+          onDeleteTransaction={deletePaymentTransaction}
+          onOpenAddExpense={() => setIsAddExpenseModalOpen(true, project.id)}
+          onEditExpense={(exp) => setIsAddExpenseModalOpen(true, project.id, exp)}
+          onDeleteExpense={(exp) => setExpenseToDelete(exp)}
+        />
       )}
 
-      {/* TAB 3: BOQ & COSTING */}
-      {activeTab === 'BOQ' && (
-        <div className="space-y-6">
-          <div className="premium-card p-6 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
-              <div>
-                <h3 className="text-base font-bold font-display text-slate-900">Bill of Quantities (BOQ) & Scope Costing</h3>
-                <p className="text-xs text-slate-500">Granular rate analysis, item specifications, and estimated vs actual cost comparison.</p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={handleApproveBOQ}
-                  disabled={!canApproveBOQ || projectBOQItems.length === 0 || isApprovingBOQ}
-                  title={!canApproveBOQ ? 'Only an owner or admin can approve a BOQ.' : undefined}
-                  className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800 transition-all hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  <span>{isApprovingBOQ ? 'Approving…' : approvedBOQCount === projectBOQItems.length && projectBOQItems.length ? 'Re-approve BOQ' : 'Approve BOQ'}</span>
-                  <span className="rounded-md bg-white/80 px-1.5 py-0.5 text-[10px]">{approvedBOQCount}/{projectBOQItems.length}</span>
-                </button>
-                <button
-                  onClick={() => setIsSpecificQuoteModalOpen(true, project.id)}
-                  className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-[#1D4ED8] transition-all hover:bg-blue-100"
-                >
-                  <FileCheck2 className="h-3.5 w-3.5" />
-                  <span>Generate Client Quotation</span>
-                </button>
-                <button
-                  onClick={() => setIsBOQModalOpen(true, project.id)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#1D4ED8] px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-[#1E40AF]"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>Add BOQ Item</span>
-                </button>
-              </div>
-            </div>
-            {boqApprovalError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">{boqApprovalError}</p>}
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search item, category, description..."
-                  value={boqSearch}
-                  onChange={(e) => setBOQSearch(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-brand-500"
-                />
-              </div>
-
-              <div>
-                <select
-                  value={boqRoomFilter}
-                  onChange={(e) => setBOQRoomFilter(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none"
-                >
-                  <option value="All">Filter by Room: All Rooms</option>
-                  <option value="General">General / Site Wide</option>
-                  {rooms.map(r => (
-                    <option key={r.id} value={r.id}>{r.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <select
-                  value={boqCategoryFilter}
-                  onChange={(e) => setBOQCategoryFilter(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none"
-                >
-                  <option value="All">Filter by Category: All</option>
-                  {['Civil Work', 'Carpentry', 'Electrical', 'Painting', 'Lighting', 'Plumbing', 'Decor', 'Other'].map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {filteredBOQItems.length === 0 ? (
-              <EmptyState
-                icon={Layers}
-                title="No BOQ items match your filter"
-                description="Add items to build out detailed rate analysis for false ceiling, woodwork, and civil specs."
-                actionLabel="+ Add BOQ Item"
-                onAction={() => setIsBOQModalOpen(true, project.id)}
-              />
-            ) : (
-              <>
-                {/* Desktop Table View */}
-                <div className="hidden md:block overflow-x-auto border border-slate-200 rounded-2xl">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50/80 text-slate-500 border-b border-slate-200 uppercase font-semibold">
-                      <tr>
-                        <th className="px-4 py-3">Item & Category</th>
-                        <th className="px-4 py-3">Room</th>
-                        <th className="px-4 py-3 text-right">Quantity & Unit</th>
-                        <th className="px-4 py-3 text-right">Rate</th>
-                        <th className="px-4 py-3 text-right">Estimated Cost</th>
-                        <th className="px-4 py-3 text-center">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {filteredBOQItems.map((item) => {
-                        const assignedRoom = rooms.find(r => r.id === item.room_id);
-                        return (
-                          <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
-                            <td className="px-4 py-3">
-                              <div className="font-bold text-slate-900">{item.item_name}</div>
-                              {item.category && (
-                                <span className="text-[10px] text-slate-400 font-semibold">{item.category}</span>
-                              )}
-                              {item.description && (
-                                <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{item.description}</p>
-                              )}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="text-xs text-slate-600 font-medium">
-                                {assignedRoom ? assignedRoom.name : 'General'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-right font-semibold text-slate-800">
-                              {item.quantity} {item.unit || 'units'}
-                            </td>
-                            <td className="px-4 py-3 text-right text-slate-600 font-medium">
-                              {formatINR(item.rate)}
-                            </td>
-                            <td className="px-4 py-3 text-right font-extrabold text-slate-900">
-                              {formatINR(item.estimated_cost)}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <div className="flex items-center justify-center gap-1.5">
-                                <button
-                                  onClick={() => setIsBOQModalOpen(true, project.id, item.room_id, item)}
-                                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg"
-                                  title="Edit BOQ Item"
-                                >
-                                  <Edit2 className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => setBOQToDelete(item)}
-                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"
-                                  title="Delete BOQ Item"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Mobile Cards View */}
-                <div className="md:hidden space-y-3">
-                  {filteredBOQItems.map((item) => {
-                    const assignedRoom = rooms.find(r => r.id === item.room_id);
-                    return (
-                      <div key={item.id} className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <h4 className="font-bold text-sm text-slate-900">{item.item_name}</h4>
-                            <div className="flex items-center gap-2 mt-1 flex-wrap">
-                              {item.category && (
-                                <span className="text-[10px] px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100">
-                                  {item.category}
-                                </span>
-                              )}
-                              <span className="text-[11px] text-slate-500 font-medium">
-                                {assignedRoom ? assignedRoom.name : 'General Site'}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 block">Est. Cost</span>
-                            <span className="text-sm font-extrabold text-slate-900">{formatINR(item.estimated_cost)}</span>
-                          </div>
-                        </div>
-
-                        {item.description && (
-                          <p className="text-xs text-slate-500 leading-relaxed">{item.description}</p>
-                        )}
-
-                        <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 text-xs">
-                          <div className="text-slate-600">
-                            <span className="font-semibold">{item.quantity} {item.unit || 'units'}</span>
-                            <span className="text-slate-400 mx-1.5">@</span>
-                            <span>{formatINR(item.rate)}</span>
-                          </div>
-
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => setIsBOQModalOpen(true, project.id, item.room_id, item)}
-                              className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-200 rounded-lg min-w-[36px] min-h-[36px] flex items-center justify-center"
-                              title="Edit BOQ Item"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => setBOQToDelete(item)}
-                              className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg min-w-[36px] min-h-[36px] flex items-center justify-center"
-                              title="Delete BOQ Item"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* TAB: CLIENT REQUESTS & PORTAL REQUIREMENTS */}
-      {activeTab === 'Client Requests' && (
-        <div className="space-y-6">
-          <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 space-y-5">
-            {/* Top Toolbar */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-bold shadow-xs">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-base font-bold text-slate-900">Client Requirements &amp; Portal Submissions</h2>
-                    {pendingRequests.length > 0 && (
-                      <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                        {pendingRequests.length} Pending Review
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-500">
-                    Live requirements submitted by {project.client} via the shared client portal link.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <a
-                  href={`${window.location.origin}${window.location.pathname}?portal=${encodeURIComponent(project.id)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all"
-                  title="Open live client portal view"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Preview Client View</span>
-                </a>
-
-                <button
-                  type="button"
-                  onClick={() => setIsAddReqModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Record Requirement</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Filter Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-              {(['All', 'Under Review', 'Approved & In Scope', 'Declined'] as const).map(f => {
-                const count = f === 'All'
-                  ? clientRequests.length
-                  : clientRequests.filter(r => r.status === f).length;
-                return (
-                  <button
-                    key={f}
-                    type="button"
-                    onClick={() => setClientReqFilter(f)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${clientReqFilter === f
-                      ? 'bg-slate-900 text-white shadow-xs'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      }`}
-                  >
-                    <span>{f}</span>
-                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${clientReqFilter === f ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'}`}>
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Content List / Cards */}
-            {(() => {
-              const filtered = clientRequests.filter(r => clientReqFilter === 'All' || r.status === clientReqFilter);
-              if (filtered.length === 0) {
-                return (
-                  <EmptyState
-                    icon={Sparkles}
-                    title={clientReqFilter === 'All' ? 'No client requirements yet' : `No requests marked "${clientReqFilter}"`}
-                    description="When your client submits ideas or adjustments from the shared portal link, they appear here for your review and approval into the Cost Estimate."
-                    actionLabel="Add Client Request"
-                    onAction={() => setIsAddReqModalOpen(true)}
-                  />
-                );
-              }
-
-              return (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {filtered.map(req => {
-                    const isPending = req.status === 'Under Review';
-                    const isApproved = req.status === 'Approved & In Scope';
-                    const isDeclined = req.status === 'Declined';
-
-                    return (
-                      <div
-                        key={req.id}
-                        className={`rounded-2xl border p-4.5 transition-all flex flex-col justify-between ${isPending
-                          ? 'bg-amber-50/40 border-amber-300 shadow-xs ring-1 ring-amber-300/50'
-                          : isApproved
-                            ? 'bg-emerald-50/30 border-emerald-200'
-                            : 'bg-slate-50/50 border-slate-200 opacity-75'
-                          }`}
-                      >
-                        <div className="space-y-3">
-                          {/* Card Meta Row */}
-                          <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <div className="flex items-center gap-1.5">
-                              <span className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-800 shadow-2xs">
-                                🏠 {req.space}
-                              </span>
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${req.priority === 'High' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'
-                                }`}>
-                                {req.priority} Priority
-                              </span>
-                            </div>
-
-                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border flex items-center gap-1.5 ${isPending
-                              ? 'bg-amber-100 text-amber-900 border-amber-300'
-                              : isApproved
-                                ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
-                                : 'bg-slate-200 text-slate-700 border-slate-300'
-                              }`}>
-                              {isPending && <Clock className="w-3 h-3 text-amber-700" />}
-                              {isApproved && <CheckCircle2 className="w-3 h-3 text-emerald-700" />}
-                              {isDeclined && <X className="w-3 h-3 text-slate-500" />}
-                              <span>{req.status}</span>
-                            </span>
-                          </div>
-
-                          {/* Requirement Details */}
-                          <div>
-                            <h3 className="text-sm font-bold text-slate-900 leading-snug">{req.title}</h3>
-                            {req.details && (
-                              <p className="text-xs text-slate-600 mt-1 leading-relaxed bg-white/70 p-2.5 rounded-xl border border-slate-100">
-                                {req.details}
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">
-                            <span>Submitted: {req.submitted_at || 'Recent'}</span>
-                            <span>Client Portal link</span>
-                          </div>
-                        </div>
-
-                        {/* Card Actions Bar */}
-                        <div className="pt-4 mt-3 border-t border-slate-200/80 flex items-center justify-between gap-2 flex-wrap">
-                          {isPending ? (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => handleApproveAndAddToBOQ(req)}
-                                className="flex-1 py-2 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                              >
-                                <Sparkles className="w-3.5 h-3.5" />
-                                <span>Approve &amp; Add to BOQ</span>
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => handleUpdateReqStatus(req.id, 'Approved & In Scope')}
-                                className="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-all cursor-pointer"
-                                title="Mark as approved without adding separate BOQ line"
-                              >
-                                Mark In Scope
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => handleUpdateReqStatus(req.id, 'Declined')}
-                                className="py-2 px-2.5 rounded-xl bg-white border border-slate-200 hover:bg-rose-50 hover:text-rose-600 text-slate-500 text-xs font-semibold transition-all cursor-pointer"
-                                title="Decline this requirement"
-                              >
-                                Decline
-                              </button>
-                            </>
-                          ) : isApproved ? (
-                            <div className="flex items-center justify-between w-full">
-                              <span className="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
-                                <CheckCircle2 className="w-4 h-4" />
-                                <span>Included in Project Scope / BOQ</span>
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => handleUpdateReqStatus(req.id, 'Under Review')}
-                                className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 underline cursor-pointer"
-                              >
-                                Reopen Review
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-between w-full">
-                              <span className="text-xs font-semibold text-slate-500">Declined for current phase</span>
-                              <button
-                                type="button"
-                                onClick={() => handleUpdateReqStatus(req.id, 'Under Review')}
-                                className="text-[11px] font-semibold text-brand-600 hover:underline cursor-pointer"
-                              >
-                                Reconsider
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })()}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 4: EXPENSES */}
-      {activeTab === 'Expenses' && (
-        <div className="space-y-6">
-          <div className="premium-card p-6 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
-              <div>
-                <h3 className="text-base font-bold font-display text-slate-900">Project Expense Ledger</h3>
-                <p className="text-xs text-slate-500">Every recorded payment directly recalculates the authoritative project budget.</p>
-              </div>
-
-              <button
-                onClick={() => setIsAddExpenseModalOpen(true, project.id)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-sm transition-all self-start sm:self-auto"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Expense</span>
-              </button>
-            </div>
-
-            {projectExpenses.length === 0 ? (
-              <EmptyState
-                icon={IndianRupee}
-                title="No expenses logged for this project"
-                description="Record advances, vendor payments, and site expenses to track real-time utilization."
-                actionLabel="+ Add First Expense"
-                onAction={() => setIsAddExpenseModalOpen(true, project.id)}
-              />
-            ) : (
-              <>
-                {/* Desktop Table */}
-                <div className="hidden md:block overflow-x-auto border border-slate-200 rounded-2xl">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50/80 text-slate-500 border-b border-slate-200 uppercase font-semibold">
-                      <tr>
-                        <th className="px-4 py-3">Title & Category</th>
-                        <th className="px-4 py-3">Room / Area</th>
-                        <th className="px-4 py-3">Vendor</th>
-                        <th className="px-4 py-3">Date</th>
-                        <th className="px-4 py-3 text-right">Amount</th>
-                        <th className="px-4 py-3 text-center">Status</th>
-                        <th className="px-4 py-3 text-center">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {projectExpenses.map((exp) => {
-                        const assignedRoom = rooms.find(r => r.id === exp.room_id);
-                        return (
-                          <tr key={exp.id} className="hover:bg-slate-50/60 transition-colors">
-                            <td className="px-4 py-3">
-                              <div className="font-bold text-slate-900">{exp.title}</div>
-                              <span className="text-[10px] text-slate-400 font-semibold">{exp.category}</span>
-                            </td>
-                            <td className="px-4 py-3 text-slate-600 font-medium">
-                              {assignedRoom ? assignedRoom.name : 'General Project'}
-                            </td>
-                            <td className="px-4 py-3 text-slate-600 font-medium">
-                              {exp.vendor || '—'}
-                            </td>
-                            <td className="px-4 py-3 text-slate-500">
-                              {formatDate(exp.date)}
-                            </td>
-                            <td className="px-4 py-3 text-right font-extrabold text-brand-600">
-                              {formatINR(exp.amount)}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <Badge status={exp.paymentStatus} />
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <div className="flex items-center justify-center gap-1.5">
-                                <button
-                                  onClick={() => setIsAddExpenseModalOpen(true, project.id, exp)}
-                                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg"
-                                  title="Edit Expense"
-                                >
-                                  <Edit2 className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => setExpenseToDelete(exp)}
-                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"
-                                  title="Delete Expense"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Mobile Cards View */}
-                <div className="md:hidden space-y-3">
-                  {projectExpenses.map((exp) => {
-                    const assignedRoom = rooms.find(r => r.id === exp.room_id);
-                    return (
-                      <div key={exp.id} className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <h4 className="font-bold text-sm text-slate-900">{exp.title}</h4>
-                            <div className="flex items-center gap-2 mt-1 flex-wrap">
-                              <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-200/70 text-slate-700 font-semibold">
-                                {exp.category}
-                              </span>
-                              <span className="text-[11px] text-slate-500">
-                                {assignedRoom ? assignedRoom.name : 'General Project'}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <span className="text-sm font-black text-brand-600 block">{formatINR(exp.amount)}</span>
-                            <div className="mt-1">
-                              <Badge status={exp.paymentStatus} size="sm" />
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 text-xs text-slate-500">
-                          <div>
-                            <span>Vendor: <strong className="text-slate-700">{exp.vendor || '—'}</strong></span>
-                            <span className="mx-2">•</span>
-                            <span>{formatDate(exp.date)}</span>
-                          </div>
-
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => setIsAddExpenseModalOpen(true, project.id, exp)}
-                              className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-200 rounded-lg min-w-[36px] min-h-[36px] flex items-center justify-center"
-                              title="Edit Expense"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => setExpenseToDelete(exp)}
-                              className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg min-w-[36px] min-h-[36px] flex items-center justify-center"
-                              title="Delete Expense"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-
-      {/* TAB 5: BUDGET */}
-      {activeTab === 'Budget' && (
-        <div className="space-y-6">
-          <div className="premium-card p-6 space-y-4">
-            <h3 className="text-base font-bold font-display text-slate-900 pb-2 border-b border-slate-100">
-              Category Variance & Budget Controls
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {categoryBreakdown.map((cat) => {
-                const variance = cat.estimated - cat.spent;
-                const isOver = cat.spent > cat.estimated && cat.estimated > 0;
-
-                return (
-                  <div key={cat.category} className="p-4 rounded-2xl border border-slate-200 bg-white shadow-xs">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
-                        <span className="font-bold text-xs text-slate-900">{cat.category}</span>
-                      </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isOver ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-slate-100 text-slate-600'}`}>
-                        {cat.estimated > 0 ? (isOver ? 'Over BOQ Estimate' : 'Within BOQ') : 'Actual Spending'}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 text-xs py-1">
-                      <div>
-                        <div className="text-[10px] text-slate-400 font-semibold uppercase">BOQ Estimate</div>
-                        <div className="font-extrabold text-slate-800">{formatINR(cat.estimated)}</div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-slate-400 font-semibold uppercase">Actual Spent</div>
-                        <div className="font-extrabold text-brand-600">{formatINR(cat.spent)}</div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-slate-400 font-semibold uppercase">Variance</div>
-                        <div className={`font-extrabold ${variance >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                          {variance >= 0 ? `+${formatINR(variance)}` : `-${formatINR(Math.abs(variance))}`}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 6: MATERIALS & STOCK TRACKING */}
+      {/* ── TAB 3: MATERIAL MANAGEMENT ── */}
       {activeTab === 'Materials' && (
-        <div className="space-y-6">
-          <div className="premium-card p-6 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
-              <div>
-                <h3 className="text-base font-bold font-display text-slate-900">Site Materials & Stock Ledger</h3>
-                <p className="text-xs text-slate-500">Track material deliveries (IN), on-site consumption (OUT), and live available inventory.</p>
-              </div>
-
-              <button
-                onClick={() => setIsMaterialModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold shadow-sm transition-all"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Material</span>
-              </button>
-            </div>
-
-            {/* Filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search material by name or spec..."
-                  value={materialSearch}
-                  onChange={(e) => setMaterialSearch(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-amber-500"
-                />
-              </div>
-
-              <div>
-                <select
-                  value={materialCategoryFilter}
-                  onChange={(e) => setMaterialCategoryFilter(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none"
-                >
-                  <option value="All">Filter Category: All</option>
-                  {['Plywood & Boards', 'Laminates & Veneer', 'Paints & Primers', 'Electrical & Wire', 'Hardware & Fittings', 'Tiles & Stone', 'Sanitary & Plumbing', 'Civil Materials', 'Other'].map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <select
-                  value={materialRoomFilter}
-                  onChange={(e) => setMaterialRoomFilter(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none"
-                >
-                  <option value="All">Filter Room: All Areas</option>
-                  <option value="General">General / Site Wide</option>
-                  {rooms.map(r => (
-                    <option key={r.id} value={r.id}>{r.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {filteredMaterials.length === 0 ? (
-              <EmptyState
-                icon={Package}
-                title="No materials logged for this site"
-                description="Add materials like Plywood sheets, Laminate rolls, and Cement bags to record Stock IN & OUT."
-                actionLabel="+ Add First Material"
-                onAction={() => setIsMaterialModalOpen(true)}
-              />
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
-                {filteredMaterials.map((mat) => {
-                  const stockSummary = materialService.calculateStock(mat.id, materialTransactions, mat.minimum_stock);
-                  const assignedRoom = rooms.find(r => r.id === mat.room_id);
-
-                  return (
-                    <div key={mat.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-extrabold text-sm text-slate-900 truncate">{mat.name}</h4>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${stockSummary.is_out_of_stock
-                            ? 'bg-rose-50 text-rose-700 border-rose-200'
-                            : stockSummary.is_low_stock
-                              ? 'bg-amber-50 text-amber-700 border-amber-200'
-                              : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            }`}>
-                            {stockSummary.is_out_of_stock ? 'Out of Stock' : stockSummary.is_low_stock ? 'Low Stock' : 'Available'}
-                          </span>
-                        </div>
-
-                        <div className="text-xs text-slate-500 mb-3 flex items-center gap-2">
-                          {mat.category && <span className="bg-slate-100 px-2 py-0.5 rounded-md font-medium">{mat.category}</span>}
-                          {assignedRoom && <span>• {assignedRoom.name}</span>}
-                        </div>
-
-                        <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 grid grid-cols-3 gap-2 text-xs mb-3 text-center">
-                          <div>
-                            <span className="text-[10px] text-slate-400 font-semibold uppercase block">Available</span>
-                            <span className={`text-base font-black ${stockSummary.available <= 0 ? 'text-rose-600' : 'text-slate-900'}`}>
-                              {stockSummary.available} <span className="text-[10px] font-normal text-slate-500">{mat.unit}</span>
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-slate-400 font-semibold uppercase block">Total IN</span>
-                            <span className="text-sm font-bold text-emerald-600">
-                              +{stockSummary.total_in}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-slate-400 font-semibold uppercase block">Total OUT</span>
-                            <span className="text-sm font-bold text-amber-600">
-                              -{stockSummary.total_out}
-                            </span>
-                          </div>
-                        </div>
-
-                        {mat.notes && (
-                          <p className="text-xs text-slate-500 italic line-clamp-1 mb-3">"{mat.notes}"</p>
-                        )}
-                      </div>
-
-                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-1">
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => setIsMaterialTransactionModalOpen(true, mat, 'in')}
-                            className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs rounded-lg flex items-center gap-1 transition-colors"
-                            title="Record Stock IN"
-                          >
-                            <ArrowDownLeft className="w-3.5 h-3.5" />
-                            <span>+ IN</span>
-                          </button>
-                          <button
-                            onClick={() => setIsMaterialTransactionModalOpen(true, mat, 'out')}
-                            disabled={stockSummary.available <= 0}
-                            className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-xs rounded-lg flex items-center gap-1 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                            title="Record Stock OUT"
-                          >
-                            <ArrowUpRight className="w-3.5 h-3.5" />
-                            <span>- OUT</span>
-                          </button>
-                        </div>
-
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => setHistoryMaterial(mat)}
-                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg"
-                            title="View History"
-                          >
-                            <History className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setIsMaterialModalOpen(true, mat)}
-                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg"
-                            title="Edit Material"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setMaterialToDelete(mat)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"
-                            title="Delete Material"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
+        <ProjectMaterialsSection
+          projectId={project.id}
+          materials={projectMaterials}
+          materialTransactions={materialTransactions}
+          rooms={rooms}
+          onOpenAddMaterial={() => setIsMaterialModalOpen(true)}
+          onOpenImportMaterials={() => setIsMaterialImportModalOpen(true)}
+          onOpenReceiveStock={(mat) => setIsMaterialTransactionModalOpen(true, mat, 'in')}
+          onOpenStockHistory={(mat) => setHistoryMaterial(mat)}
+          onEditMaterial={(mat) => setIsMaterialModalOpen(true, mat)}
+          onDeleteMaterial={(mat) => setMaterialToDelete(mat)}
+        />
       )}
 
-      {/* TAB 7: MILESTONES */}
+      {/* ── TAB 4: MILESTONES & SITE EXECUTION ── */}
       {activeTab === 'Milestones' && (
-        <div className="space-y-6">
-          <GanttChart
-            projectId={project.id}
-            projectName={project.name}
-            startDate={project.startDate}
-            deadline={project.deadline}
-            milestones={projectMilestones}
-            onAddMilestone={() => setIsMilestoneModalOpen(true)}
-          />
-          <div className="premium-card p-6 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
-              <div>
-                <h3 className="text-base font-bold font-display text-slate-900">Project Execution Milestones</h3>
-                <p className="text-xs text-slate-500">Key site checkpoints driving overall deterministic project completion progress.</p>
-              </div>
-
-              <button
-                onClick={() => setIsMilestoneModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm transition-all"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Milestone</span>
-              </button>
-            </div>
-
-            {/* Overall Progress Banner */}
-            <div className="p-4 rounded-xl bg-[#EFF6FF] border border-blue-200 text-[#111827] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <span className="text-xs font-bold text-[#1D4ED8] uppercase tracking-wider">Derived Project Progress</span>
-                <div className="text-2xl font-extrabold font-serif text-[#111827] mt-0.5 tabular-nums">
-                  {displayProgressText}
-                </div>
-                <p className="text-xs text-slate-600 mt-1">
-                  Average progress across {projectMilestones.length} milestone checkpoint{projectMilestones.length !== 1 ? 's' : ''}.
-                </p>
-              </div>
-              <div className="sm:w-64">
-                <ProgressBar value={progressNumericValue} height="md" />
-              </div>
-            </div>
-
-            {projectMilestones.length === 0 ? (
-              <EmptyState
-                icon={Flag}
-                title="No milestones configured"
-                description="Set up timeline milestones like Design Finalization, Civil Work, Carpentry, and Handover."
-                actionLabel="+ Add First Milestone"
-                onAction={() => setIsMilestoneModalOpen(true)}
-              />
-            ) : (
-              <div className="space-y-3 pt-2">
-                {projectMilestones.map((ms, index) => {
-                  const isCompleted = ms.status === 'completed' || ms.progress === 100;
-                  const isDelayed = ms.status === 'delayed';
-
-                  return (
-                    <div
-                      key={ms.id}
-                      className={`p-4 rounded-2xl border transition-all ${isCompleted
-                        ? 'bg-emerald-50/40 border-emerald-200/80'
-                        : isDelayed
-                          ? 'bg-rose-50/40 border-rose-200/80'
-                          : 'bg-white border-slate-200 hover:bg-slate-50/60'
-                        }`}
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-3">
-                          <span className="w-6 h-6 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shrink-0">
-                            {index + 1}
-                          </span>
-                          <div>
-                            <h4 className="font-extrabold text-sm text-slate-900">{ms.title}</h4>
-                            {ms.description && <p className="text-xs text-slate-500 line-clamp-1">{ms.description}</p>}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <Badge status={ms.status === 'completed' ? 'Completed' : ms.status === 'delayed' ? 'Delayed' : ms.status === 'in_progress' ? 'Needs Attention' : 'Pending'} />
-                          <span className="text-xs font-black text-slate-800">{ms.progress}%</span>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 flex items-center gap-4">
-                        <div className="flex-1">
-                          <ProgressBar value={ms.progress} height="sm" />
-                        </div>
-                      </div>
-
-                      <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-4 text-slate-500 font-medium">
-                          {ms.start_date && <span>Start: {formatDate(ms.start_date)}</span>}
-                          {ms.due_date && <span>Target: {formatDate(ms.due_date)}</span>}
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          {!isCompleted && (
-                            <button
-                              onClick={() => updateMilestone(ms.id, { status: 'completed', progress: 100 })}
-                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] flex items-center gap-1 shadow-xs transition-colors"
-                            >
-                              <CheckCircle2 className="w-3 h-3" />
-                              <span>Mark Complete</span>
-                            </button>
-                          )}
-                          <button
-                            onClick={() => setIsMilestoneModalOpen(true, ms)}
-                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg"
-                            title="Edit Milestone"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setMilestoneToDelete(ms)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"
-                            title="Delete Milestone"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
+        <ProjectMilestonesSection
+          project={project}
+          milestones={projectMilestones}
+          dailyUpdates={projectDailyUpdates}
+          tasks={projectTasks}
+          activeSubTab={milestoneSubTab}
+          onSubTabChange={setMilestoneSubTab}
+          onOpenAddMilestone={() => setIsMilestoneModalOpen(true)}
+          onEditMilestone={(ms) => setIsMilestoneModalOpen(true, ms)}
+          onDeleteMilestone={(id) => deleteMilestone(id)}
+          onUpdateMilestone={updateMilestone}
+          onOpenAddDailyUpdate={() => setIsDailyUpdateModalOpen(true)}
+          onEditDailyUpdate={(u) => setIsDailyUpdateModalOpen(true, u)}
+          onDeleteDailyUpdate={(id) => deleteDailyUpdate(id)}
+          onOpenAddTask={() => {
+            setProjectTaskToEdit(null);
+            setIsProjectTaskModalOpen(true);
+          }}
+          onEditTask={(t) => {
+            setProjectTaskToEdit(t);
+            setIsProjectTaskModalOpen(true);
+          }}
+          onDeleteTask={(id) => deleteTask(id)}
+          onToggleTaskComplete={(t) => updateTask(t.id, { status: t.status === 'Completed' ? 'To Do' : 'Completed' })}
+        />
       )}
 
-      {/* TAB 8: DAILY UPDATES / DPR SITE DIARY */}
-      {activeTab === 'Daily Updates' && (
-        <div className="space-y-6">
-          <div className="premium-card p-6 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
-              <div>
-                <h3 className="text-base font-bold font-display text-slate-900">Daily Progress Reports (DPR) & Site Diary</h3>
-                <p className="text-xs text-slate-500">Document daily execution logs, worker attendance, site issues, and next-day plans.</p>
-              </div>
-
-              <button
-                onClick={() => setIsDailyUpdateModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-sm transition-all"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>New Daily Report</span>
-              </button>
-            </div>
-
-            {projectDailyUpdates.length === 0 ? (
-              <EmptyState
-                icon={FileText}
-                title="No daily site updates logged yet"
-                description="Log site updates daily to maintain a complete operational audit trail and resolve blockers quickly."
-                actionLabel="+ Log First DPR"
-                onAction={() => setIsDailyUpdateModalOpen(true)}
-              />
-            ) : (
-              <div className="space-y-4 pt-2">
-                {projectDailyUpdates.map((dpr) => (
-                  <div key={dpr.id} className="p-5 rounded-2xl border border-slate-200 bg-white shadow-xs hover:shadow-md transition-all">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-slate-100">
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 font-bold text-xs flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5" />
-                          <span>{formatDate(dpr.update_date)}</span>
-                        </div>
-                        {dpr.workers_count !== undefined && dpr.workers_count > 0 && (
-                          <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg flex items-center gap-1">
-                            <Users className="w-3.5 h-3.5 text-slate-400" />
-                            {dpr.workers_count} Workers
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {dpr.progress !== undefined && (
-                          <span className="text-xs font-extrabold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg">
-                            {dpr.progress}% Site Progress
-                          </span>
-                        )}
-                        <button
-                          onClick={() => setIsUploadPhotoModalOpen(true, dpr.id)}
-                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg flex items-center gap-1 transition-colors"
-                          title="Attach Photo to DPR"
-                        >
-                          <Camera className="w-3 h-3" />
-                          <span>Add Photo</span>
-                        </button>
-                        <button
-                          onClick={() => setIsDailyUpdateModalOpen(true, dpr)}
-                          className="p-1 text-slate-400 hover:text-slate-700 rounded-md"
-                          title="Edit DPR"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => setDailyUpdateToDelete(dpr)}
-                          className="p-1 text-slate-400 hover:text-rose-600 rounded-md"
-                          title="Delete DPR"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 space-y-3 text-xs">
-                      <div>
-                        <span className="font-bold text-slate-900 block mb-1 flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          Work Completed:
-                        </span>
-                        <p className="text-slate-700 font-medium pl-5 leading-relaxed">{dpr.work_completed}</p>
-                      </div>
-
-                      {dpr.work_pending && (
-                        <div>
-                          <span className="font-semibold text-slate-600 block mb-1 pl-5">Work In Progress / Pending:</span>
-                          <p className="text-slate-600 pl-5">{dpr.work_pending}</p>
-                        </div>
-                      )}
-
-                      {dpr.issues && (
-                        <div className="p-3 bg-rose-50/70 border border-rose-100 rounded-xl">
-                          <span className="font-bold text-rose-800 block mb-0.5 flex items-center gap-1.5">
-                            <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                            Site Issues & Blockers:
-                          </span>
-                          <p className="text-rose-700 font-medium pl-5">{dpr.issues}</p>
-                        </div>
-                      )}
-
-                      {dpr.next_day_tasks && (
-                        <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-xl">
-                          <span className="font-bold text-blue-900 block mb-0.5 flex items-center gap-1.5">
-                            <ArrowRight className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                            Tomorrow's Action Plan:
-                          </span>
-                          <p className="text-blue-800 font-medium pl-5">{dpr.next_day_tasks}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 9: PHOTOS (AUTHENTICATED STORAGE & SIGNED URLS) */}
-      {activeTab === 'Photos' && (
-        <div className="space-y-6">
-          <div className="premium-card p-6 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
-              <div>
-                <h3 className="text-base font-bold font-display text-slate-900">Project Photos & Site Gallery</h3>
-                <p className="text-xs text-slate-500">Private tenant-isolated photos stored securely in Supabase storage.</p>
-              </div>
-
-              <button
-                onClick={() => setIsUploadPhotoModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-sm transition-all"
-              >
-                <Camera className="w-3.5 h-3.5" />
-                <span>Upload Photo</span>
-              </button>
-            </div>
-
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-              {(['All', 'Site Progress', 'Design', 'Materials', 'Completed Work'] as const).map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setPhotoFilter(cat)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${photoFilter === cat
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-
-            {filteredPhotos.length === 0 ? (
-              <EmptyState
-                icon={ImageIcon}
-                title="No photos in this category yet"
-                description="Upload site progress pictures, marble slab selections, or 3D concept renders."
-                actionLabel="+ Upload Photo"
-                onAction={() => setIsUploadPhotoModalOpen(true)}
-              />
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pt-2">
-                {filteredPhotos.map((photo) => (
-                  <div key={photo.id} className="group rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
-                    <div
-                      onClick={() => setLightboxPhoto(photo)}
-                      className="relative h-48 w-full overflow-hidden bg-slate-100 cursor-pointer"
-                    >
-                      <img
-                        src={photo.url}
-                        alt={photo.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute top-2.5 left-2.5 bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full border border-white/20">
-                        {photo.category}
-                      </div>
-                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                        <span className="px-3 py-1.5 rounded-xl bg-white/90 text-slate-900 font-bold text-xs flex items-center gap-1">
-                          <ZoomIn className="w-3.5 h-3.5" />
-                          View
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="p-3.5 flex items-center justify-between">
-                      <div className="overflow-hidden mr-2">
-                        <h4 className="font-bold text-xs text-slate-900 truncate">{photo.title}</h4>
-                        <span className="text-[11px] text-slate-400">{formatDate(photo.uploadedAt)}</span>
-                      </div>
-
-                      <button
-                        onClick={() => setPhotoToDelete(photo)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg shrink-0 transition-colors"
-                        title="Delete Photo"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 10: NOTES */}
-      {activeTab === 'Notes' && (
-        <div className="space-y-6">
-          <div className="premium-card p-6 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
-              <div>
-                <h3 className="text-base font-bold font-display text-slate-900">Project Notes & Decisions Feed</h3>
-                <p className="text-xs text-slate-500">Record client approvals, material color choices, and site instructions.</p>
-              </div>
-
-              <button
-                onClick={() => setIsNoteModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm transition-all"
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span>Add Note</span>
-              </button>
-            </div>
-
-            {notes.length === 0 ? (
-              <EmptyState
-                icon={MessageSquare}
-                title="No notes logged yet"
-                description="Keep track of verbal client approvals, wardrobe laminate codes, and site inspection items."
-                actionLabel="+ Add First Note"
-                onAction={() => setIsNoteModalOpen(true)}
-              />
-            ) : (
-              <div className="space-y-3 pt-2">
-                {notes.map((n) => {
-                  let tagBg = 'bg-blue-50 text-blue-700 border-blue-200';
-                  if (n.tag === 'Client Decision') tagBg = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-                  else if (n.tag === 'Vendor Issue') tagBg = 'bg-amber-50 text-amber-700 border-amber-200';
-                  else if (n.tag === 'Site Update') tagBg = 'bg-indigo-50 text-indigo-700 border-indigo-200';
-
-                  return (
-                    <div key={n.id} className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 hover:bg-slate-50 transition-colors">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${tagBg}`}>
-                            {n.tag || 'General'}
-                          </span>
-                          <span className="text-xs font-semibold text-slate-700">{n.author}</span>
-                        </div>
-                        <span className="text-[11px] text-slate-400">{formatDate(n.createdAt)}</span>
-                      </div>
-                      <p className="text-xs text-slate-700 leading-relaxed font-medium">{n.content}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 11: TASKS */}
-      {activeTab === 'Tasks' && (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <h3 className="text-base font-bold font-display text-slate-900">Project Execution Tasks</h3>
-              <p className="text-xs text-slate-500">Site milestones, checklist approvals, and designer assignments for {project.name}.</p>
-            </div>
-            <button
-              onClick={() => {
-                setProjectTaskToEdit(null);
-                setIsProjectTaskModalOpen(true);
-              }}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all self-start sm:self-auto cursor-pointer"
-            >
-              <Plus className="w-4 h-4 text-brand-400" />
-              <span>Add Task</span>
-            </button>
-          </div>
-
-          {projectTasks.length === 0 ? (
-            <EmptyState
-              icon={CheckSquare}
-              title="No tasks assigned for this project"
-              description="Create checklist items for site supervision, sample selections, or vendor milestones."
-              actionLabel="+ Create Project Task"
-              onAction={() => {
-                setProjectTaskToEdit(null);
-                setIsProjectTaskModalOpen(true);
-              }}
-            />
-          ) : (
-            <div className="space-y-3">
-              {projectTasks.map((t) => {
-                const isDone = t.status === 'Completed';
-                return (
-                  <div
-                    key={t.id}
-                    className={`bg-white p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${isDone ? 'border-slate-200 bg-slate-50/40 opacity-75' : 'border-slate-200/90 shadow-xs hover:border-brand-300'
-                      }`}
-                  >
-                    <div className="flex items-start gap-3 min-w-0 flex-1">
-                      <button
-                        onClick={async () => {
-                          const next: TaskStatus = t.status === 'Completed' ? 'To Do' : 'Completed';
-                          await updateTask(t.id, { status: next });
-                        }}
-                        className={`mt-0.5 w-5 h-5 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${isDone
-                          ? 'bg-emerald-500 border-emerald-500 text-white'
-                          : 'border-slate-300 hover:border-brand-500 bg-white'
-                          }`}
-                      >
-                        {isDone && <CheckCircle2 className="w-3.5 h-3.5" />}
-                      </button>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
-                            {t.priority}
-                          </span>
-                          <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
-                            {t.status}
-                          </span>
-                        </div>
-                        <h4 className={`text-xs sm:text-sm font-bold ${isDone ? 'line-through text-slate-400' : 'text-slate-900'}`}>
-                          {t.title}
-                        </h4>
-                        {t.description && (
-                          <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{t.description}</p>
-                        )}
-                        <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-2">
-                          {t.due_date && <span>Due: {formatDate(t.due_date)}</span>}
-                          {t.assigned_staff_name && <span className="inline-flex items-center gap-1 font-medium text-slate-600"><UserRound className="h-3.5 w-3.5 text-slate-400" />{t.assigned_staff_name}</span>}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1 self-end sm:self-center">
-                      <button
-                        onClick={() => {
-                          setProjectTaskToEdit(t);
-                          setIsProjectTaskModalOpen(true);
-                        }}
-                        className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-100 text-xs font-semibold flex items-center gap-1"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                        <span>Edit</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Delete task "${t.title}"?`)) deleteTask(t.id);
-                        }}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB 12: DOCUMENTS */}
-      {activeTab === 'Documents' && (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <h3 className="text-base font-bold font-display text-slate-900">Project Documents & Blueprints</h3>
-              <p className="text-xs text-slate-500">Contracts, CAD drawings, site measurements, and estimates for {project.name}.</p>
-            </div>
-            <button
-              onClick={() => setIsProjectUploadDocModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all self-start sm:self-auto cursor-pointer"
-            >
-              <Plus className="w-4 h-4 text-brand-400" />
-              <span>Upload Document</span>
-            </button>
-          </div>
-
-          {projectDocuments.length === 0 ? (
-            <EmptyState
-              icon={FileText}
-              title="No documents uploaded for this project"
-              description="Upload PDF proposals, client agreements, CAD DWG sets, or vendor quotes."
-              actionLabel="+ Upload Project Document"
-              onAction={() => setIsProjectUploadDocModalOpen(true)}
-            />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {projectDocuments.map((doc) => (
-                <div key={doc.id} className="premium-card p-5 flex flex-col justify-between group hover:border-brand-300">
-                  <div>
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="p-2.5 rounded-xl bg-brand-50 text-brand-600 border border-brand-100">
-                        <FileText className="w-5 h-5" />
-                      </div>
-                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-                        {doc.category || doc.type || 'Document'}
-                      </span>
-                    </div>
-                    <h4 className="font-bold text-xs sm:text-sm text-slate-900 line-clamp-2 mb-1 group-hover:text-brand-600 transition-colors">
-                      {doc.title}
-                    </h4>
-                    <span className="text-[11px] text-slate-400">
-                      {doc.size || 'PDF / CAD'} • {formatDate(doc.updatedAt || doc.created_at || '')}
-                    </span>
-                  </div>
-
-                  <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <button
-                      onClick={async () => {
-                        setDownloadingDocId(doc.id);
-                        try {
-                          if (doc.storage_path && !isDemoMode) {
-                            const url = await documentService.getSignedUrl(doc.storage_path);
-                            window.open(url, '_blank');
-                          } else if (doc.fileUrl) {
-                            window.open(doc.fileUrl, '_blank');
-                          } else {
-                            alert(`Downloaded sample blueprint: "${doc.title}"`);
-                          }
-                        } catch (err: any) {
-                          alert(err.message || 'Failed to download document.');
-                        } finally {
-                          setDownloadingDocId(null);
-                        }
-                      }}
-                      disabled={downloadingDocId === doc.id}
-                      className="inline-flex items-center gap-1 text-xs font-bold text-brand-600 hover:text-brand-700 hover:underline"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>{downloadingDocId === doc.id ? 'Loading...' : 'Download'}</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        if (confirm(`Delete document "${doc.title}"?`)) deleteDocument(doc.id, doc.storage_path);
-                      }}
-                      className="p-1 text-slate-400 hover:text-rose-600 rounded"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB 13: PAYMENTS */}
-      {activeTab === 'Payments' && (
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h3 className="text-base font-bold font-display text-slate-900">Client Payment Schedules & Receipts</h3>
-              <p className="text-xs text-slate-500">Track milestone billing, installment collections, and outstanding dues.</p>
-            </div>
-            <button
-              onClick={() => {
-                setProjectPaymentToEdit(null);
-                setIsProjectPaymentModalOpen(true);
-              }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all shrink-0"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Record Payment</span>
-            </button>
-          </div>
-
-          {/* Payment Metrics Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="premium-card p-5">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Contract Value</span>
-              <div className="text-2xl font-extrabold font-display text-slate-900 mt-2">
-                {formatINR(profitability.contractValue)}
-              </div>
-              <p className="text-xs text-slate-400 mt-1">Total contract baseline</p>
-            </div>
-
-            <div className="premium-card p-5">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">Total Received</span>
-              <div className="text-2xl font-extrabold font-display text-emerald-600 mt-2">
-                {formatINR(profitability.revenueReceived)}
-              </div>
-              <p className="text-xs text-slate-400 mt-1">
-                {profitability.contractValue > 0
-                  ? `${((profitability.revenueReceived / profitability.contractValue) * 100).toFixed(1)}% collected`
-                  : 'Actual paid receipts'}
-              </p>
-            </div>
-
-            <div className="premium-card p-5">
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-600">Outstanding Contract</span>
-              <div className="text-2xl font-extrabold font-display text-amber-600 mt-2">
-                {formatINR(profitability.outstandingAgainstContract)}
-              </div>
-              <p className="text-xs text-slate-400 mt-1">Remaining to be collected</p>
-            </div>
-
-            <div className="premium-card p-5">
-              <span className="text-xs font-bold uppercase tracking-wider text-indigo-600">Scheduled Invoices</span>
-              <div className="text-2xl font-extrabold font-display text-indigo-600 mt-2">
-                {formatINR(profitability.totalScheduled)}
-              </div>
-              <p className="text-xs text-slate-400 mt-1">{projectPayments.length} milestones created</p>
-            </div>
-          </div>
-
-          {/* Payments List Table */}
-          {projectPayments.length === 0 ? (
-            <EmptyState
-              icon={Receipt}
-              title="No client payment milestones recorded"
-              description="Create payment milestones like Advance Deposit, Structure Handover, or Final Handover."
-              actionLabel="+ Record Payment Milestone"
-              onAction={() => {
-                setProjectPaymentToEdit(null);
-                setIsProjectPaymentModalOpen(true);
-              }}
-            />
-          ) : (
-            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-card overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50/75 border-b border-slate-200/80 text-[11px] font-black uppercase tracking-wider text-slate-500">
-                      <th className="py-3.5 px-4">Milestone / Title</th>
-                      <th className="py-3.5 px-4">Due Date</th>
-                      <th className="py-3.5 px-4">Status</th>
-                      <th className="py-3.5 px-4 text-right">Scheduled Amount</th>
-                      <th className="py-3.5 px-4 text-right">Paid Amount</th>
-                      <th className="py-3.5 px-4">Method / Ref</th>
-                      <th className="py-3.5 px-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
-                    {projectPayments.map((p) => {
-                      const isOverdue = (p.status === 'overdue' || (p.due_date && new Date(p.due_date) < new Date() && p.status !== 'paid'));
-                      return (
-                        <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="py-3.5 px-4">
-                            <div className="font-bold text-slate-900">{p.title || p.milestone_name || 'Payment Milestone'}</div>
-                            {p.notes && <div className="text-[11px] text-slate-400 line-clamp-1">{p.notes}</div>}
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <span className="text-slate-600">{p.due_date ? formatDate(p.due_date) : '—'}</span>
-                            {isOverdue && (
-                              <span className="block text-[10px] font-bold text-rose-500 mt-0.5">Overdue</span>
-                            )}
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${p.status === 'paid'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : p.status === 'partial'
-                                ? 'bg-amber-100 text-amber-800'
-                                : isOverdue
-                                  ? 'bg-rose-100 text-rose-800'
-                                  : 'bg-slate-100 text-slate-700'
-                              }`}>
-                              {p.status}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4 text-right font-bold text-slate-900">
-                            {formatINR(p.amount)}
-                          </td>
-                          <td className="py-3.5 px-4 text-right font-extrabold text-emerald-600">
-                            {formatINR(p.paid_amount || 0)}
-                          </td>
-                          <td className="py-3.5 px-4 text-slate-500">
-                            {p.payment_method || '—'}
-                            {p.reference_number && <div className="text-[10px] text-slate-400 font-mono">Ref: {p.reference_number}</div>}
-                          </td>
-                          <td className="py-3.5 px-4 text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <button
-                                onClick={() => {
-                                  setProjectPaymentToEdit(p);
-                                  setIsProjectPaymentModalOpen(true);
-                                }}
-                                className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
-                                title="Edit Payment"
-                              >
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => setPaymentToDelete(p)}
-                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                                title="Delete Payment"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB 14: PURCHASES & PROCUREMENT */}
-      {activeTab === 'Purchases' && (
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h3 className="text-base font-bold font-display text-slate-900">Purchase Orders & Site Procurement</h3>
-              <p className="text-xs text-slate-500">Atomic purchase orders, vendor assignments, and line-item fulfillment.</p>
-            </div>
-            <button
-              onClick={() => {
-                setProjectPurchaseToEdit(null);
-                setIsProjectPurchaseModalOpen(true);
-              }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-all shrink-0"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Create Purchase Order</span>
-            </button>
-          </div>
-
-          {/* Purchases Metrics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="premium-card p-5">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Procurement Orders</span>
-              <div className="text-2xl font-extrabold font-display text-slate-900 mt-2">
-                {projectPurchases.length}
-              </div>
-              <p className="text-xs text-slate-400 mt-1">Total POs issued</p>
-            </div>
-
-            <div className="premium-card p-5">
-              <span className="text-xs font-bold uppercase tracking-wider text-indigo-600">Total Committed POs</span>
-              <div className="text-2xl font-extrabold font-display text-indigo-600 mt-2">
-                {formatINR(projectPurchases.reduce((sum, p) => sum + Number(p.total_amount || 0), 0))}
-              </div>
-              <p className="text-xs text-slate-400 mt-1">Server-verified item totals</p>
-            </div>
-
-            <div className="premium-card p-5">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">Fulfilled / Received</span>
-              <div className="text-2xl font-extrabold font-display text-emerald-600 mt-2">
-                {projectPurchases.filter(p => p.status === 'received' || p.status === 'delivered').length}
-              </div>
-              <p className="text-xs text-slate-400 mt-1">Material on site</p>
-            </div>
-
-            <div className="premium-card p-5">
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-600">Pending Delivery</span>
-              <div className="text-2xl font-extrabold font-display text-amber-600 mt-2">
-                {projectPurchases.filter(p => p.status === 'draft' || p.status === 'ordered').length}
-              </div>
-              <p className="text-xs text-slate-400 mt-1">Awaiting dispatch</p>
-            </div>
-          </div>
-
-          {/* Purchases List */}
-          {projectPurchases.length === 0 ? (
-            <EmptyState
-              icon={ShoppingBag}
-              title="No purchase orders created for this project"
-              description="Create atomic purchase orders with dynamic line items for plywood, hardware, lighting, or fabric."
-              actionLabel="+ Create First Purchase Order"
-              onAction={() => {
-                setProjectPurchaseToEdit(null);
-                setIsProjectPurchaseModalOpen(true);
-              }}
-            />
-          ) : (
-            <div className="space-y-4">
-              {projectPurchases.map((po) => {
-                const vendorObj = vendors.find(v => v.id === po.vendor_id);
-                const vendorName = vendorObj?.name || po.vendor?.name || 'Vendor';
-
-                return (
-                  <div key={po.id} className="premium-card p-5 space-y-4 hover:border-indigo-200 transition-colors">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100">
-                          <ShoppingBag className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-extrabold text-sm text-slate-900 font-mono">
-                              {po.po_number || 'PO-DRAFT'}
-                            </span>
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${po.status === 'received' || po.status === 'delivered'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : po.status === 'ordered'
-                                ? 'bg-blue-100 text-blue-800'
-                                : po.status === 'cancelled'
-                                  ? 'bg-rose-100 text-rose-800'
-                                  : 'bg-slate-100 text-slate-700'
-                              }`}>
-                              {po.status}
-                            </span>
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${po.payment_status === 'paid'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : po.payment_status === 'partial'
-                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                : 'bg-slate-50 text-slate-600 border border-slate-200'
-                              }`}>
-                              Pay: {po.payment_status || 'unpaid'}
-                            </span>
-                          </div>
-                          <div className="text-xs text-slate-500 mt-0.5">
-                            Vendor: <span className="font-bold text-slate-800">{vendorName}</span> • Order Date: {po.order_date ? formatDate(po.order_date) : formatDate(po.created_at || '')}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <span className="text-[10px] text-slate-400 font-bold uppercase block">Total Amount</span>
-                          <span className="text-lg font-black text-slate-900 font-display">
-                            {formatINR(po.total_amount)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => {
-                              setProjectPurchaseToEdit(po);
-                              setIsProjectPurchaseModalOpen(true);
-                            }}
-                            className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
-                            title="Edit PO"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setPurchaseToDelete(po)}
-                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                            title="Delete PO"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Line Items Preview */}
-                    {po.items && po.items.length > 0 && (
-                      <div className="bg-slate-50/75 rounded-xl p-3 border border-slate-100 text-xs">
-                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                          Line Items ({po.items.length})
-                        </div>
-                        <div className="space-y-1.5">
-                          {po.items.map((item, idx) => (
-                            <div key={item.id || idx} className="flex items-center justify-between text-slate-700">
-                              <span className="font-semibold">
-                                {item.item_name} <span className="text-slate-400 font-normal">({item.quantity} {item.unit || 'units'} @ {formatINR(item.rate)})</span>
-                              </span>
-                              <span className="font-mono font-bold text-slate-900">
-                                {formatINR(item.total_amount || (item.quantity * item.rate))}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+      {/* ── TAB 5: PLANS & BLUEPRINTS ── */}
+      {activeTab === 'Plans' && (
+        <ProjectPlansSection
+          project={project}
+          documents={projectDocuments}
+          rooms={rooms}
+          boqItems={projectBOQItems}
+          clientRequests={clientRequests}
+          activeSubTab={plansSubTab}
+          onSubTabChange={setPlansSubTab}
+          onOpenUploadDocument={() => setIsProjectUploadDocModalOpen(true)}
+          onDownloadDocument={async (doc) => {
+            if (doc.storage_path && !isDemoMode) {
+              const url = await documentService.getSignedUrl(doc.storage_path);
+              window.open(url, '_blank');
+            } else if (doc.fileUrl) {
+              window.open(doc.fileUrl, '_blank');
+            } else {
+              alert(`Downloaded blueprint: "${doc.title}"`);
+            }
+          }}
+          onDeleteDocument={(id, storagePath) => deleteDocument(id, storagePath)}
+          onOpenAddRoom={() => handleAddRoom()}
+          onEditRoom={(r) => handleEditRoom(r)}
+          onDeleteRoom={(r) => setRoomToDelete(r)}
+          onOpenAddBOQItem={(roomId) => setIsBOQModalOpen(true, project.id, roomId)}
+          onApproveClientRequest={(id) => handleApproveClientRequest(id)}
+        />
       )}
 
       {/* ========================================================================= */}
@@ -3344,6 +1641,24 @@ export const ProjectDetailPage: React.FC = () => {
         isOpen={isProjectUploadDocModalOpen}
         onClose={() => setIsProjectUploadDocModalOpen(false)}
         defaultProjectId={project.id}
+      />
+
+      {/* Record Partial Payment Modal */}
+      <RecordPaymentModal
+        isOpen={isRecordPaymentModalOpen}
+        onClose={() => {
+          setIsRecordPaymentModalOpen(false);
+          setRecordPaymentDefaultObligationId(undefined);
+        }}
+        projectId={project.id}
+        defaultObligationId={recordPaymentDefaultObligationId}
+      />
+
+      {/* Material Document Importer Modal */}
+      <MaterialImportModal
+        isOpen={isMaterialImportModalOpen}
+        onClose={() => setIsMaterialImportModalOpen(false)}
+        projectId={project.id}
       />
 
       {/* Room Modal */}

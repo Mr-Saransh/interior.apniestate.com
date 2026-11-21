@@ -7,7 +7,12 @@ export interface CreateMaterialInput {
   name: string;
   category?: string;
   unit?: string;
+  quantity_required?: number;
   quantity_ordered?: number;
+  quantity_received?: number;
+  estimated_rate?: number;
+  supplier?: string;
+  delivery_status?: 'Pending' | 'Partially Received' | 'Received';
   minimum_stock?: number;
   initial_quantity?: number;
   notes?: string;
@@ -104,7 +109,12 @@ export const materialService = {
       name: newMat.name,
       category: newMat.category || undefined,
       unit: newMat.unit,
-      quantity_ordered: Number(newMat.quantity_ordered) || 0,
+      quantity_required: input.quantity_required,
+      quantity_ordered: Number(newMat.quantity_ordered) || input.quantity_ordered || 0,
+      quantity_received: input.quantity_received || 0,
+      estimated_rate: input.estimated_rate,
+      supplier: input.supplier,
+      delivery_status: input.delivery_status || 'Pending',
       minimum_stock: Number(newMat.minimum_stock) || 0,
       notes: newMat.notes || undefined,
       created_at: newMat.created_at,

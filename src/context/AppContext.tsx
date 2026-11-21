@@ -29,6 +29,7 @@ import {
   DocumentCategory,
   Vendor,
   ClientPayment,
+  PaymentTransaction,
   Purchase,
   MaterialWastage
 } from '../types';
@@ -241,6 +242,9 @@ interface AppContextType {
   addClientPayment: (payment: Partial<ClientPayment>) => Promise<ClientPayment>;
   updateClientPayment: (id: string, updates: Partial<ClientPayment>) => Promise<ClientPayment>;
   deleteClientPayment: (id: string) => Promise<void>;
+  paymentTransactions: PaymentTransaction[];
+  addPaymentTransaction: (tx: Omit<PaymentTransaction, 'id' | 'created_at'>) => Promise<PaymentTransaction>;
+  deletePaymentTransaction: (id: string) => Promise<void>;
 
   // Purchase Actions
   addPurchase: (purchase: any) => Promise<Purchase>;
@@ -723,6 +727,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return [];
   });
 
+  const [paymentTransactions, setPaymentTransactions] = useState<PaymentTransaction[]>(() => {
+    if (isDemoAccount) {
+      const saved = localStorage.getItem('apni_estate_demo_payment_txs');
+      return saved ? JSON.parse(saved) : [];
+    }
+    if (isRealTenant && activeTenantId) {
+      const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_payment_txs`);
+      if (!saved) return [];
+      try {
+        return JSON.parse(saved) || [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+
   const [purchases, setPurchases] = useState<Purchase[]>(() => {
     if (isDemoAccount) {
       const saved = localStorage.getItem('apni_estate_demo_purchases');
@@ -890,6 +911,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setVendors(rawVendors ? JSON.parse(rawVendors) : INITIAL_VENDORS);
       const rawPayments = localStorage.getItem('apni_estate_demo_client_payments');
       setClientPayments(rawPayments ? JSON.parse(rawPayments) : INITIAL_CLIENT_PAYMENTS);
+      const rawTxs = localStorage.getItem('apni_estate_demo_payment_txs');
+      setPaymentTransactions(rawTxs ? JSON.parse(rawTxs) : []);
       const rawPurchases = localStorage.getItem('apni_estate_demo_purchases');
       setPurchases(rawPurchases ? JSON.parse(rawPurchases) : INITIAL_PURCHASES);
       const rawDocs = localStorage.getItem('apni_estate_demo_documents');
@@ -1048,6 +1071,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setDailyUpdates(getSafeList('daily_updates'));
       setProjectPhotos(getSafeList('project_photos'));
       setDocuments(getSafeList('documents'));
+      setPaymentTransactions(getSafeList('payment_txs'));
       setCalendarEvents(getSafeList('calendar'));
 
       const rawNotifs = localStorage.getItem(`${prefix}notifications`);
@@ -1263,6 +1287,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const key = getTenantStorageKey('client_payments', isDemoAccount, activeTenantId);
     localStorage.setItem(key, JSON.stringify(clientPayments));
   }, [clientPayments, isDemoAccount, activeTenantId, isRealTenant]);
+
+  useEffect(() => {
+    if (!isDemoAccount && (!isRealTenant || !activeTenantId)) return;
+    const key = getTenantStorageKey('payment_txs', isDemoAccount, activeTenantId);
+    localStorage.setItem(key, JSON.stringify(paymentTransactions));
+  }, [paymentTransactions, isDemoAccount, activeTenantId, isRealTenant]);
 
   useEffect(() => {
     if (!isDemoAccount && (!isRealTenant || !activeTenantId)) return;
@@ -1773,6 +1803,71 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
     setClientPayments(prev => prev.filter(p => p.id !== id));
+  };
+
+  const addPaymentTransaction = async (txData: Omit<PaymentTransaction, 'id' | 'created_at'>): Promise<PaymentTransaction> => {
+    const newTx: PaymentTransaction = {
+      ...txData,
+      id: `ptx-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      created_at: new Date().toISOString()
+    };
+    setPaymentTransactions(prev => [newTx, ...prev]);
+
+    // Also update linked clientPayment obligation
+    if (txData.obligation_id) {
+      setClientPayments(prev => prev.map(p => {
+        if (p.id === txData.obligation_id) {
+          const newPaidAmount = (Number(p.paid_amount) || 0) + Number(txData.amount);
+          const totalAmount = Number(p.amount) || 0;
+          let newStatus = p.status;
+          if (newPaidAmount >= totalAmount && totalAmount > 0) {
+            newStatus = 'Paid';
+          } else if (newPaidAmount > 0) {
+            newStatus = 'Partially Paid';
+          }
+          return {
+            ...p,
+            paid_amount: newPaidAmount,
+            paid_date: txData.payment_date,
+            status: newStatus,
+            payment_method: txData.payment_method || p.payment_method,
+            payment_reference: txData.reference_number || p.payment_reference,
+            updated_at: new Date().toISOString()
+          };
+        }
+        return p;
+      }));
+    }
+
+    return newTx;
+  };
+
+  const deletePaymentTransaction = async (id: string): Promise<void> => {
+    const target = paymentTransactions.find(t => t.id === id);
+    if (target && target.obligation_id) {
+      setClientPayments(prev => prev.map(p => {
+        if (p.id === target.obligation_id) {
+          const revertedPaid = Math.max(0, (Number(p.paid_amount) || 0) - Number(target.amount));
+          const totalAmount = Number(p.amount) || 0;
+          let newStatus = p.status;
+          if (revertedPaid >= totalAmount && totalAmount > 0) {
+            newStatus = 'Paid';
+          } else if (revertedPaid > 0) {
+            newStatus = 'Partially Paid';
+          } else {
+            newStatus = 'Pending';
+          }
+          return {
+            ...p,
+            paid_amount: revertedPaid,
+            status: newStatus,
+            updated_at: new Date().toISOString()
+          };
+        }
+        return p;
+      }));
+    }
+    setPaymentTransactions(prev => prev.filter(t => t.id !== id));
   };
 
   // ============================================================================
@@ -2970,6 +3065,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         teamMembers,
         vendors,
         clientPayments,
+        paymentTransactions,
         purchases,
         projects,
         expenses,
@@ -3036,6 +3132,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addClientPayment,
         updateClientPayment,
         deleteClientPayment,
+        addPaymentTransaction,
+        deletePaymentTransaction,
         addPurchase,
         updatePurchase,
         deletePurchase,

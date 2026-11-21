@@ -35,7 +35,18 @@ export type ExpenseCategory =
 
 export type PaymentStatus = 'Paid' | 'Pending' | 'Partially Paid';
 export type PhotoCategory = 'Design' | 'Site Progress' | 'Materials' | 'Completed Work';
-export type MilestoneStatus = 'pending' | 'in_progress' | 'completed' | 'delayed';
+export type MilestoneStatus = 
+  | 'pending' 
+  | 'in_progress' 
+  | 'completed' 
+  | 'delayed' 
+  | 'on_hold' 
+  | 'not_started' 
+  | 'Not Started' 
+  | 'In Progress' 
+  | 'Completed' 
+  | 'Delayed' 
+  | 'On Hold';
 export type MaterialTransactionType = 'in' | 'out';
 
 // ==============================================================================
@@ -378,11 +389,31 @@ export interface Material {
   name: string;
   category?: string;
   unit: string;
+  quantity_required?: number;
   quantity_ordered: number;
+  quantity_received?: number;
+  estimated_rate?: number;
+  supplier?: string;
+  delivery_status?: 'Pending' | 'Partially Received' | 'Received';
   minimum_stock: number;
   notes?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface PaymentTransaction {
+  id: string;
+  organization_id?: string;
+  project_id: string;
+  obligation_id?: string;
+  obligation_title?: string;
+  amount: number;
+  payment_date: string;
+  payment_method: string;
+  reference_number?: string;
+  notes?: string;
+  recorded_by?: string;
+  created_at?: string;
 }
 
 export interface MaterialTransaction {
@@ -472,6 +503,7 @@ export interface Milestone {
   description?: string;
   start_date?: string;
   due_date?: string;
+  actual_date?: string;
   status: MilestoneStatus;
   progress: number;
   sort_order: number;
@@ -597,6 +629,8 @@ export interface DocumentItem {
   created_at?: string;
   updatedAt?: string;
   fileUrl?: string;
+  revision?: string;
+  approval_status?: 'Draft' | 'In Review' | 'Approved' | 'Superseded';
 }
 
 export interface NotificationItem {

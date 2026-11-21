@@ -38,16 +38,60 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [organization, setOrganization] = useState<Organization | null>(null);
   const [registeredUser, setRegisteredUser] = useState<RegisteredUser | null>(() => userService.getCurrentUser());
-  const [loading, setLoading] = useState<boolean>(true);
-  const [isDemoMode, setIsDemoModeState] = useState<boolean>(false);
 
-  const setIsDemoMode = useCallback((mode: boolean) => {
-    setIsDemoModeState(mode);
+  const [profile, setProfile] = useState<Profile | null>(() => {
+    const current = userService.getCurrentUser();
+    if (!current) return null;
+    const isDemo = current.email.toLowerCase() === 'apni@gmail.com';
+    const cleanName = isDemo ? 'Aarav Mehta' : (current.fullName || current.email.split('@')[0]);
+    return {
+      id: current.id,
+      organization_id: isDemo ? 'org-demo-1' : `org_${current.id}`,
+      full_name: cleanName,
+      role: 'owner',
+      created_at: current.registeredAt,
+    } as Profile;
+  });
+
+  const [organization, setOrganization] = useState<Organization | null>(() => {
+    const current = userService.getCurrentUser();
+    if (!current) return null;
+    const isDemo = current.email.toLowerCase() === 'apni@gmail.com';
+    const cleanName = isDemo ? 'Aarav Mehta' : (current.fullName || current.email.split('@')[0]);
+    const orgName = isDemo ? 'Apni Estate Studio' : (current.studioName || `${cleanName}'s Studio`);
+    return {
+      id: isDemo ? 'org-demo-1' : `org_${current.id}`,
+      name: orgName,
+      subscription_status: (isDemo ? 'active' : current.status) as any,
+      trial_ends_at: current.trialEndsAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      plan: (isDemo ? 'prime' : (current.plan || 'professional')) as any,
+      created_at: current.registeredAt,
+      updated_at: current.registeredAt,
+    } as Organization;
+  });
+
+  const [user, setUser] = useState<User | null>(() => {
+    const current = userService.getCurrentUser();
+    if (!current) return null;
+    return {
+      id: current.id,
+      email: current.email,
+      user_metadata: { full_name: current.fullName, studio_name: current.studioName },
+      app_metadata: {},
+      aud: 'authenticated',
+      created_at: current.registeredAt,
+    } as User;
+  });
+
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  // Exact rule: only apni@gmail.com is in demo mode
+  const isDemoMode = Boolean(registeredUser && registeredUser.email.toLowerCase() === 'apni@gmail.com');
+
+  const setIsDemoMode = useCallback((_mode: boolean) => {
+    // Mode is derived strictly from account identity (apni@gmail.com)
   }, []);
 
   // Sync with userService changes across components/tabs
@@ -56,24 +100,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const current = userService.getCurrentUser();
       setRegisteredUser(current);
       if (current) {
-        // Build mock profile & org for local registered user
-        const cleanName = current.fullName || current.email.split('@')[0];
-        const orgName = current.studioName || `${cleanName}'s Studio`;
+        const isDemo = current.email.toLowerCase() === 'apni@gmail.com';
+        const cleanName = isDemo ? 'Aarav Mehta' : (current.fullName || current.email.split('@')[0]);
+        const orgName = isDemo ? 'Apni Estate Studio' : (current.studioName || `${cleanName}'s Studio`);
+        const orgId = isDemo ? 'org-demo-1' : `org_${current.id}`;
         
         setProfile({
           id: current.id,
-          organization_id: `org_${current.id}`,
+          organization_id: orgId,
           full_name: cleanName,
           role: 'owner',
           created_at: current.registeredAt,
         } as Profile);
 
         setOrganization({
-          id: `org_${current.id}`,
+          id: orgId,
           name: orgName,
-          subscription_status: current.status as any,
+          subscription_status: (isDemo ? 'active' : current.status) as any,
           trial_ends_at: current.trialEndsAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          plan: (current.plan || 'professional') as any,
+          plan: (isDemo ? 'prime' : (current.plan || 'professional')) as any,
           created_at: current.registeredAt,
           updated_at: current.registeredAt,
         } as Organization);
@@ -86,6 +131,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           aud: 'authenticated',
           created_at: current.registeredAt,
         } as User);
+      } else {
+        setProfile(null);
+        setOrganization(null);
+        setUser(null);
       }
     };
 

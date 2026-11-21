@@ -285,11 +285,12 @@ export const ProjectDetailPage: React.FC = () => {
   }, [initialProjectDetailTab]);
 
   const activeProject = projects.find(p => p.id === selectedProjectId) || (projects.length > 0 ? projects[0] : null);
-  const project: Project = activeProject || ({
+  const project: Project = activeProject || {
     id: '',
     name: 'No Project Selected',
     client: 'N/A',
     location: '',
+    city: '',
     type: 'Residential',
     budget: 0,
     spent: 0,
@@ -297,11 +298,12 @@ export const ProjectDetailPage: React.FC = () => {
     status: 'On Track',
     startDate: '',
     deadline: '',
+    coverImage: '',
     rooms: [],
     boq_items: [],
     notes: [],
     photos: []
-  } as Project);
+  };
   const activeTabGroup = projectTabGroups.find(group => group.tabs.includes(activeTab)) || projectTabGroups[0];
 
   // Client Portal Requirements State & Sync

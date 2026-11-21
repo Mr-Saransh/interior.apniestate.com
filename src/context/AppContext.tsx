@@ -370,14 +370,24 @@ const INITIAL_DEMO_CLIENTS: Client[] = [
 
 const DEMO_PROJECT_IDS = new Set(INITIAL_PROJECTS.map(p => p.id));
 const DEMO_CLIENT_NAMES = new Set(INITIAL_DEMO_CLIENTS.map(c => c.name.toLowerCase()));
+const DEMO_CLIENT_IDS = new Set(INITIAL_DEMO_CLIENTS.map(c => c.id));
 const DEMO_EXPENSE_TITLES = new Set(INITIAL_EXPENSES.map(e => e.title.toLowerCase()));
+const DEMO_EXPENSE_IDS = new Set(INITIAL_EXPENSES.map(e => e.id));
+const DEMO_LEAD_IDS = new Set(INITIAL_LEADS.map(l => l.id));
+const DEMO_TASK_IDS = new Set(INITIAL_TASKS.map(t => t.id));
+const DEMO_STAFF_IDS = new Set(INITIAL_STAFF_MEMBERS.map(s => s.id));
+const DEMO_VENDOR_IDS = new Set(INITIAL_VENDORS.map(v => v.id));
+const DEMO_PURCHASE_IDS = new Set(INITIAL_PURCHASES.map(p => p.id));
+const DEMO_PAYMENT_IDS = new Set(INITIAL_CLIENT_PAYMENTS.map(p => p.id));
 
 export const isDemoProjectItem = (p: any): boolean => {
   if (!p || typeof p !== 'object') return false;
   return (
     DEMO_PROJECT_IDS.has(p.id) ||
+    (typeof p.id === 'string' && (p.id.startsWith('proj-') || p.id.startsWith('demo-'))) ||
     p.organization_id === 'org-demo-1' ||
     p.organization_id === 'demo-org' ||
+    p.organization_id === 'demo' ||
     p.name === 'Mehta Residence' ||
     p.name === 'Godrej Woodsville 3BHK' ||
     p.name === 'Kapoor Apartment' ||
@@ -385,8 +395,64 @@ export const isDemoProjectItem = (p: any): boolean => {
     p.name === 'Birla House' ||
     p.name === 'Singhania Villa' ||
     p.name === 'Oberoi Sky City' ||
-    p.name === 'Lodha Park 4BHK'
+    p.name === 'Lodha Park 4BHK' ||
+    p.client === 'Sameer & Divya Joshi' ||
+    p.client === 'Vikram Kapoor' ||
+    p.client === 'Rohan Mehta' ||
+    p.client === 'Pooja Malhotra'
   );
+};
+
+export const isDemoExpenseItem = (e: any): boolean => {
+  if (!e || typeof e !== 'object') return false;
+  return (
+    DEMO_EXPENSE_IDS.has(e.id) ||
+    (typeof e.id === 'string' && e.id.startsWith('exp-demo-')) ||
+    DEMO_EXPENSE_TITLES.has((e.title || '').toLowerCase()) ||
+    DEMO_PROJECT_IDS.has(e.projectId) ||
+    (typeof e.projectId === 'string' && e.projectId.startsWith('proj-'))
+  );
+};
+
+export const isDemoClientItem = (c: any): boolean => {
+  if (!c || typeof c !== 'object') return false;
+  return (
+    DEMO_CLIENT_IDS.has(c.id) ||
+    DEMO_CLIENT_NAMES.has((c.name || '').toLowerCase()) ||
+    (typeof c.id === 'string' && c.id.startsWith('cli-demo-')) ||
+    c.organization_id === 'org-demo-1' ||
+    c.organization_id === 'demo'
+  );
+};
+
+export const isDemoLeadItem = (l: any): boolean => {
+  if (!l || typeof l !== 'object') return false;
+  return DEMO_LEAD_IDS.has(l.id) || (typeof l.id === 'string' && l.id.startsWith('lead-demo-'));
+};
+
+export const isDemoTaskItem = (t: any): boolean => {
+  if (!t || typeof t !== 'object') return false;
+  return DEMO_TASK_IDS.has(t.id) || (typeof t.id === 'string' && t.id.startsWith('task-demo-')) || DEMO_PROJECT_IDS.has(t.project_id || t.projectId);
+};
+
+export const isDemoStaffItem = (s: any): boolean => {
+  if (!s || typeof s !== 'object') return false;
+  return DEMO_STAFF_IDS.has(s.id) || s.full_name === 'Aarav Mehta' || s.full_name === 'Priya Sharma';
+};
+
+export const isDemoVendorItem = (v: any): boolean => {
+  if (!v || typeof v !== 'object') return false;
+  return DEMO_VENDOR_IDS.has(v.id);
+};
+
+export const isDemoPurchaseItem = (p: any): boolean => {
+  if (!p || typeof p !== 'object') return false;
+  return DEMO_PURCHASE_IDS.has(p.id) || DEMO_PROJECT_IDS.has(p.project_id || p.projectId);
+};
+
+export const isDemoPaymentItem = (p: any): boolean => {
+  if (!p || typeof p !== 'object') return false;
+  return DEMO_PAYMENT_IDS.has(p.id) || DEMO_PROJECT_IDS.has(p.project_id || p.projectId);
 };
 
 export const getTenantStorageKey = (
@@ -394,8 +460,11 @@ export const getTenantStorageKey = (
   isDemo: boolean,
   tenantId?: string | null
 ): string => {
-  if (isDemo || !tenantId || tenantId === 'demo') {
+  if (isDemo || tenantId === 'demo') {
     return `apni_estate_demo_${entity}`;
+  }
+  if (!tenantId) {
+    return `apni_estate_unauth_${entity}`;
   }
   return `apni_estate_tenant_${tenantId}_${entity}`;
 };
@@ -403,10 +472,12 @@ export const getTenantStorageKey = (
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { organization, profile, currentUser, user, isAuthenticated, isDemoMode } = useAuth();
 
-  const activeTenantId = isDemoMode 
+  // Exactly one demo account: apni@gmail.com
+  const isDemoAccount = Boolean(isDemoMode || (currentUser && currentUser.email.toLowerCase() === 'apni@gmail.com'));
+  const activeTenantId = isDemoAccount 
     ? 'demo' 
-    : (organization?.id || currentUser?.id || profile?.organization_id || user?.id || null);
-  const isRealTenant = !isDemoMode && Boolean(activeTenantId && activeTenantId !== 'demo');
+    : (currentUser?.id || organization?.id || profile?.organization_id || user?.id || null);
+  const isRealTenant = !isDemoAccount && Boolean(activeTenantId && activeTenantId !== 'demo');
 
   const [workspaceMode, setWorkspaceModeState] = useState<WorkspaceMode>(() => {
     try {
@@ -542,380 +613,265 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Core Data States (Tenant-Isolated & Offline-Resilient)
   const [clients, setClients] = useState<Client[]>(() => {
-    if (!isRealTenant) {
+    if (isDemoAccount) {
       const saved = localStorage.getItem('apni_estate_demo_clients');
       return saved ? JSON.parse(saved) : INITIAL_DEMO_CLIENTS;
     }
-    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_clients`);
-    if (!saved) return [];
-    try {
-      const demoCliIds = new Set(INITIAL_DEMO_CLIENTS.map(c => c.id));
-      return (JSON.parse(saved) || []).filter((c: any) => !demoCliIds.has(c.id));
-    } catch {
-      return [];
+    if (isRealTenant && activeTenantId) {
+      const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_clients`);
+      if (!saved) return [];
+      try {
+        return (JSON.parse(saved) || []).filter((c: any) => !isDemoClientItem(c));
+      } catch {
+        return [];
+      }
     }
+    return [];
   });
 
   const [leads, setLeads] = useState<Lead[]>(() => {
-    if (!isRealTenant) {
+    if (isDemoAccount) {
       const saved = localStorage.getItem('apni_estate_demo_leads');
       return saved ? JSON.parse(saved) : INITIAL_LEADS;
     }
-    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_leads`);
-    if (!saved) return [];
-    try {
-      const demoLeadIds = new Set(INITIAL_LEADS.map(l => l.id));
-      return (JSON.parse(saved) || []).filter((l: any) => !demoLeadIds.has(l.id));
-    } catch {
-      return [];
+    if (isRealTenant && activeTenantId) {
+      const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_leads`);
+      if (!saved) return [];
+      try {
+        return (JSON.parse(saved) || []).filter((l: any) => !isDemoLeadItem(l));
+      } catch {
+        return [];
+      }
     }
+    return [];
   });
 
   const [tasks, setTasks] = useState<Task[]>(() => {
-    if (!isRealTenant) {
+    if (isDemoAccount) {
       const saved = localStorage.getItem('apni_estate_demo_tasks');
       return saved ? JSON.parse(saved) : INITIAL_TASKS;
     }
-    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_tasks`);
-    if (!saved) return [];
-    try {
-      const demoTaskIds = new Set(INITIAL_TASKS.map(t => t.id));
-      return (JSON.parse(saved) || []).filter((t: any) => !demoTaskIds.has(t.id));
-    } catch {
-      return [];
+    if (isRealTenant && activeTenantId) {
+      const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_tasks`);
+      if (!saved) return [];
+      try {
+        return (JSON.parse(saved) || []).filter((t: any) => !isDemoTaskItem(t));
+      } catch {
+        return [];
+      }
     }
+    return [];
   });
 
   const [teamMembers, setTeamMembers] = useState<StaffMember[]>(() => {
-    if (!isRealTenant) {
+    if (isDemoAccount) {
       const saved = localStorage.getItem('apni_estate_demo_team');
       return saved ? JSON.parse(saved) : INITIAL_STAFF_MEMBERS;
     }
-    const defaultOwner: StaffMember = {
-      id: profile?.id || currentUser?.id || 'owner-1',
-      organization_id: activeTenantId || '',
-      full_name: profile?.full_name || currentUser?.fullName || 'Studio Owner',
-      role: 'owner',
-      status: 'Active',
-      created_at: new Date().toISOString()
-    };
-    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_team`);
-    if (!saved) return [defaultOwner];
-    try {
-      const demoTeamIds = new Set(INITIAL_STAFF_MEMBERS.map(m => m.id));
-      const parsed = (JSON.parse(saved) || []).filter((m: any) => !demoTeamIds.has(m.id));
-      return parsed.length > 0 ? parsed : [defaultOwner];
-    } catch {
-      return [defaultOwner];
+    if (isRealTenant && activeTenantId) {
+      const defaultOwner: StaffMember = {
+        id: currentUser?.id || profile?.id || 'owner-1',
+        organization_id: activeTenantId,
+        full_name: currentUser?.fullName || profile?.full_name || currentUser?.email.split('@')[0] || 'Studio Owner',
+        role: 'owner',
+        status: 'Active',
+        created_at: currentUser?.registeredAt || new Date().toISOString()
+      };
+      const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_team`);
+      if (!saved) return [defaultOwner];
+      try {
+        const parsed = (JSON.parse(saved) || []).filter((m: any) => !isDemoStaffItem(m));
+        return parsed.length > 0 ? parsed : [defaultOwner];
+      } catch {
+        return [defaultOwner];
+      }
     }
+    return [];
   });
 
   const [vendors, setVendors] = useState<Vendor[]>(() => {
-    if (!isRealTenant) {
+    if (isDemoAccount) {
       const saved = localStorage.getItem('apni_estate_demo_vendors');
       return saved ? JSON.parse(saved) : INITIAL_VENDORS;
     }
-    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_vendors`);
-    if (!saved) return [];
-    try {
-      const demoVenIds = new Set(INITIAL_VENDORS.map(v => v.id));
-      return (JSON.parse(saved) || []).filter((v: any) => !demoVenIds.has(v.id));
-    } catch {
-      return [];
+    if (isRealTenant && activeTenantId) {
+      const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_vendors`);
+      if (!saved) return [];
+      try {
+        return (JSON.parse(saved) || []).filter((v: any) => !isDemoVendorItem(v));
+      } catch {
+        return [];
+      }
     }
+    return [];
   });
 
   const [clientPayments, setClientPayments] = useState<ClientPayment[]>(() => {
-    if (!isRealTenant) {
+    if (isDemoAccount) {
       const saved = localStorage.getItem('apni_estate_demo_client_payments');
       return saved ? JSON.parse(saved) : INITIAL_CLIENT_PAYMENTS;
     }
-    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_client_payments`);
-    if (!saved) return [];
-    try {
-      const demoPayIds = new Set(INITIAL_CLIENT_PAYMENTS.map(p => p.id));
-      return (JSON.parse(saved) || []).filter((p: any) => !demoPayIds.has(p.id));
-    } catch {
-      return [];
+    if (isRealTenant && activeTenantId) {
+      const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_client_payments`);
+      if (!saved) return [];
+      try {
+        return (JSON.parse(saved) || []).filter((p: any) => !isDemoPaymentItem(p));
+      } catch {
+        return [];
+      }
     }
+    return [];
   });
 
   const [purchases, setPurchases] = useState<Purchase[]>(() => {
-    if (!isRealTenant) {
+    if (isDemoAccount) {
       const saved = localStorage.getItem('apni_estate_demo_purchases');
       return saved ? JSON.parse(saved) : INITIAL_PURCHASES;
     }
-    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_purchases`);
-    if (!saved) return [];
-    try {
-      const demoPoIds = new Set(INITIAL_PURCHASES.map(p => p.id));
-      return (JSON.parse(saved) || []).filter((p: any) => !demoPoIds.has(p.id));
-    } catch {
-      return [];
+    if (isRealTenant && activeTenantId) {
+      const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_purchases`);
+      if (!saved) return [];
+      try {
+        return (JSON.parse(saved) || []).filter((p: any) => !isDemoPurchaseItem(p));
+      } catch {
+        return [];
+      }
     }
+    return [];
   });
 
   const [projects, setProjects] = useState<Project[]>(() => {
-    if (!isRealTenant) {
+    if (isDemoAccount) {
       const saved = localStorage.getItem('apni_estate_demo_projects');
       return saved ? JSON.parse(saved) : INITIAL_PROJECTS;
     }
-    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_projects`);
-    if (!saved) return [];
-    try {
-      return (JSON.parse(saved) || []).filter((p: any) => !isDemoProjectItem(p));
-    } catch {
-      return [];
+    if (isRealTenant && activeTenantId) {
+      const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_projects`);
+      if (!saved) return [];
+      try {
+        return (JSON.parse(saved) || []).filter((p: any) => !isDemoProjectItem(p));
+      } catch {
+        return [];
+      }
     }
+    return [];
   });
 
   const [expenses, setExpenses] = useState<Expense[]>(() => {
-    if (!isRealTenant) {
+    if (isDemoAccount) {
       const saved = localStorage.getItem('apni_estate_demo_expenses');
       return saved ? JSON.parse(saved) : INITIAL_EXPENSES;
     }
-    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_expenses`);
-    if (!saved) return [];
-    try {
-      const demoExpIds = new Set(INITIAL_EXPENSES.map(e => e.id));
-      return (JSON.parse(saved) || []).filter((e: any) => !demoExpIds.has(e.id));
-    } catch {
-      return [];
+    if (isRealTenant && activeTenantId) {
+      const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_expenses`);
+      if (!saved) return [];
+      try {
+        return (JSON.parse(saved) || []).filter((e: any) => !isDemoExpenseItem(e));
+      } catch {
+        return [];
+      }
     }
+    return [];
   });
 
   const [boqItems, setBoqItems] = useState<BOQItem[]>(() => {
-    if (!isRealTenant) {
+    if (isDemoAccount) {
       const saved = localStorage.getItem('apni_estate_demo_boq_items');
       return saved ? JSON.parse(saved) : (INITIAL_BOQ_ITEMS as BOQItem[]);
     }
-    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_boq_items`);
-    if (!saved) return [];
-    try {
-      const demoBoqIds = new Set(INITIAL_BOQ_ITEMS.map((b: any) => b.id));
-      return (JSON.parse(saved) || []).filter((b: any) => !demoBoqIds.has(b.id));
-    } catch {
-      return [];
+    if (isRealTenant && activeTenantId) {
+      const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_boq_items`);
+      if (!saved) return [];
+      try {
+        const demoBoqIds = new Set(INITIAL_BOQ_ITEMS.map((b: any) => b.id));
+        return (JSON.parse(saved) || []).filter((b: any) => !demoBoqIds.has(b.id));
+      } catch {
+        return [];
+      }
     }
+    return [];
   });
 
   const [materials, setMaterials] = useState<Material[]>(() => {
-    const key = isRealTenant ? `apni_estate_tenant_${activeTenantId}_materials` : 'apni_estate_demo_materials';
+    const key = isDemoAccount ? 'apni_estate_demo_materials' : (activeTenantId ? `apni_estate_tenant_${activeTenantId}_materials` : null);
+    if (!key) return [];
     const saved = localStorage.getItem(key);
     return saved ? JSON.parse(saved) : [];
   });
   const [materialTransactions, setMaterialTransactions] = useState<MaterialTransaction[]>(() => {
-    const key = isRealTenant ? `apni_estate_tenant_${activeTenantId}_material_tx` : 'apni_estate_demo_material_tx';
+    const key = isDemoAccount ? 'apni_estate_demo_material_tx' : (activeTenantId ? `apni_estate_tenant_${activeTenantId}_material_tx` : null);
+    if (!key) return [];
     const saved = localStorage.getItem(key);
     return saved ? JSON.parse(saved) : [];
   });
   const [milestones, setMilestones] = useState<Milestone[]>(() => {
-    const key = isRealTenant ? `apni_estate_tenant_${activeTenantId}_milestones` : 'apni_estate_demo_milestones';
+    const key = isDemoAccount ? 'apni_estate_demo_milestones' : (activeTenantId ? `apni_estate_tenant_${activeTenantId}_milestones` : null);
+    if (!key) return [];
     const saved = localStorage.getItem(key);
     return saved ? JSON.parse(saved) : [];
   });
   const [dailyUpdates, setDailyUpdates] = useState<DailyUpdate[]>(() => {
-    const key = isRealTenant ? `apni_estate_tenant_${activeTenantId}_daily_updates` : 'apni_estate_demo_daily_updates';
+    const key = isDemoAccount ? 'apni_estate_demo_daily_updates' : (activeTenantId ? `apni_estate_tenant_${activeTenantId}_daily_updates` : null);
+    if (!key) return [];
     const saved = localStorage.getItem(key);
     return saved ? JSON.parse(saved) : [];
   });
   const [projectPhotos, setProjectPhotos] = useState<ProjectPhoto[]>(() => {
-    const key = isRealTenant ? `apni_estate_tenant_${activeTenantId}_project_photos` : 'apni_estate_demo_project_photos';
+    const key = isDemoAccount ? 'apni_estate_demo_project_photos' : (activeTenantId ? `apni_estate_tenant_${activeTenantId}_project_photos` : null);
+    if (!key) return [];
     const saved = localStorage.getItem(key);
     return saved ? JSON.parse(saved) : [];
   });
 
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(() => {
-    if (!isRealTenant) {
+    if (isDemoAccount) {
       const saved = localStorage.getItem('apni_estate_demo_calendar');
       return saved ? JSON.parse(saved) : CALENDAR_EVENTS;
     }
-    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_calendar`);
-    return saved ? JSON.parse(saved) : [];
+    if (isRealTenant && activeTenantId) {
+      const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_calendar`);
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
   });
 
   const [documents, setDocuments] = useState<DocumentItem[]>(() => {
-    if (!isRealTenant) {
+    if (isDemoAccount) {
       const saved = localStorage.getItem('apni_estate_demo_documents');
       return saved ? JSON.parse(saved) : INITIAL_DOCUMENTS;
     }
-    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_documents`);
-    return saved ? JSON.parse(saved) : [];
+    if (isRealTenant && activeTenantId) {
+      const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_documents`);
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
   });
 
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
-    if (!isRealTenant) {
+    if (isDemoAccount) {
       const saved = localStorage.getItem('apni_estate_demo_notifications');
       return saved ? JSON.parse(saved) : INITIAL_NOTIFICATIONS;
     }
-    const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_notifications`);
-    return saved ? JSON.parse(saved) : [
-      {
-        id: `welcome-${activeTenantId}`,
-        title: 'Welcome to Apni Estate',
-        description: 'Your private workspace is ready. Click "+ New Project" to create your first site.',
-        time: 'Just now',
-        read: false,
-        type: 'update'
-      }
-    ];
+    if (isRealTenant && activeTenantId) {
+      const saved = localStorage.getItem(`apni_estate_tenant_${activeTenantId}_notifications`);
+      return saved ? JSON.parse(saved) : [
+        {
+          id: `welcome-${activeTenantId}`,
+          title: 'Welcome to Apni Estate',
+          description: 'Your studio workspace is ready. Click "+ New Project" to create your first site.',
+          time: 'Just now',
+          read: false,
+          type: 'update'
+        }
+      ];
+    }
+    return [];
   });
 
   // Dynamically switch and sanitize workspace data whenever active tenant / auth state changes
   useEffect(() => {
-    if (isRealTenant && activeTenantId) {
-      const prefix = `apni_estate_tenant_${activeTenantId}_`;
-
-      // Projects
-      const rawProjects = localStorage.getItem(`${prefix}projects`);
-      let loadedProjects: Project[] = [];
-      if (rawProjects) {
-        try {
-          loadedProjects = (JSON.parse(rawProjects) || []).filter((p: any) => !isDemoProjectItem(p));
-        } catch {}
-      }
-      setProjects(loadedProjects);
-      setSelectedProjectId(loadedProjects.length > 0 ? loadedProjects[0].id : null);
-
-      // Expenses
-      const rawExpenses = localStorage.getItem(`${prefix}expenses`);
-      let loadedExpenses: Expense[] = [];
-      if (rawExpenses) {
-        try {
-          const demoExpIds = new Set(INITIAL_EXPENSES.map(e => e.id));
-          loadedExpenses = (JSON.parse(rawExpenses) || []).filter((e: any) => !demoExpIds.has(e.id));
-        } catch {}
-      }
-      setExpenses(loadedExpenses);
-
-      // Clients
-      const rawClients = localStorage.getItem(`${prefix}clients`);
-      let loadedClients: Client[] = [];
-      if (rawClients) {
-        try {
-          const demoCliIds = new Set(INITIAL_DEMO_CLIENTS.map(c => c.id));
-          loadedClients = (JSON.parse(rawClients) || []).filter((c: any) => !demoCliIds.has(c.id));
-        } catch {}
-      }
-      setClients(loadedClients);
-
-      // BOQ
-      const rawBoq = localStorage.getItem(`${prefix}boq_items`);
-      let loadedBoq: BOQItem[] = [];
-      if (rawBoq) {
-        try {
-          const demoBoqIds = new Set(INITIAL_BOQ_ITEMS.map((b: any) => b.id));
-          loadedBoq = (JSON.parse(rawBoq) || []).filter((b: any) => !demoBoqIds.has(b.id));
-        } catch {}
-      }
-      setBoqItems(loadedBoq);
-
-      // Leads
-      const rawLeads = localStorage.getItem(`${prefix}leads`);
-      let loadedLeads: Lead[] = [];
-      if (rawLeads) {
-        try {
-          const demoLeadIds = new Set(INITIAL_LEADS.map(l => l.id));
-          loadedLeads = (JSON.parse(rawLeads) || []).filter((l: any) => !demoLeadIds.has(l.id));
-        } catch {}
-      }
-      setLeads(loadedLeads);
-
-      // Tasks
-      const rawTasks = localStorage.getItem(`${prefix}tasks`);
-      let loadedTasks: Task[] = [];
-      if (rawTasks) {
-        try {
-          const demoTaskIds = new Set(INITIAL_TASKS.map(t => t.id));
-          loadedTasks = (JSON.parse(rawTasks) || []).filter((t: any) => !demoTaskIds.has(t.id));
-        } catch {}
-      }
-      setTasks(loadedTasks);
-
-      // Team
-      const defaultOwner: StaffMember = {
-        id: profile?.id || currentUser?.id || 'owner-1',
-        organization_id: activeTenantId,
-        full_name: profile?.full_name || currentUser?.fullName || 'Studio Owner',
-        role: 'owner',
-        status: 'Active',
-        created_at: new Date().toISOString()
-      };
-      const rawTeam = localStorage.getItem(`${prefix}team`);
-      let loadedTeam: StaffMember[] = [defaultOwner];
-      if (rawTeam) {
-        try {
-          const demoTeamIds = new Set(INITIAL_STAFF_MEMBERS.map(m => m.id));
-          const parsed = (JSON.parse(rawTeam) || []).filter((m: any) => !demoTeamIds.has(m.id));
-          if (parsed.length > 0) loadedTeam = parsed;
-        } catch {}
-      }
-      setTeamMembers(loadedTeam);
-
-      // Vendors
-      const rawVen = localStorage.getItem(`${prefix}vendors`);
-      let loadedVen: Vendor[] = [];
-      if (rawVen) {
-        try {
-          const demoVenIds = new Set(INITIAL_VENDORS.map(v => v.id));
-          loadedVen = (JSON.parse(rawVen) || []).filter((v: any) => !demoVenIds.has(v.id));
-        } catch {}
-      }
-      setVendors(loadedVen);
-
-      // Payments
-      const rawPay = localStorage.getItem(`${prefix}client_payments`);
-      let loadedPay: ClientPayment[] = [];
-      if (rawPay) {
-        try {
-          const demoPayIds = new Set(INITIAL_CLIENT_PAYMENTS.map(p => p.id));
-          loadedPay = (JSON.parse(rawPay) || []).filter((p: any) => !demoPayIds.has(p.id));
-        } catch {}
-      }
-      setClientPayments(loadedPay);
-
-      // Purchases
-      const rawPo = localStorage.getItem(`${prefix}purchases`);
-      let loadedPo: Purchase[] = [];
-      if (rawPo) {
-        try {
-          const demoPoIds = new Set(INITIAL_PURCHASES.map(p => p.id));
-          loadedPo = (JSON.parse(rawPo) || []).filter((p: any) => !demoPoIds.has(p.id));
-        } catch {}
-      }
-      setPurchases(loadedPo);
-
-      // Materials, tx, milestones, dpr, photos, docs, calendar, notifs
-      const getSafeList = (subKey: string) => {
-        const raw = localStorage.getItem(`${prefix}${subKey}`);
-        if (!raw) return [];
-        try { return JSON.parse(raw) || []; } catch { return []; }
-      };
-      setMaterials(getSafeList('materials'));
-      setMaterialTransactions(getSafeList('material_tx'));
-      setMilestones(getSafeList('milestones'));
-      setDailyUpdates(getSafeList('daily_updates'));
-      setProjectPhotos(getSafeList('project_photos'));
-      setDocuments(getSafeList('documents'));
-      setCalendarEvents(getSafeList('calendar'));
-
-      const rawNotifs = localStorage.getItem(`${prefix}notifications`);
-      if (rawNotifs) {
-        try { setNotifications(JSON.parse(rawNotifs)); } catch { setNotifications([]); }
-      } else {
-        setNotifications([
-          {
-            id: `welcome-${activeTenantId}`,
-            title: 'Welcome to Apni Estate',
-            description: 'Your private workspace is ready. Click "+ New Project" to create your first site.',
-            time: 'Just now',
-            read: false,
-            type: 'update'
-          }
-        ]);
-      }
-    } else if (isDemoMode) {
-      // Demo mode
+    if (isDemoAccount) {
+      // Dedicated Demo account: apni@gmail.com
       const rawProjects = localStorage.getItem('apni_estate_demo_projects');
       setProjects(rawProjects ? JSON.parse(rawProjects) : INITIAL_PROJECTS);
       const rawExpenses = localStorage.getItem('apni_estate_demo_expenses');
@@ -943,8 +899,197 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const rawNotifs = localStorage.getItem('apni_estate_demo_notifications');
       setNotifications(rawNotifs ? JSON.parse(rawNotifs) : INITIAL_NOTIFICATIONS);
       setSelectedProjectId('proj-1');
+    } else if (isRealTenant && activeTenantId) {
+      // Fresh real tenant account (e.g. saranshagrahari589@gmail.com, 7-day trial or paid)
+      const prefix = `apni_estate_tenant_${activeTenantId}_`;
+
+      // Wipe legacy global un-scoped demo keys so they never cross-contaminate
+      localStorage.removeItem('apni_estate_projects');
+      localStorage.removeItem('apni_estate_expenses');
+      localStorage.removeItem('apni_estate_clients');
+      localStorage.removeItem('apni_estate_boq_items');
+      localStorage.removeItem('apni_estate_leads');
+      localStorage.removeItem('apni_estate_tasks');
+      localStorage.removeItem('apni_estate_team');
+      localStorage.removeItem('apni_estate_vendors');
+      localStorage.removeItem('apni_estate_client_payments');
+      localStorage.removeItem('apni_estate_purchases');
+
+      // Projects
+      const rawProjects = localStorage.getItem(`${prefix}projects`);
+      let loadedProjects: Project[] = [];
+      if (rawProjects) {
+        try {
+          loadedProjects = (JSON.parse(rawProjects) || []).filter((p: any) => !isDemoProjectItem(p));
+        } catch {}
+      }
+      setProjects(loadedProjects);
+      localStorage.setItem(`${prefix}projects`, JSON.stringify(loadedProjects));
+      setSelectedProjectId(loadedProjects.length > 0 ? loadedProjects[0].id : null);
+
+      // Expenses
+      const rawExpenses = localStorage.getItem(`${prefix}expenses`);
+      let loadedExpenses: Expense[] = [];
+      if (rawExpenses) {
+        try {
+          loadedExpenses = (JSON.parse(rawExpenses) || []).filter((e: any) => !isDemoExpenseItem(e));
+        } catch {}
+      }
+      setExpenses(loadedExpenses);
+      localStorage.setItem(`${prefix}expenses`, JSON.stringify(loadedExpenses));
+
+      // Clients
+      const rawClients = localStorage.getItem(`${prefix}clients`);
+      let loadedClients: Client[] = [];
+      if (rawClients) {
+        try {
+          loadedClients = (JSON.parse(rawClients) || []).filter((c: any) => !isDemoClientItem(c));
+        } catch {}
+      }
+      setClients(loadedClients);
+      localStorage.setItem(`${prefix}clients`, JSON.stringify(loadedClients));
+
+      // BOQ
+      const rawBoq = localStorage.getItem(`${prefix}boq_items`);
+      let loadedBoq: BOQItem[] = [];
+      if (rawBoq) {
+        try {
+          const demoBoqIds = new Set(INITIAL_BOQ_ITEMS.map((b: any) => b.id));
+          loadedBoq = (JSON.parse(rawBoq) || []).filter((b: any) => !demoBoqIds.has(b.id));
+        } catch {}
+      }
+      setBoqItems(loadedBoq);
+      localStorage.setItem(`${prefix}boq_items`, JSON.stringify(loadedBoq));
+
+      // Leads
+      const rawLeads = localStorage.getItem(`${prefix}leads`);
+      let loadedLeads: Lead[] = [];
+      if (rawLeads) {
+        try {
+          loadedLeads = (JSON.parse(rawLeads) || []).filter((l: any) => !isDemoLeadItem(l));
+        } catch {}
+      }
+      setLeads(loadedLeads);
+      localStorage.setItem(`${prefix}leads`, JSON.stringify(loadedLeads));
+
+      // Tasks
+      const rawTasks = localStorage.getItem(`${prefix}tasks`);
+      let loadedTasks: Task[] = [];
+      if (rawTasks) {
+        try {
+          loadedTasks = (JSON.parse(rawTasks) || []).filter((t: any) => !isDemoTaskItem(t));
+        } catch {}
+      }
+      setTasks(loadedTasks);
+      localStorage.setItem(`${prefix}tasks`, JSON.stringify(loadedTasks));
+
+      // Team: Authenticated owner ONLY
+      const defaultOwner: StaffMember = {
+        id: currentUser?.id || profile?.id || 'owner-1',
+        organization_id: activeTenantId,
+        full_name: currentUser?.fullName || profile?.full_name || currentUser?.email.split('@')[0] || 'Studio Owner',
+        role: 'owner',
+        status: 'Active',
+        created_at: currentUser?.registeredAt || new Date().toISOString()
+      };
+      const rawTeam = localStorage.getItem(`${prefix}team`);
+      let loadedTeam: StaffMember[] = [defaultOwner];
+      if (rawTeam) {
+        try {
+          const parsed = (JSON.parse(rawTeam) || []).filter((m: any) => !isDemoStaffItem(m));
+          if (parsed.length > 0) loadedTeam = parsed;
+        } catch {}
+      }
+      setTeamMembers(loadedTeam);
+      localStorage.setItem(`${prefix}team`, JSON.stringify(loadedTeam));
+
+      // Vendors
+      const rawVen = localStorage.getItem(`${prefix}vendors`);
+      let loadedVen: Vendor[] = [];
+      if (rawVen) {
+        try {
+          loadedVen = (JSON.parse(rawVen) || []).filter((v: any) => !isDemoVendorItem(v));
+        } catch {}
+      }
+      setVendors(loadedVen);
+      localStorage.setItem(`${prefix}vendors`, JSON.stringify(loadedVen));
+
+      // Payments
+      const rawPay = localStorage.getItem(`${prefix}client_payments`);
+      let loadedPay: ClientPayment[] = [];
+      if (rawPay) {
+        try {
+          loadedPay = (JSON.parse(rawPay) || []).filter((p: any) => !isDemoPaymentItem(p));
+        } catch {}
+      }
+      setClientPayments(loadedPay);
+      localStorage.setItem(`${prefix}client_payments`, JSON.stringify(loadedPay));
+
+      // Purchases
+      const rawPo = localStorage.getItem(`${prefix}purchases`);
+      let loadedPo: Purchase[] = [];
+      if (rawPo) {
+        try {
+          loadedPo = (JSON.parse(rawPo) || []).filter((p: any) => !isDemoPurchaseItem(p));
+        } catch {}
+      }
+      setPurchases(loadedPo);
+      localStorage.setItem(`${prefix}purchases`, JSON.stringify(loadedPo));
+
+      // Materials, tx, milestones, dpr, photos, docs, calendar, notifs
+      const getSafeList = (subKey: string) => {
+        const raw = localStorage.getItem(`${prefix}${subKey}`);
+        if (!raw) return [];
+        try { return JSON.parse(raw) || []; } catch { return []; }
+      };
+      setMaterials(getSafeList('materials'));
+      setMaterialTransactions(getSafeList('material_tx'));
+      setMilestones(getSafeList('milestones'));
+      setDailyUpdates(getSafeList('daily_updates'));
+      setProjectPhotos(getSafeList('project_photos'));
+      setDocuments(getSafeList('documents'));
+      setCalendarEvents(getSafeList('calendar'));
+
+      const rawNotifs = localStorage.getItem(`${prefix}notifications`);
+      if (rawNotifs) {
+        try { setNotifications(JSON.parse(rawNotifs)); } catch { setNotifications([]); }
+      } else {
+        const welcomeNotif = [
+          {
+            id: `welcome-${activeTenantId}`,
+            title: 'Welcome to Apni Estate',
+            description: 'Your studio workspace is ready. Click "+ New Project" to create your first site.',
+            time: 'Just now',
+            read: false,
+            type: 'update' as const
+          }
+        ];
+        setNotifications(welcomeNotif);
+        localStorage.setItem(`${prefix}notifications`, JSON.stringify(welcomeNotif));
+      }
+    } else {
+      // Unauthenticated state: completely clear in-memory state
+      setProjects([]);
+      setExpenses([]);
+      setClients([]);
+      setBoqItems([]);
+      setLeads([]);
+      setTasks([]);
+      setTeamMembers([]);
+      setVendors([]);
+      setClientPayments([]);
+      setPurchases([]);
+      setMaterials([]);
+      setMaterialTransactions([]);
+      setMilestones([]);
+      setDailyUpdates([]);
+      setProjectPhotos([]);
+      setDocuments([]);
+      setCalendarEvents([]);
+      setNotifications([]);
+      setSelectedProjectId(null);
     }
-  }, [isRealTenant, activeTenantId, isDemoMode, profile?.id, profile?.full_name, currentUser?.id, currentUser?.fullName]);
+  }, [isRealTenant, activeTenantId, isDemoAccount, profile?.id, profile?.full_name, currentUser?.id, currentUser?.fullName, currentUser?.email]);
 
   // Load Remote Data from Supabase only when Supabase is explicitly configured & active
   const loadRemoteData = useCallback(async () => {
@@ -1054,94 +1199,112 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Continuously sync all application state to tenant-scoped LocalStorage so data is never lost
   useEffect(() => {
-    const key = getTenantStorageKey('clients', isDemoMode, activeTenantId);
+    if (!isDemoAccount && (!isRealTenant || !activeTenantId)) return;
+    const key = getTenantStorageKey('clients', isDemoAccount, activeTenantId);
     localStorage.setItem(key, JSON.stringify(clients));
-  }, [clients, isDemoMode, activeTenantId]);
+  }, [clients, isDemoAccount, activeTenantId, isRealTenant]);
 
   useEffect(() => {
-    const key = getTenantStorageKey('projects', isDemoMode, activeTenantId);
+    if (!isDemoAccount && (!isRealTenant || !activeTenantId)) return;
+    const key = getTenantStorageKey('projects', isDemoAccount, activeTenantId);
     localStorage.setItem(key, JSON.stringify(projects));
-  }, [projects, isDemoMode, activeTenantId]);
+  }, [projects, isDemoAccount, activeTenantId, isRealTenant]);
 
   useEffect(() => {
-    const key = getTenantStorageKey('expenses', isDemoMode, activeTenantId);
+    if (!isDemoAccount && (!isRealTenant || !activeTenantId)) return;
+    const key = getTenantStorageKey('expenses', isDemoAccount, activeTenantId);
     localStorage.setItem(key, JSON.stringify(expenses));
-  }, [expenses, isDemoMode, activeTenantId]);
+  }, [expenses, isDemoAccount, activeTenantId, isRealTenant]);
 
   useEffect(() => {
-    const key = getTenantStorageKey('boq_items', isDemoMode, activeTenantId);
+    if (!isDemoAccount && (!isRealTenant || !activeTenantId)) return;
+    const key = getTenantStorageKey('boq_items', isDemoAccount, activeTenantId);
     localStorage.setItem(key, JSON.stringify(boqItems));
-  }, [boqItems, isDemoMode, activeTenantId]);
+  }, [boqItems, isDemoAccount, activeTenantId, isRealTenant]);
 
   useEffect(() => {
-    const key = getTenantStorageKey('calendar', isDemoMode, activeTenantId);
+    if (!isDemoAccount && (!isRealTenant || !activeTenantId)) return;
+    const key = getTenantStorageKey('calendar', isDemoAccount, activeTenantId);
     localStorage.setItem(key, JSON.stringify(calendarEvents));
-  }, [calendarEvents, isDemoMode, activeTenantId]);
+  }, [calendarEvents, isDemoAccount, activeTenantId, isRealTenant]);
 
   useEffect(() => {
-    const key = getTenantStorageKey('documents', isDemoMode, activeTenantId);
+    if (!isDemoAccount && (!isRealTenant || !activeTenantId)) return;
+    const key = getTenantStorageKey('documents', isDemoAccount, activeTenantId);
     localStorage.setItem(key, JSON.stringify(documents));
-  }, [documents, isDemoMode, activeTenantId]);
+  }, [documents, isDemoAccount, activeTenantId, isRealTenant]);
 
   useEffect(() => {
-    const key = getTenantStorageKey('leads', isDemoMode, activeTenantId);
+    if (!isDemoAccount && (!isRealTenant || !activeTenantId)) return;
+    const key = getTenantStorageKey('leads', isDemoAccount, activeTenantId);
     localStorage.setItem(key, JSON.stringify(leads));
-  }, [leads, isDemoMode, activeTenantId]);
+  }, [leads, isDemoAccount, activeTenantId, isRealTenant]);
 
   useEffect(() => {
-    const key = getTenantStorageKey('tasks', isDemoMode, activeTenantId);
+    if (!isDemoAccount && (!isRealTenant || !activeTenantId)) return;
+    const key = getTenantStorageKey('tasks', isDemoAccount, activeTenantId);
     localStorage.setItem(key, JSON.stringify(tasks));
-  }, [tasks, isDemoMode, activeTenantId]);
+  }, [tasks, isDemoAccount, activeTenantId, isRealTenant]);
 
   useEffect(() => {
-    const key = getTenantStorageKey('team', isDemoMode, activeTenantId);
+    if (!isDemoAccount && (!isRealTenant || !activeTenantId)) return;
+    const key = getTenantStorageKey('team', isDemoAccount, activeTenantId);
     localStorage.setItem(key, JSON.stringify(teamMembers));
-  }, [teamMembers, isDemoMode, activeTenantId]);
+  }, [teamMembers, isDemoAccount, activeTenantId, isRealTenant]);
 
   useEffect(() => {
-    const key = getTenantStorageKey('vendors', isDemoMode, activeTenantId);
+    if (!isDemoAccount && (!isRealTenant || !activeTenantId)) return;
+    const key = getTenantStorageKey('vendors', isDemoAccount, activeTenantId);
     localStorage.setItem(key, JSON.stringify(vendors));
-  }, [vendors, isDemoMode, activeTenantId]);
+  }, [vendors, isDemoAccount, activeTenantId, isRealTenant]);
 
   useEffect(() => {
-    const key = getTenantStorageKey('client_payments', isDemoMode, activeTenantId);
+    if (!isDemoAccount && (!isRealTenant || !activeTenantId)) return;
+    const key = getTenantStorageKey('client_payments', isDemoAccount, activeTenantId);
     localStorage.setItem(key, JSON.stringify(clientPayments));
-  }, [clientPayments, isDemoMode, activeTenantId]);
+  }, [clientPayments, isDemoAccount, activeTenantId, isRealTenant]);
 
   useEffect(() => {
-    const key = getTenantStorageKey('purchases', isDemoMode, activeTenantId);
+    if (!isDemoAccount && (!isRealTenant || !activeTenantId)) return;
+    const key = getTenantStorageKey('purchases', isDemoAccount, activeTenantId);
     localStorage.setItem(key, JSON.stringify(purchases));
-  }, [purchases, isDemoMode, activeTenantId]);
+  }, [purchases, isDemoAccount, activeTenantId, isRealTenant]);
 
   useEffect(() => {
-    const key = getTenantStorageKey('notifications', isDemoMode, activeTenantId);
+    if (!isDemoAccount && (!isRealTenant || !activeTenantId)) return;
+    const key = getTenantStorageKey('notifications', isDemoAccount, activeTenantId);
     localStorage.setItem(key, JSON.stringify(notifications));
-  }, [notifications, isDemoMode, activeTenantId]);
+  }, [notifications, isDemoAccount, activeTenantId, isRealTenant]);
 
   useEffect(() => {
-    const key = getTenantStorageKey('materials', isDemoMode, activeTenantId);
+    if (!isDemoAccount && (!isRealTenant || !activeTenantId)) return;
+    const key = getTenantStorageKey('materials', isDemoAccount, activeTenantId);
     localStorage.setItem(key, JSON.stringify(materials));
-  }, [materials, isDemoMode, activeTenantId]);
+  }, [materials, isDemoAccount, activeTenantId, isRealTenant]);
 
   useEffect(() => {
-    const key = getTenantStorageKey('material_tx', isDemoMode, activeTenantId);
+    if (!isDemoAccount && (!isRealTenant || !activeTenantId)) return;
+    const key = getTenantStorageKey('material_tx', isDemoAccount, activeTenantId);
     localStorage.setItem(key, JSON.stringify(materialTransactions));
-  }, [materialTransactions, isDemoMode, activeTenantId]);
+  }, [materialTransactions, isDemoAccount, activeTenantId, isRealTenant]);
 
   useEffect(() => {
-    const key = getTenantStorageKey('milestones', isDemoMode, activeTenantId);
+    if (!isDemoAccount && (!isRealTenant || !activeTenantId)) return;
+    const key = getTenantStorageKey('milestones', isDemoAccount, activeTenantId);
     localStorage.setItem(key, JSON.stringify(milestones));
-  }, [milestones, isDemoMode, activeTenantId]);
+  }, [milestones, isDemoAccount, activeTenantId, isRealTenant]);
 
   useEffect(() => {
-    const key = getTenantStorageKey('daily_updates', isDemoMode, activeTenantId);
+    if (!isDemoAccount && (!isRealTenant || !activeTenantId)) return;
+    const key = getTenantStorageKey('daily_updates', isDemoAccount, activeTenantId);
     localStorage.setItem(key, JSON.stringify(dailyUpdates));
-  }, [dailyUpdates, isDemoMode, activeTenantId]);
+  }, [dailyUpdates, isDemoAccount, activeTenantId, isRealTenant]);
 
   useEffect(() => {
-    const key = getTenantStorageKey('project_photos', isDemoMode, activeTenantId);
+    if (!isDemoAccount && (!isRealTenant || !activeTenantId)) return;
+    const key = getTenantStorageKey('project_photos', isDemoAccount, activeTenantId);
     localStorage.setItem(key, JSON.stringify(projectPhotos));
-  }, [projectPhotos, isDemoMode, activeTenantId]);
+  }, [projectPhotos, isDemoAccount, activeTenantId, isRealTenant]);
 
   // Open Project Detail Page
   const openProjectDetail = (
@@ -2707,7 +2870,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem('apni_estate_tasks');
     localStorage.removeItem('apni_estate_team');
 
-    if (isDemoMode) {
+    if (isDemoAccount) {
       setClients(INITIAL_DEMO_CLIENTS);
       setProjects(INITIAL_PROJECTS);
       setExpenses(INITIAL_EXPENSES);

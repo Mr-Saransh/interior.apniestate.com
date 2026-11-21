@@ -30,6 +30,20 @@ class UserService {
   private initialSeed(): RegisteredUser[] {
     return [
       {
+        id: 'usr_demo_apni',
+        email: 'apni@gmail.com',
+        password: 'admin123',
+        fullName: 'Aarav Mehta (Demo Studio)',
+        studioName: 'Apni Estate Studio',
+        phone: '+91 98765 43210',
+        city: 'Mumbai',
+        businessType: 'Turnkey Luxury Interiors',
+        emailVerified: true,
+        status: 'active',
+        plan: 'prime',
+        registeredAt: new Date(Date.now() - 86400000 * 30).toISOString(),
+      },
+      {
         id: 'usr_sample_1',
         email: 'priya.sharma@designcraft.in',
         password: 'password123',
@@ -81,12 +95,32 @@ class UserService {
   public getUsers(): RegisteredUser[] {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) {
-        const seed = this.initialSeed();
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
-        return seed;
+      let list: RegisteredUser[] = raw ? JSON.parse(raw) : this.initialSeed();
+
+      // Ensure the official demo user apni@gmail.com always exists with password admin123
+      const demoUser = list.find(u => u.email.toLowerCase() === 'apni@gmail.com');
+      if (!demoUser) {
+        list.unshift({
+          id: 'usr_demo_apni',
+          email: 'apni@gmail.com',
+          password: 'admin123',
+          fullName: 'Aarav Mehta (Demo Studio)',
+          studioName: 'Apni Estate Studio',
+          phone: '+91 98765 43210',
+          city: 'Mumbai',
+          businessType: 'Turnkey Luxury Interiors',
+          emailVerified: true,
+          status: 'active',
+          plan: 'prime',
+          registeredAt: new Date(Date.now() - 86400000 * 30).toISOString(),
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+      } else if (demoUser.password !== 'admin123') {
+        demoUser.password = 'admin123';
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
       }
-      return JSON.parse(raw);
+
+      return list;
     } catch {
       return this.initialSeed();
     }

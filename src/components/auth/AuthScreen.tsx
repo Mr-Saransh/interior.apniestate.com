@@ -484,6 +484,31 @@ export const AuthScreen: React.FC = () => {
                     </p>
                   </div>
 
+                  {/* Demo Account Quick Access Banner */}
+                  <div className="p-3 bg-amber-50/80 border border-amber-200/90 rounded-xl flex items-center justify-between gap-2 text-left">
+                    <div>
+                      <div className="text-[11px] font-bold text-amber-900 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Dedicated Demo Studio (Aarav Mehta)</span>
+                      </div>
+                      <div className="text-[10px] text-amber-800 font-mono mt-0.5">
+                        apni@gmail.com • pass: admin123
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSignInMethod('password');
+                        setEmail('apni@gmail.com');
+                        setPassword('admin123');
+                        setErrorMessage(null);
+                      }}
+                      className="px-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold rounded-lg transition-colors cursor-pointer shrink-0 shadow-xs"
+                    >
+                      Use Demo
+                    </button>
+                  </div>
+
                   {/* Mode Toggle: Password vs OTP */}
                   <div className="flex justify-end">
                     <button
